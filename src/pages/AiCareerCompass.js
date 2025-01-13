@@ -64,7 +64,7 @@ const CareerPathCard = ({ path, onSelect, isSelected }) => (
 
 
 const AICareerCompass = ({ setStage: setStageFromProps }) => {
-  const { user, setStage: setStageFromContext } = useContext(UserContext);
+  const { user, setUser, setStage: setStageFromContext } = useContext(UserContext);
   const setStage = setStageFromProps || setStageFromContext;
   const [selectedPath, setSelectedPath] = useState(null);
   const [careerPaths, setCareerPaths] = useState([]);
@@ -661,9 +661,32 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
                       </li>
                     ))}
                   </ul>
-                  <button className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    Start This Path
-                  </button>
+                  <button 
+  onClick={async () => {
+    console.log('Selected career path:', selectedPath);
+
+    // Update user context with selected path
+    setUser(prevUser => {
+      const updatedUser = {
+        ...prevUser,
+        selectedCareerPath: selectedPath
+      };
+      console.log('Updated user context:', updatedUser);
+      return updatedUser;
+    });
+    
+    // Store the selection
+    sessionStorage.setItem('selectedCareerPath', JSON.stringify(selectedPath));
+    console.log('Stored selected career path in session storage');
+    
+    // Trigger navigation to personalized dashboard
+    console.log('Navigating to personalized dashboard (stage 6)');
+    setStage(6);
+  }}
+  className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+>
+  Start This Path
+</button>
                 </div>
               ) : (
                 <p className="text-gray-600">

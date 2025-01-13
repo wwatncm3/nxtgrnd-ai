@@ -2,19 +2,10 @@ import React, { useState, createContext } from 'react';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
 import MainContent from './components/MainContent';
-import CreatePage from './components/CreatePage';
-import SettingsPage from './pages/SettingsPage';
-import SavedVideosPage from './pages/SavedVideosPage';
-import LikedVideosPage from './pages/LikedVideosPage';
-import RepostedVideosPage from './pages/RepostedVideosPage';
-import HistoryPage from './pages/HistoryPage';
-import CreatorsList from './components/CreatorsList';
-import AiCareerCompassPage from './pages/AiCareerCompass';
+import AICareerCompass from './pages/AiCareerCompass';
 
-// Create UserContext to manage global state
 export const UserContext = createContext();
 
-// Layout for onboarding stages
 const OnboardingLayout = ({ children }) => (
   <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
     {children}
@@ -24,84 +15,90 @@ const OnboardingLayout = ({ children }) => (
 function App() {
   const [stage, setStage] = useState(1);
   const [user, setUser] = useState({});
+  const [selectedCareerPath, setSelectedCareerPath] = useState(null);
 
-  // Handle stage completion and user data updates
   const handleStageComplete = (newData, nextStage) => {
-    // Merge newData into existing user object
-    setUser(prev => ({ ...prev, ...newData }));
+    // Update user data if provided
+    if (newData) {
+      setUser(prev => ({ ...prev, ...newData }));
+    }
+    // Move to next stage
     setStage(nextStage);
   };
 
-  // Render the appropriate component based on current stage
+  const handleCareerPathSelect = (path) => {
+    setSelectedCareerPath(path);
+    // When a career path is selected, update user data and move to dashboard
+    setUser(prev => ({
+      ...prev,
+      selectedCareerPath: path
+    }));
+    handleStageComplete(null, 6); // Move to dashboard after path selection
+  };
+
   const renderContent = () => {
     switch (stage) {
-      case 1:
+      case 1: // Account Creation
         return (
           <OnboardingLayout>
             <ProfileCreation 
               onNext={(profileData, isLogin = false) => {
-                if (isLogin) {
-                  // If it's a login, go directly to main content
-                  handleStageComplete(profileData, 3);
-                } else {
-                  // If it's registration, continue to interests selection
-                  handleStageComplete(profileData, 2);
-                }
+                handleStageComplete(
+                  profileData,
+                  isLogin ? 5 : 2 // Login goes to Career Compass, signup continues flow
+                );
               }} 
             />
           </OnboardingLayout>
         );
 
-      case 2:
+      case 2: // Path Selection (Start Your Journey)
         return (
           <OnboardingLayout>
-            <InterestSelection
-              onComplete={(interests) => handleStageComplete({ interests }, 3)}
-              initialData={user.interests}
+            <ProfileCreation
+              currentSection="compass"
+              onNext={(data) => handleStageComplete(data, 3)}
             />
           </OnboardingLayout>
         );
 
-      case 3:
-        // Main feed or dashboard
-        return <MainContent userData={user} setStage={setStage} />;
-
-      case 4:
-        // Creating content
+      case 3: // Skills Selection
         return (
           <OnboardingLayout>
-            <CreatePage />
+            <InterestSelection
+              onComplete={(data) => handleStageComplete(data, 4)}
+              initialData={user}
+            />
           </OnboardingLayout>
         );
 
-      case 5:
-        // Directly go to SettingsPage (with user data in context)
+      case 4: // Resume Upload
         return (
           <OnboardingLayout>
-            <SettingsPage />
+            <InterestSelection
+              step={2}
+              onComplete={(data) => handleStageComplete(data, 5)}
+              initialData={user}
+            />
           </OnboardingLayout>
         );
 
-      // Additional pages
-      case 6:
-        return <HistoryPage setStage={setStage} />;
-      case 7:
-        return <SavedVideosPage setStage={setStage} />;
-      case 8:
-        return <LikedVideosPage setStage={setStage} />;
-      case 9:
-        return <RepostedVideosPage setStage={setStage} />;
-      case 10:
+      case 5: // AI Career Compass
         return (
           <OnboardingLayout>
-            <CreatorsList setStage={setStage} />
+            <AICareerCompass
+              onPathSelect={handleCareerPathSelect}
+            />
           </OnboardingLayout>
         );
-      case 11:
+
+      case 6: // Personalized Dashboard
         return (
-          <OnboardingLayout>
-            <AiCareerCompassPage />
-          </OnboardingLayout>
+          <MainContent 
+            userData={user}
+            selectedCareerPath={selectedCareerPath}
+            setStage={setStage}
+          />
         );
 
       default:
@@ -110,8 +107,8 @@ function App() {
             <div className="text-center p-8">
               <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
               <button 
-                onClick={() => setStage(1)}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                onClick={() => handleStageComplete(null, 1)}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
               >
                 Return Home
               </button>
@@ -122,7 +119,14 @@ function App() {
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser, stage, setStage }}>
+    <UserContext.Provider value={{ 
+      user, 
+      setUser, 
+      stage, 
+      setStage,
+      selectedCareerPath,
+      setSelectedCareerPath 
+    }}>
       {renderContent()}
     </UserContext.Provider>
   );
