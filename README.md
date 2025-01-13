@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -68,3 +69,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+=======
+# careerday
+CareerDay: A platform showcasing predictive career pathways using AI-driven analysis. Helps students and professionals visualize their career goals, explore future scenarios, and build actionable steps for success.
+>>>>>>> 9b3d904df405440bd2ba501e86347bb81685f6cc
