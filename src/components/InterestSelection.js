@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { Compass, ChevronRight, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Compass, ChevronRight, ChevronDown, ChevronUp, X, Search, Check, Upload } from 'lucide-react';
 import { UserContext } from '../App';
 import Papa from 'papaparse';
 
@@ -88,7 +88,9 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
   }, [skillOptions, searchTerm]);
 
   const handleSkillSelect = (skill) => {
-    setSelectedSkills((prev) => [...prev, skill]);
+    if (!selectedSkills.includes(skill)) {
+      setSelectedSkills((prev) => [...prev, skill]);
+    }
     setIsDropdownOpen(false);
   };
 
@@ -199,111 +201,169 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
           Help us understand your interests to personalize your career journey
         </p>
 
-        {/* Step 1: Skills */}
         {step === 1 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">Select Skills</h2>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search skills..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1); // Reset to first page when searching
-                  setIsDropdownOpen(true);
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onFocus={() => setIsDropdownOpen(true)}
-                onBlur={() => setIsDropdownOpen(false)}
-              />
-              {/* Show dropdown if we have any filtered skills */}
-              {isLoading ? (
-                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg p-4 text-center">
-                  Loading skills...
-                </div>
-              ) : isDropdownOpen && filteredSkills.length > 0 ? (
-                <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg max-h-48 overflow-y-auto">
-                  {filteredSkills.map((skill, index) => (
-                    <button
-                      key={`${skill}-${index}`}
-                      onClick={() => handleSkillSelect(skill)}
-                      className="w-full px-4 py-2 text-left hover:bg-blue-50"
-                    >
-                      {skill}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            {/* Pagination controls */}
-            {!isLoading && filteredSkills.length > 0 && (
-              <div className="flex justify-between items-center mt-2">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="p-2 disabled:opacity-50"
-                >
-                  <ChevronUp />
-                </button>
-                <span>Page {page} of {totalPages}</span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="p-2 disabled:opacity-50"
-                >
-                  <ChevronDown />
-                </button>
-              </div>
-            )}
-
-            {/* Display selected skills as badges */}
-            <div className="flex flex-wrap gap-2">
+            
+            {/* Display selected skills as badges ABOVE the search */}
+            <div className="flex flex-wrap gap-2 min-h-[40px]">
               {selectedSkills.map((skill, index) => (
                 <span
                   key={`selected-${skill}-${index}`}
-                  className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full flex items-center"
+                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full flex items-center
+                           border border-blue-100 hover:bg-blue-100 transition-colors"
                 >
                   {skill}
                   <button
                     onClick={() => handleSkillRemove(skill)}
-                    className="ml-1 focus:outline-none"
+                    className="ml-2 hover:text-blue-800 focus:outline-none"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 </span>
               ))}
             </div>
 
+            {/* Search input with dropdown */}
+            <div className="relative">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search skills..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                    setIsDropdownOpen(true);
+                  }}
+                  className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg 
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onFocus={() => setIsDropdownOpen(true)}
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              </div>
+
+              {isLoading ? (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : isDropdownOpen && filteredSkills.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                  <div className="max-h-60 overflow-y-auto">
+                    {filteredSkills.map((skill, index) => (
+                      <button
+                        key={`${skill}-${index}`}
+                        onClick={() => handleSkillSelect(skill)}
+                        className="w-full px-4 py-2 text-left hover:bg-blue-50 text-gray-700
+                                 flex items-center justify-between group"
+                      >
+                        <span>{skill}</span>
+                        {selectedSkills.includes(skill) && (
+                          <span className="text-blue-600">
+                            <Check size={16} />
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Pagination at bottom of dropdown */}
+                  <div className="border-t border-gray-100 p-2 flex items-center justify-between bg-gray-50 rounded-b-lg">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPage(p => Math.max(1, p - 1));
+                      }}
+                      disabled={page === 1}
+                      className="p-1 hover:bg-gray-100 rounded disabled:opacity-50"
+                    >
+                      <ChevronUp size={16} />
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      Page {page} of {totalPages}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPage(p => Math.min(totalPages, p + 1));
+                      }}
+                      disabled={page === totalPages}
+                      className="p-1 hover:bg-gray-100 rounded disabled:opacity-50"
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => setStep(2)}
-              className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              disabled={selectedSkills.length === 0}
+              className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold 
+                       hover:bg-blue-700 shadow-md hover:shadow-lg transition-all 
+                       flex items-center justify-center gap-2 disabled:opacity-50
+                       disabled:cursor-not-allowed"
             >
               Next Step <ChevronRight size={20} />
             </button>
           </div>
         )}
 
-        {/* Step 2: Resume Upload */}
         {step === 2 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">Upload Your Resume</h2>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={handleResumeUpload}
-              className="border border-gray-300 rounded-lg p-2 w-full"
-            />
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleResumeUpload}
+                className="hidden"
+                id="resume-upload"
+              />
+              <label
+                htmlFor="resume-upload"
+                className="cursor-pointer text-blue-600 hover:text-blue-700 flex flex-col items-center"
+              >
+                <Upload className="h-8 w-8 mb-2" />
+                <span className="font-medium">Click to upload your resume</span>
+                <span className="text-sm text-gray-500 mt-1">PDF, DOC, or DOCX</span>
+              </label>
+            </div>
+            
             {resumeName && (
-              <p className="text-green-600 mt-2">Uploaded: {resumeName}</p>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span className="text-green-700">{resumeName}</span>
+                <button
+                  onClick={() => {
+                    setResumeFile(null);
+                    setResumeName('');
+                  }}
+                  className="text-green-700 hover:text-green-800"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             )}
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-blue-600 py-3 rounded-lg text-white font-semibold hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
-            >
-              Complete Profile
-            </button>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setStep(1)}
+                className="flex-1 py-3 rounded-lg border border-gray-300 font-medium
+                         hover:bg-gray-50 transition-all"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="flex-1 py-3 rounded-lg bg-blue-600 text-white font-semibold
+                         hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+              >
+                Complete Profile
+              </button>
+            </div>
           </div>
         )}
       </div>

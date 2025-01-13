@@ -312,6 +312,9 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
         if (uniquePaths.length > 0) {
           console.log('Generated unique paths:', uniquePaths);
           
+          // Update state BEFORE storing in backend
+          setCareerPaths(uniquePaths); // Add this line
+          
           // Store in backend
           const storagePayload = {
             httpMethod: 'PUT',
@@ -322,7 +325,7 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
               timestamp: new Date().toISOString()
             })
           };
-  
+      
           await fetch(
             `https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/${user.userID}`,
             {
@@ -331,7 +334,7 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
               body: JSON.stringify(storagePayload)
             }
           );
-  
+      
           return uniquePaths;
         } else {
           console.log('No unique paths found, returning fallback paths');
@@ -348,81 +351,31 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
   };
 
   const refreshRecommendations = async () => {
-    console.log('Starting refresh with current user context:', {
+    console.log('Starting refresh of recommendations...');
+    console.log('Current user context:', {
       userID: user?.userID,
       interests: user?.interests,
       skills: user?.skills,
-      experienceLevel: user?.experienceLevel,
-      careerStage: user?.careerStage,
       pathType: user?.pathType
     });
     
     setIsRefreshing(true);
-    setError(null);
   
     try {
-      // Generate new recommendations
-      console.log('Generating new recommendations...');
+      // First generate new recommendations
       const newRecommendations = await generateNewRecommendations();
-      console.log('Generated recommendations:', newRecommendations);
+      console.log('Generated new recommendations:', newRecommendations);
   
-      if (!newRecommendations || !Array.isArray(newRecommendations)) {
-        throw new Error('Failed to generate valid recommendations');
-      }
-  
-      // Format recommendations to ensure all required fields
-      const formattedRecs = newRecommendations.map(rec => ({
-        id: rec.id || Math.random().toString(36).substr(2, 9),
-        title: rec.title || 'Career Path',
-        description: rec.description || 'No description available',
-        salaryRange: rec.salaryRange || 'Varies by location and experience',
-        matchScore: rec.matchScore || rec.MatchScore || 85, // Ensure matchScore exists
-        requiredSkills: Array.isArray(rec.requiredSkills) ? rec.requiredSkills : [],
-        recommendedCertifications: Array.isArray(rec.recommendedCertifications) ? 
-          rec.recommendedCertifications : [],
-        roadmap: {
-          timeToAchieve: rec.roadmap?.timeToAchieve || '1-2 years',
-          steps: Array.isArray(rec.roadmap?.steps) ? rec.roadmap.steps : []
-        },
-        nextSteps: Array.isArray(rec.nextSteps) ? rec.nextSteps : []
-      }));
-  
-      console.log('Formatted recommendations:', formattedRecs);
-  
-      // Update both state and session storage
-      setCareerPaths(formattedRecs);
-      sessionStorage.setItem(pathsKey, JSON.stringify(formattedRecs));
-      console.log('Updated career paths in state and session storage');
-  
-      // Update stored recommendations in backend
-      if (user?.userID) {
-        const storagePayload = {
-          httpMethod: 'PUT',
-          path: `/recommendations/${user.userID}`,
-          body: JSON.stringify({
-            userId: user.userID,
-            recommendations: formattedRecs,
-            timestamp: new Date().toISOString()
-          })
-        };
-  
-        console.log('Updating backend storage with payload:', storagePayload);
-  
-        await fetch(
-          `https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/${user.userID}`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(storagePayload)
-          }
-        );
-        
-        console.log('Successfully updated backend storage');
+      if (newRecommendations && user?.userID) {
+        // Update state and storage atomically
+        setCareerPaths(newRecommendations);
+        sessionStorage.setItem(pathsKey, JSON.stringify(newRecommendations));
+        console.log('Updated career paths and session storage');
       }
   
     } catch (error) {
       console.error('Error during refresh:', error);
-      setError('Failed to refresh recommendations. Please try again.');
+      setError('Failed to refresh recommendations');
     } finally {
       setIsRefreshing(false);
     }
@@ -467,13 +420,15 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
           
           if (stored) {
             console.log('Found stored recommendations, using those');
-            // Store in session for persistence
+            setCareerPaths(stored); // Make sure this line is here
             sessionStorage.setItem(pathsKey, JSON.stringify(stored));
           } else {
             console.log('No stored recommendations found, generating new ones');
-            await generateNewRecommendations();
+            const newRecs = await generateNewRecommendations();
+            setCareerPaths(newRecs); // Add this line
+            sessionStorage.setItem(pathsKey, JSON.stringify(newRecs));
           }
-  
+    
           // Mark as initialized
           console.log('Initialization complete');
           sessionStorage.setItem(initializationKey, 'true');
@@ -486,7 +441,7 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
           setLoading(false);
         }
       };
-  
+    
       initializeRecommendations();
     }
   

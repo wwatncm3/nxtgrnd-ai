@@ -1,13 +1,17 @@
+
+
+
 import React, { useState, useRef, useContext, useEffect } from 'react';
 import {
   Compass, BookOpen, Target, Award, MessageSquare, 
   PlayCircle, ChevronRight, Home, Briefcase, GraduationCap,
   Users, Menu, UserCircle, BellIcon, Search, Book,
   Lightbulb, Settings, LogOut, Building2, BarChart,
-  Calendar
+  Calendar, ChevronLeft, RefreshCw
 } from 'lucide-react';
 import { UserContext } from '../App';
 
+// Utility function to normalize career paths and remove duplicates
 const normalizeCareerPaths = (paths) => {
   if (!Array.isArray(paths)) return [];
   
@@ -34,39 +38,12 @@ const normalizeCareerPaths = (paths) => {
   return Array.from(uniquePaths.values());
 };
 
-const CareerCompassWidget = ({ setStage }) => {
+const CareerCompassWidget = ({ setStage, careerPaths, isLoading }) => {
   const { user } = useContext(UserContext);
   const [profileProgress, setProfileProgress] = useState(0);
-  const [savedPaths, setSavedPaths] = useState(null);
 
+  // Calculate profile progress
   useEffect(() => {
-    const loadSavedPaths = async () => {
-      if (!user?.userID) return;
-
-      try {
-        const response = await fetch(
-          `https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/${user.userID}`,
-          {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-        if (data?.recommendations) {
-          const normalizedPaths = normalizeCareerPaths(data.recommendations);
-          setSavedPaths(normalizedPaths);
-        }
-      } catch (error) {
-        console.error('Error loading saved paths:', error);
-      }
-    };
-
-    loadSavedPaths();
-
-    // Calculate profile progress
     const calculateProgress = () => {
       const requiredFields = [
         'firstName',
@@ -75,7 +52,8 @@ const CareerCompassWidget = ({ setStage }) => {
         'interests',
         'skills',
         'careerStage',
-        'experienceLevel'
+        'pathType',
+        'primaryGoal'
       ];
       
       let completedFields = 0;
@@ -92,13 +70,11 @@ const CareerCompassWidget = ({ setStage }) => {
     setProfileProgress(calculateProgress());
   }, [user]);
 
-  // Use savedPaths for display, with fallback
-  const displayPath = savedPaths?.[0] || {
-    title: `${Array.isArray(user?.interests) && user.interests.length > 0 
-            ? user.interests[0] 
-            : 'Technology'} Professional`,
-    matchScore: 85,
-    requiredSkills: Array.isArray(user?.interests) ? user.interests : []
+  // Simply use the first path from sorted careerPaths
+  const topMatch = careerPaths?.[0] || {
+    title: 'Complete your profile to see matches',
+    matchScore: 0,
+    requiredSkills: []
   };
 
   return (
@@ -108,8 +84,12 @@ const CareerCompassWidget = ({ setStage }) => {
           <Compass className="h-6 w-6" />
           <h2 className="text-xl font-semibold">AI Career Compass™</h2>
         </div>
-        <button onClick={() => setStage(11)} className="text-blue-100 hover:text-white">
-          <ChevronRight />
+        <button 
+          onClick={() => setStage(11)} 
+          className="flex items-center gap-2 text-blue-100 hover:text-white transition-colors"
+        >
+          View Details
+          <ChevronRight className="h-5 w-5" />
         </button>
       </div>
       
@@ -118,20 +98,20 @@ const CareerCompassWidget = ({ setStage }) => {
           <h3 className="font-medium mb-2">Top Career Match</h3>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-lg font-medium">{displayPath.title}</span>
-              <span className="text-sm bg-white/20 px-2 py-1 rounded">
-                {displayPath.matchScore}% Match
-              </span>
+              <span className="text-lg font-medium">{topMatch.title}</span>
+              {topMatch.matchScore > 0 && (
+                <span className="text-sm bg-white/20 px-2 py-1 rounded">
+                  {topMatch.matchScore}% Match
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
-              {Array.isArray(displayPath.requiredSkills) && 
-               displayPath.requiredSkills.slice(0, 3).map((skill, index) => (
+              {topMatch.requiredSkills?.slice(0, 3).map((skill, index) => (
                 <span key={index} className="text-sm bg-white/20 px-2 py-1 rounded">
                   {skill}
                 </span>
               ))}
-              {(!Array.isArray(displayPath.requiredSkills) || 
-                displayPath.requiredSkills.length === 0) && (
+              {(!topMatch.requiredSkills || topMatch.requiredSkills.length === 0) && (
                 <span className="text-sm bg-white/20 px-2 py-1 rounded">
                   Update your profile to see required skills
                 </span>
@@ -149,22 +129,33 @@ const CareerCompassWidget = ({ setStage }) => {
           </div>
           <div className="w-full bg-white/20 rounded-full h-2">
             <div 
-              className="bg-white rounded-full h-2" 
+              className="bg-white rounded-full h-2 transition-all duration-500" 
               style={{ width: `${profileProgress}%` }}
             />
           </div>
+          {profileProgress < 100 && (
+            <button 
+              onClick={() => setStage(4)}
+              className="w-full mt-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition-colors"
+            >
+              Complete Your Profile
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
+// Learning Paths Section Component
 const LearningPathSection = () => {
   const { user } = useContext(UserContext);
   const [currentCourses, setCurrentCourses] = useState([]);
   
   useEffect(() => {
     const fetchLearningPaths = async () => {
+      if (!user?.userID) return;
+
       try {
         const response = await fetch(
           'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/generate',
@@ -188,7 +179,6 @@ const LearningPathSection = () => {
         if (!response.ok) throw new Error('Failed to fetch learning paths');
         const data = await response.json();
         
-        // Transform API response into learning paths
         const recommendedCourses = data.recommendations?.learningPaths?.map(path => ({
           title: path.title,
           progress: path.progress || 0,
@@ -199,7 +189,6 @@ const LearningPathSection = () => {
         setCurrentCourses(recommendedCourses);
       } catch (error) {
         console.error('Error fetching learning paths:', error);
-        // Fallback data if API fails
         setCurrentCourses([{
           title: `${user.interests?.[0] || 'Technology'} Fundamentals`,
           progress: 0,
@@ -209,9 +198,7 @@ const LearningPathSection = () => {
       }
     };
 
-    if (user?.userID) {
-      fetchLearningPaths();
-    }
+    fetchLearningPaths();
   }, [user]);
 
   return (
@@ -221,7 +208,9 @@ const LearningPathSection = () => {
           <BookOpen className="h-5 w-5 text-blue-600" />
           Learning Paths
         </h2>
-        <button className="text-sm text-blue-600 hover:text-blue-700">View All</button>
+        <button className="text-sm text-blue-600 hover:text-blue-700">
+          View All
+        </button>
       </div>
       
       <div className="space-y-4">
@@ -257,12 +246,15 @@ const LearningPathSection = () => {
   );
 };
 
+// Opportunity Section Component
 const OpportunitySection = () => {
   const { user } = useContext(UserContext);
   const [opportunities, setOpportunities] = useState([]);
 
   useEffect(() => {
     const fetchOpportunities = async () => {
+      if (!user?.userID) return;
+
       try {
         const response = await fetch(
           'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/generate',
@@ -287,21 +279,19 @@ const OpportunitySection = () => {
         if (!response.ok) throw new Error('Failed to fetch opportunities');
         const data = await response.json();
         
-        // Transform API response into opportunities
         const matchedOpportunities = data.recommendations?.opportunities?.map(opp => ({
           type: opp.type,
           role: opp.role || opp.title,
           company: opp.company || opp.client,
           location: opp.location || 'Remote',
           duration: opp.duration,
-          matchScore: opp.matchScore || Math.floor(Math.random() * 20 + 80), // Fallback score
+          matchScore: opp.matchScore || Math.floor(Math.random() * 20 + 80),
           postedDate: opp.postedDate || 'Recently'
         })) || [];
 
         setOpportunities(matchedOpportunities);
       } catch (error) {
         console.error('Error fetching opportunities:', error);
-        // Fallback data if API fails
         setOpportunities([{
           type: "job",
           role: `${user.interests?.[0] || 'Technology'} Professional`,
@@ -313,9 +303,7 @@ const OpportunitySection = () => {
       }
     };
 
-    if (user?.userID) {
-      fetchOpportunities();
-    }
+    fetchOpportunities();
   }, [user]);
 
   return (
@@ -362,6 +350,7 @@ const OpportunitySection = () => {
   );
 };
 
+// Main Content Component
 const MainContent = () => {
   const { setStage, setUser, user } = useContext(UserContext);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -411,7 +400,6 @@ const MainContent = () => {
 
   // Handle navigation
   const handleNavigation = (stage) => {
-    // Clear any temporary state if needed
     setStage(stage);
   };
 
@@ -489,18 +477,18 @@ const MainContent = () => {
                     Settings
                   </button>
                   <button
-  className="w-full px-4 py-2 text-left hover:bg-gray-100"
-  onClick={() => {
-    console.log('User logging out...');
-    console.log('Clearing user state:', user); // Shows current user before clearing
-    setUser({});
-    console.log('User state cleared');
-    console.log('Redirecting to stage 1 (login)');
-    setStage(1);
-  }}
->
-  Logout
-</button>
+                    className="w-full px-4 py-2 text-left hover:bg-gray-100"
+                    onClick={() => {
+                      console.log('User logging out...');
+                      console.log('Clearing user state:', user);
+                      setUser({});
+                      console.log('User state cleared');
+                      console.log('Redirecting to stage 1 (login)');
+                      setStage(1);
+                    }}
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
@@ -564,16 +552,18 @@ const MainContent = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column (spans 2 in large screens) */}
               <div className="lg:col-span-2 space-y-6">
-                <CareerCompassWidget setStage={setStage} careerPaths={careerPaths} />
+                <CareerCompassWidget 
+                  setStage={setStage} 
+                  careerPaths={careerPaths}
+                  isLoading={isLoading}
+                />
                 <OpportunitySection />
-                
-                {/* Learning Progress */}
                 <LearningPathSection />
               </div>
 
               {/* Right Column */}
               <div className="space-y-6">
-                {/* Weekly Goals - Dynamic based on career path */}
+                {/* Weekly Goals */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -609,7 +599,7 @@ const MainContent = () => {
                   )}
                 </div>
 
-                {/* Upcoming Events - Based on career path milestones */}
+                {/* Upcoming Events */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold flex items-center gap-2">
