@@ -1,0 +1,241 @@
+import React, { useState, useEffect, useContext } from 'react';
+import { Compass, ChevronRight } from 'lucide-react';
+import { UserContext } from '../App';
+
+const CareerInterests = ({ onComplete, initialData = {} }) => {
+  const { user, setUser } = useContext(UserContext);
+  const [selectedInterests, setSelectedInterests] = useState(initialData.interests || []);
+  const [selectedSkills, setSelectedSkills] = useState(initialData.skills || []);
+  const [experienceLevel, setExperienceLevel] = useState(initialData.experienceLevel || '');
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeName, setResumeName] = useState('');
+  const [step, setStep] = useState(1);
+
+  // Predefined options for interests and skills
+  const predefinedInterests = [
+    { Name: 'Cloud Computing', Metadata: { Color: 'bg-blue-500' } },
+    { Name: 'Software Engineering', Metadata: { Color: 'bg-green-500' } },
+    { Name: 'Writing', Metadata: { Color: 'bg-purple-500' } },
+    { Name: 'Data Science', Metadata: { Color: 'bg-indigo-500' } },
+  ];
+
+  const predefinedSkills = [
+    { Name: 'Coding', Metadata: { Color: 'bg-yellow-500' } },
+    { Name: 'Data Analysis', Metadata: { Color: 'bg-orange-500' } },
+    { Name: 'Project Management', Metadata: { Color: 'bg-pink-500' } },
+    { Name: 'Public Speaking', Metadata: { Color: 'bg-teal-500' } },
+  ];
+
+  // Toggle selection for interests and skills
+  const handleInterestToggle = (interest) => {
+    setSelectedInterests((prev) =>
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+    );
+  };
+
+  const handleSkillToggle = (skill) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+  };
+
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0];
+  
+    if (!file) {
+      alert('Please select a file to upload.');
+      return;
+    }
+  
+    if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+      alert('Invalid file type. Please upload a .pdf, .doc, or .docx file.');
+      return;
+    }
+  
+    try {
+      const base64Content = await toBase64(file);
+      const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: `${user.userID}/resume/${file.name}`,
+          fileContent: base64Content,
+        }),
+      });
+  
+      const responseData = await response.json();
+      console.log('File upload response:', responseData);
+  
+      if (response.ok) {
+        setResumeFile(file);
+        setResumeName(file.name); // Ensure resumeName is updated
+        alert('File uploaded successfully!');
+      } else {
+        throw new Error(responseData.message || 'Unknown error occurred.');
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload the file. Please try again.');
+    }
+  };
+  
+  
+
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = (error) => reject(error);
+    });
+
+    // In InterestSelection.js - Update handleSubmit function
+  const handleSubmit = async () => {
+    if (!user || !user.userID) {
+      console.error('UserID is missing');
+      return;
+    }
+  
+    try {
+      // Save dynamic options
+      const dynamicOptionsPayload = {
+        UserID: user.userID,
+        Interests: selectedInterests,
+        Skills: selectedSkills,
+        ExperienceLevel: experienceLevel,
+        Resume: resumeName || null,
+      };
+      
+      const dynamicResponsePayload = {
+        httpMethod: 'POST',
+        path: '/dynamic-options',
+        body: JSON.stringify(dynamicOptionsPayload),
+      };
+
+      const dynamicOptionsResponse = await fetch(
+        'https://qvuwgujm49.execute-api.us-east-1.amazonaws.com/dev/dynamic-options',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dynamicResponsePayload),
+        }
+      );
+  
+      if (!dynamicOptionsResponse.ok) {
+        throw new Error(`Failed to save dynamic options: ${await dynamicOptionsResponse.text()}`);
+      }
+  
+      // Update user context with new data
+      setUser(prevUser => ({
+        ...prevUser,
+        interests: selectedInterests,
+        skills: selectedSkills,
+        experienceLevel: experienceLevel,
+        resumeName: resumeName
+      }));
+
+      // Navigate to AI Career Compass
+      onComplete({
+        interests: selectedInterests,
+        skills: selectedSkills,
+        experienceLevel,
+        resume: resumeName
+      });
+      
+    } catch (error) {
+      console.error('Error during submission:', error);
+      alert('An error occurred during profile submission. Please try again.');
+    }
+  };
+      
+      
+      
+      
+      
+      
+      
+      
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <h1 className="text-3xl font-bold text-center">CareerDay</h1>
+        </div>
+        <p className="text-gray-600 text-center mb-8">
+          Help us understand your interests to personalize your career journey
+        </p>
+
+        {step === 1 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Select Interests</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {predefinedInterests.map(({ Name, Metadata }) => (
+                <button
+                  key={Name}
+                  onClick={() => handleInterestToggle(Name)}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    selectedInterests.includes(Name)
+                      ? `${Metadata?.Color || 'bg-blue-500'} text-white border-transparent`
+                      : 'border-gray-200 hover:border-blue-600'
+                  }`}
+                >
+                  {Name}
+                </button>
+              ))}
+            </div>
+            <button
+  onClick={() => setStep(2)}
+  className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white font-semibold hover:from-purple-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all"
+>
+  Next Step <ChevronRight size={20} />
+</button>
+
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Select Skills</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {predefinedSkills.map(({ Name, Metadata }) => (
+                <button
+                  key={Name}
+                  onClick={() => handleSkillToggle(Name)}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    selectedSkills.includes(Name)
+                      ? `${Metadata?.Color || 'bg-green-500'} text-white border-transparent`
+                      : 'border-gray-200 hover:border-blue-600'
+                  }`}
+                >
+                  {Name}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setStep(3)} className="w-full bg-blue-600 py-3 rounded-lg">
+              Next Step <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Upload Your Resume</h2>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleResumeUpload}
+              className="border border-gray-300 rounded-lg p-2 w-full"
+            />
+            {resumeName && <p className="text-green-600 mt-2">Uploaded: {resumeName}</p>}
+            <button onClick={handleSubmit} className="w-full bg-blue-600 py-3 rounded-lg">
+              Complete Profile
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default CareerInterests;
