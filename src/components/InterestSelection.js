@@ -98,45 +98,70 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
     setSelectedSkills((prev) => prev.filter((s) => s !== skill));
   };
 
-  const handleResumeUpload = async (e) => {
-    const file = e.target.files[0];
+  // Updated handleResumeUpload function
+const handleResumeUpload = async (e) => {
+  const file = e.target.files[0];
+  console.log('Resume upload initiated:', file?.name);
 
-    if (!file) {
-      alert('Please select a file to upload.');
-      return;
+  if (!file) {
+    alert('Please select a file to upload.');
+    return;
+  }
+
+  if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+    alert('Invalid file type. Please upload a .pdf, .doc, or .docx file.');
+    return;
+  }
+
+  try {
+    const base64Content = await toBase64(file);
+    console.log('File converted to base64, uploading to S3...');
+
+    const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: `${user.userID}/resume/${file.name}`,
+        fileContent: base64Content,
+      }),
+    });
+
+    const responseData = await response.json();
+    console.log('File upload response:', responseData);
+
+    if (response.ok) {
+      const resumeData = {
+        name: file.name,
+        type: file.type,
+        content: base64Content,
+        uploadDate: new Date().toISOString(),
+        path: `${user.userID}/resume/${file.name}`
+      };
+
+      // Store resume data in session storage
+      console.log('Storing resume data in session storage:', resumeData);
+      sessionStorage.setItem('userResume', JSON.stringify(resumeData));
+
+      // Update component state
+      setResumeFile(file);
+      setResumeName(file.name);
+      
+      // Update user context
+      setUser(prevUser => ({
+        ...prevUser,
+        resume: resumeData
+      }));
+
+      console.log('Resume upload complete and data stored');
+      alert('File uploaded successfully!');
+    } else {
+      throw new Error(responseData.message || 'Unknown error occurred.');
     }
-
-    if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-      alert('Invalid file type. Please upload a .pdf, .doc, or .docx file.');
-      return;
-    }
-
-    try {
-      const base64Content = await toBase64(file);
-      const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: `${user.userID}/resume/${file.name}`,
-          fileContent: base64Content,
-        }),
-      });
-
-      const responseData = await response.json();
-      console.log('File upload response:', responseData);
-
-      if (response.ok) {
-        setResumeFile(file);
-        setResumeName(file.name);
-        alert('File uploaded successfully!');
-      } else {
-        throw new Error(responseData.message || 'Unknown error occurred.');
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload the file. Please try again.');
-    }
-  };
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to upload the file. Please try again.');
+  }
+};
 
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -146,50 +171,74 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
       reader.onerror = (error) => reject(error);
     });
 
-  const handleSubmit = async () => {
-    if (!user || !user.userID) {
-      console.error('UserID is missing');
-      return;
-    }
+  // Updated handleSubmit function
+const handleSubmit = async () => {
+  if (!user || !user.userID) {
+    console.error('UserID is missing');
+    return;
+  }
 
-    try {
-      const preferencesPayload = {
-        userId: user.userID,
-        skills: selectedSkills,
-        experienceLevel,
-        resume: resumeName || null
-      };
+  console.log('Submitting profile with:', {
+    skills: selectedSkills.length,
+    experienceLevel,
+    resumeUploaded: !!resumeName
+  });
 
-      const response = await fetch(
-        'https://qvuwgujm49.execute-api.us-east-1.amazonaws.com/dev/dynamic-options',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            httpMethod: 'POST',
-            path: '/dynamic-options',
-            body: JSON.stringify(preferencesPayload)
-          })
-        }
-      );
+  try {
+    // Get resume data from session storage
+    const storedResume = sessionStorage.getItem('userResume');
+    console.log('Retrieved resume from session storage:', storedResume ? 'Found' : 'Not found');
 
-      if (!response.ok) throw new Error('Failed to save preferences');
+    const preferencesPayload = {
+      userId: user.userID,
+      skills: selectedSkills,
+      experienceLevel,
+      resume: storedResume ? JSON.parse(storedResume) : null
+    };
 
-      setUser(prevUser => ({
+    console.log('Sending preferences payload:', preferencesPayload);
+
+    const response = await fetch(
+      'https://qvuwgujm49.execute-api.us-east-1.amazonaws.com/dev/dynamic-options',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          httpMethod: 'POST',
+          path: '/dynamic-options',
+          body: JSON.stringify(preferencesPayload)
+        })
+      }
+    );
+
+    if (!response.ok) throw new Error('Failed to save preferences');
+
+    console.log('Preferences saved successfully');
+
+    // Update user context with all data including resume
+    setUser(prevUser => {
+      const updatedUser = {
         ...prevUser,
         skills: selectedSkills,
-        experienceLevel
-      }));
-
-      onComplete({
-        skills: selectedSkills,
         experienceLevel,
-        resume: resumeName
-      });
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
+        resume: storedResume ? JSON.parse(storedResume) : null
+      };
+      console.log('Updated user context:', updatedUser);
+      return updatedUser;
+    });
+
+    // Complete the flow with all data
+    onComplete({
+      skills: selectedSkills,
+      experienceLevel,
+      resume: storedResume ? JSON.parse(storedResume) : null
+    });
+    
+    console.log('Profile completion successful');
+  } catch (error) {
+    console.error('Error during profile completion:', error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6 flex items-center justify-center">

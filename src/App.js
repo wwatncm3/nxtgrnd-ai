@@ -3,6 +3,8 @@ import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
 import MainContent from './components/MainContent';
 import AICareerCompass from './pages/AiCareerCompass';
+import ResumeAnalysis from './components/ResumeAnalysis';
+import { AchievementProvider } from './components/AchievementSystem';
 
 export const UserContext = createContext();
 
@@ -92,13 +94,20 @@ function App() {
           </OnboardingLayout>
         );
 
-      case 6: // Personalized Dashboard
+        case 6: // Personalized Dashboard
         return (
           <MainContent 
             userData={user}
             selectedCareerPath={selectedCareerPath}
             setStage={setStage}
           />
+        );
+  
+      case 7: // Resume Analysis
+        return (
+          <OnboardingLayout>
+            <ResumeAnalysis setStage={setStage} />
+          </OnboardingLayout>
         );
 
       default:
@@ -127,7 +136,9 @@ function App() {
       selectedCareerPath,
       setSelectedCareerPath 
     }}>
-      {renderContent()}
+      <AchievementProvider>
+        {renderContent()}
+      </AchievementProvider>
     </UserContext.Provider>
   );
 }

@@ -2,9 +2,10 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
   Compass, BookOpen, Target, Award, Users, Menu, 
   UserCircle, BellIcon, Search, Building2, 
-  Calendar, Link, Star,Clock, ArrowRight
+  Calendar, Link, Star,Clock, ArrowRight,FileText
 } from 'lucide-react';
 import { UserContext } from '../App';
+
 
 // Resource Card Component
 const ResourceCard = ({ resource }) => {
@@ -571,13 +572,49 @@ const MainContent = ({ setStage }) => {
     );
   }
 
-  const navigationItems = [
-    { icon: Compass, label: 'Career Compass', onClick: () => setStage(5) },
-    { icon: BookOpen, label: 'Learning Paths' },
-    { icon: Building2, label: 'Jobs & Projects' },
-    { icon: Users, label: 'Mentorship' },
-    { icon: Award, label: 'Certifications' }
-  ];
+  // Update the navigationItems array in MainContent.js
+const navigationItems = [
+  { 
+    icon: Compass, 
+    label: 'Career Compass', 
+    onClick: () => setStage(5)
+  },
+  { 
+    icon: BookOpen, 
+    label: 'Learning Paths',
+    onClick: () => {} // Add handler if needed
+  },
+  { 
+    icon: FileText, // Make sure to import FileText from lucide-react
+    label: 'Resume Analysis',
+    onClick: () => {
+      // Check if resume exists in session storage
+      const storedResume = sessionStorage.getItem('userResume');
+      if (!storedResume) {
+        alert('Please upload your resume first to access the analysis.');
+        setStage(4); // Navigate to resume upload stage
+        return;
+      }
+      console.log('Navigating to resume analysis with stored resume');
+      setStage(7); // New stage for Resume Analysis
+    }
+  },
+  { 
+    icon: Building2, 
+    label: 'Jobs & Projects',
+    onClick: () => {}
+  },
+  { 
+    icon: Users, 
+    label: 'Mentorship',
+    onClick: () => {}
+  },
+  { 
+    icon: Award, 
+    label: 'Certifications',
+    onClick: () => {}
+  }
+];
 
   return (
     <div className="min-h-screen bg-gray-50">
