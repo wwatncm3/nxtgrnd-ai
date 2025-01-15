@@ -47,7 +47,7 @@ function App() {
               onNext={(profileData, isLogin = false) => {
                 handleStageComplete(
                   profileData,
-                  isLogin ? 5 : 2 // Login goes to Career Compass, signup continues flow
+                  isLogin ? 6 : 2 // Login goes to Career Compass, signup continues flow
                 );
               }} 
             />

@@ -126,37 +126,46 @@ export const useAchievements = () => {
   return context;
 };
 
-// Achievement Notification Component
 const AchievementNotifications = () => {
   const { notifications, removeNotification } = useAchievements();
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {notifications.map(({ id, achievement, type }) => (
-        <div
-          key={id}
-          className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-4 shadow-lg 
-                   animate-slide-in-right max-w-sm"
-          onAnimationEnd={() => {
-            setTimeout(() => removeNotification(id), 5000);
-          }}
-        >
-          <div className="p-2 bg-yellow-100 rounded-full">
-            <Trophy className="h-6 w-6 text-yellow-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-gray-900">{achievement.title}</h4>
-            <p className="text-sm text-gray-600">{achievement.description}</p>
-            <p className="text-sm font-medium text-yellow-600">+{achievement.points} points</p>
-          </div>
-          <button
-            onClick={() => removeNotification(id)}
-            className="p-1 hover:bg-gray-100 rounded"
+      {notifications.map(({ id, achievement, type }) => {
+        // Add error handling for undefined or unknown achievements
+        const achievementDetails = ACHIEVEMENTS[achievement] || {
+          title: 'Unknown Achievement',
+          description: 'An achievement was unlocked',
+          points: 0,
+          icon: Award
+        };
+
+        return (
+          <div
+            key={id}
+            className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-4 shadow-lg 
+                     animate-slide-in-right max-w-sm"
+            onAnimationEnd={() => {
+              setTimeout(() => removeNotification(id), 5000);
+            }}
           >
-            <X className="h-4 w-4 text-gray-400" />
-          </button>
-        </div>
-      ))}
+            <div className="p-2 bg-yellow-100 rounded-full">
+              <Trophy className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-gray-900">{achievementDetails.title}</h4>
+              <p className="text-sm text-gray-600">{achievementDetails.description}</p>
+              <p className="text-sm font-medium text-yellow-600">+{achievementDetails.points} points</p>
+            </div>
+            <button
+              onClick={() => removeNotification(id)}
+              className="p-1 hover:bg-gray-100 rounded"
+            >
+              <X className="h-4 w-4 text-gray-400" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 };
