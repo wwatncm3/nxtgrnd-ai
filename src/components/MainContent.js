@@ -9,6 +9,27 @@ import { UserContext } from '../App';
 // Add these at the top of MainContent component
 const USER_DASHBOARD_KEY = 'userDashboard';
 
+const storeDashboardData = (userId, data) => {
+  if (!userId) return;
+  try {
+    const dashboardData = {
+      learningPaths: data.learningPaths || [],
+      opportunities: data.opportunities || [],
+      goals: data.goals || [],
+      events: data.events || [],
+      timestamp: new Date().toISOString(),
+      careerPath: data.careerPath
+    };
+    sessionStorage.setItem(
+      `${USER_DASHBOARD_KEY}_${userId}`,
+      JSON.stringify(dashboardData)
+    );
+    console.log('Dashboard data stored:', dashboardData);
+  } catch (err) {
+    console.error('Error storing dashboard data:', err);
+  }
+};
+
 // Add this helper function
 const getDashboardFromSession = (userId) => {
   try {
@@ -130,6 +151,12 @@ const MainContent = ({ setStage }) => {
   const [personalizedOpportunities, setPersonalizedOpportunities] = useState([]);
   const [personalizedGoals, setPersonalizedGoals] = useState([]);
   const [personalizedEvents, setPersonalizedEvents] = useState([]);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(`${USER_DASHBOARD_KEY}_${user.userID}`);
+    setUser({});
+    setStage(1);
+  };
 
   const loadLearningPaths = async () => {
     setIsLearningPathsLoading(true);
@@ -509,71 +536,61 @@ const MainContent = ({ setStage }) => {
     }
   };
 
-  // Modified loadPersonalizedContent function
-const loadPersonalizedContent = async (forceRefresh = false) => {
-  console.log('Starting to load personalized content...');
-  setIsDashboardLoading(true);
-  setDashboardError(null);
-
-  try {
-    // Check session storage first unless force refresh is requested
-    if (!forceRefresh) {
-      const storedDashboard = getDashboardFromSession(user.userID);
-      if (storedDashboard) {
-        console.log('Using stored dashboard data');
-        setPersonalizedLearningPaths(storedDashboard.learningPaths);
-        setPersonalizedOpportunities(storedDashboard.opportunities);
-        setPersonalizedGoals(storedDashboard.goals);
-        setPersonalizedEvents(storedDashboard.events);
-        setIsDashboardLoading(false);
-        return;
+  const loadPersonalizedContent = async (forceRefresh = false) => {
+    console.log('Starting to load personalized content...');
+    setIsDashboardLoading(true);
+    setDashboardError(null);
+  
+    try {
+      // Check session storage first unless force refresh is requested
+      if (!forceRefresh) {
+        const storedDashboard = getDashboardFromSession(user.userID);
+        if (storedDashboard) {
+          console.log('Using stored dashboard data');
+          setPersonalizedLearningPaths(storedDashboard.learningPaths);
+          setPersonalizedOpportunities(storedDashboard.opportunities);
+          setPersonalizedGoals(storedDashboard.goals);
+          setPersonalizedEvents(storedDashboard.events);
+          setIsDashboardLoading(false);
+          return;
+        }
       }
+  
+      console.log('Loading fresh dashboard data...');
+      const learningPaths = await loadLearningPaths();
+      const opportunities = await loadOpportunities();
+      const goals = await loadGoals();
+      const events = await loadEvents();
+  
+      if (learningPaths && opportunities) {
+        // Store all data together
+        const dashboardData = {
+          learningPaths,
+          opportunities,
+          goals,
+          events,
+          careerPath: user.selectedCareerPath,
+          timestamp: new Date().toISOString()
+        };
+  
+        // Store in session
+        storeDashboardData(user.userID, dashboardData);
+  
+        // Update state
+        setPersonalizedLearningPaths(learningPaths);
+        setPersonalizedOpportunities(opportunities);
+        setPersonalizedGoals(goals);
+        setPersonalizedEvents(events);
+      } else {
+        throw new Error('Failed to load essential career data');
+      }
+    } catch (error) {
+      console.error('Error loading personalized content:', error);
+      setDashboardError('Unable to load some personalized content. Please try refreshing or contact support.');
+    } finally {
+      setIsDashboardLoading(false);
     }
-
-    console.log('Loading fresh dashboard data...');
-    const [learningPaths, opportunities] = await Promise.all([
-      loadLearningPaths(),
-      loadOpportunities()
-    ]);
-
-    if (learningPaths && opportunities) {
-      const [goals, events] = await Promise.all([
-        loadGoals(),
-        loadEvents()
-      ]);
-
-      // Create dashboard data object
-      const dashboardData = {
-        learningPaths,
-        opportunities,
-        goals,
-        events,
-        timestamp: new Date().toISOString()
-      };
-
-      // Store in session
-      sessionStorage.setItem(
-        `${USER_DASHBOARD_KEY}_${user.userID}`,
-        JSON.stringify(dashboardData)
-      );
-
-      // Update state
-      setPersonalizedLearningPaths(learningPaths);
-      setPersonalizedOpportunities(opportunities);
-      setPersonalizedGoals(goals);
-      setPersonalizedEvents(events);
-    } else {
-      throw new Error('Failed to load essential career data');
-    }
-  } catch (error) {
-    console.error('Error loading personalized content:', error);
-    setDashboardError(
-      'Unable to load some personalized content. Please try refreshing or contact support.'
-    );
-  } finally {
-    setIsDashboardLoading(false);
-  }
-};
+  };
 
 // Add refresh button component
 const refreshRecommendations = () => (
@@ -587,22 +604,33 @@ const refreshRecommendations = () => (
   </button>
 );
 
-  // Career path check effect
+  // Add this to the top of MainContent.js useEffect
   useEffect(() => {
-    // Check if user has a career path selected
+    // First check if user has a career path
     if (!user?.selectedCareerPath && user?.userID) {
       console.log('No career path found, redirecting to Career Compass');
-      setStage(5); // Redirect to AICareerCompass
+      setStage(5);
       return;
     }
 
-    // If we have a career path, load the personalized content
-    if (user?.selectedCareerPath) {
-      console.log('Career path found, loading personalized content:', user.selectedCareerPath.title);
-      loadPersonalizedContent();
-    }
-  }, [user?.selectedCareerPath, user?.userID]); // Add loadPersonalizedContent to dependencies if needed
+  // Check if we have stored dashboard data first
+  const storedDashboard = getDashboardFromSession(user?.userID);
+  if (storedDashboard) {
+    console.log('Restoring dashboard data from session storage');
+    setPersonalizedLearningPaths(storedDashboard.learningPaths);
+    setPersonalizedOpportunities(storedDashboard.opportunities);
+    setPersonalizedGoals(storedDashboard.goals);
+    setPersonalizedEvents(storedDashboard.events);
+    setIsDashboardLoading(false);
+    return;
+  }
 
+      // If we have a career path, always load fresh content
+      if (user?.selectedCareerPath) {
+        console.log('Career path found, loading fresh personalized content');
+        loadPersonalizedContent();
+      }
+}, [user?.selectedCareerPath, user?.userID]); // Dependencies
   if (isDashboardLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -736,14 +764,11 @@ const navigationItems = [
                     Settings
                   </button>
                   <button
-                    className="w-full px-4 py-2 text-left hover:bg-gray-100"
-                    onClick={() => {
-                      setUser({});
-                      setStage(1);
-                    }}
-                  >
-                    Logout
-                  </button>
+  className="w-full px-4 py-2 text-left hover:bg-gray-100"
+  onClick={handleLogout}
+>
+  Logout
+</button>
                 </div>
               )}
             </div>

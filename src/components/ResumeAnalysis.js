@@ -9,6 +9,16 @@ import { useAchievements } from './AchievementSystem';
 
 const ANALYSIS_CACHE_KEY = 'resumeAnalysisCache';
 
+// Helper function to validate resume data structure
+const isValidResumeData = (data) => {
+  return data && 
+         typeof data === 'object' &&
+         data.content &&
+         data.name &&
+         data.type &&
+         data.path;
+};
+
 const getStoredAnalysis = (userId, resumePath) => {
   try {
     const stored = sessionStorage.getItem(
@@ -37,7 +47,7 @@ const downloadResumeFromS3 = async (path) => {
     if (!response.ok) throw new Error('Failed to download resume');
     
     const data = await response.json();
-    console.log('Resume download response received');
+    console.log('Resume download successful, content length:', data.fileContent?.length);
     return data.fileContent;
   } catch (error) {
     console.error('Error downloading resume:', error);
@@ -59,19 +69,98 @@ const ResumeAnalysis = ({ setStage }) => {
     actionPlan: false
   });
 
+  const getResumeData = async () => {
+    console.log('Getting resume data...');
+    
+    // First try session storage
+    const storedResume = sessionStorage.getItem('userResume');
+    console.log('Session storage resume check:', storedResume ? 'Found' : 'Not found');
+
+    if (storedResume) {
+      try {
+        const parsedResume = JSON.parse(storedResume);
+        console.log('Resume data parsed:', {
+          name: parsedResume.name,
+          type: parsedResume.type,
+          hasContent: !!parsedResume.content,
+          contentLength: parsedResume.content?.length,
+          path: parsedResume.path
+        });
+
+        if (isValidResumeData(parsedResume)) {
+          console.log('Valid resume data found in session storage');
+          return parsedResume;
+        } else {
+          console.warn('Invalid resume data structure in session storage');
+        }
+      } catch (err) {
+        console.error('Error parsing stored resume:', err);
+      }
+    }
+
+    // If session storage failed, try S3
+    if (user?.resume?.path) {
+      try {
+        console.log('Attempting S3 download with path:', user.resume.path);
+        const resumeContent = await downloadResumeFromS3(user.resume.path);
+        
+        if (!resumeContent) {
+          throw new Error('No content received from S3');
+        }
+
+        const newResumeData = {
+          content: resumeContent,
+          name: user.resume.name || 'resume.pdf',
+          type: user.resume.type || 'application/pdf',
+          path: user.resume.path
+        };
+
+        console.log('Successfully downloaded resume from S3');
+        sessionStorage.setItem('userResume', JSON.stringify(newResumeData));
+        return newResumeData;
+      } catch (err) {
+        console.error('Error downloading resume from S3:', err);
+        throw err;
+      }
+    }
+
+    console.warn('No valid resume source found');
+    return null;
+  };
+
   const analyzeResume = async (forceRefresh = false) => {
-    if (!resumeData?.content) {
-      console.log('No resume content available for analysis');
-      return;
+    console.log('Starting resume analysis...', {
+      hasResumeData: !!resumeData,
+      contentLength: resumeData?.content?.length,
+      name: resumeData?.name
+    });
+
+    // First ensure we have resume data
+    let currentResumeData = resumeData;
+    if (!currentResumeData?.content) {
+      console.log('No resume content, attempting to reload...');
+      try {
+        const freshData = await getResumeData();
+        if (!freshData?.content) {
+          throw new Error('Unable to load resume content');
+        }
+        currentResumeData = freshData;
+        setResumeData(freshData);
+      } catch (error) {
+        console.error('Failed to reload resume data:', error);
+        setError('Unable to load resume content. Please try uploading again.');
+        return;
+      }
     }
 
     setLoading(true);
     setError(null);
 
     try {
+      // Now use currentResumeData which we know exists
       // Check cache first unless force refresh is requested
       if (!forceRefresh) {
-        const cachedAnalysis = getStoredAnalysis(user.userID, resumeData.path);
+        const cachedAnalysis = getStoredAnalysis(user.userID, currentResumeData.path);
         if (cachedAnalysis) {
           console.log('Using cached analysis results');
           setAnalysis(cachedAnalysis);
@@ -80,8 +169,12 @@ const ResumeAnalysis = ({ setStage }) => {
         }
       }
 
-      console.log('Starting fresh resume analysis...');
-      
+      console.log('Generating new analysis...', {
+        userId: user.userID,
+        resumeName: currentResumeData.name,
+        contentLength: currentResumeData.content.length
+      });
+
       const recommendationPayload = {
         userId: user?.userID,
         firstName: user?.firstName,
@@ -96,10 +189,10 @@ const ResumeAnalysis = ({ setStage }) => {
         includeEnhancedDetails: true,
         location: 'United States',
         resume: {
-          content: resumeData.content,
-          name: resumeData.name,
-          type: resumeData.type,
-          path: resumeData.path
+          content: currentResumeData.content,
+          name: currentResumeData.name,
+          type: currentResumeData.type,
+          path: currentResumeData.path
         },
         selectedCareerPath: user.selectedCareerPath?.title,
         detailsRequested: [
@@ -109,13 +202,13 @@ const ResumeAnalysis = ({ setStage }) => {
           'careerAlignment'
         ]
       };
-  
+
       const recPayload = {
         httpMethod: 'POST',
         path: '/recommendations/generate',
         body: JSON.stringify(recommendationPayload),
       };
-  
+
       const response = await fetch(
         'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/generate',
         {
@@ -125,9 +218,15 @@ const ResumeAnalysis = ({ setStage }) => {
         }
       );
 
-      if (!response.ok) throw new Error('Failed to analyze resume');
+      if (!response.ok) {
+        throw new Error('Failed to analyze resume');
+      }
 
       const data = await response.json();
+      console.log('Analysis response received:', {
+        status: response.status,
+        hasBody: !!data.body
+      });
       
       if (data.body) {
         const cleanBody = data.body.replace(/```json\n|\n```/g, '');
@@ -138,13 +237,23 @@ const ResumeAnalysis = ({ setStage }) => {
           
           // Store in session
           sessionStorage.setItem(
-            `${ANALYSIS_CACHE_KEY}_${user.userID}_${resumeData.path}`,
+            `${ANALYSIS_CACHE_KEY}_${user.userID}_${currentResumeData.path}`,
             JSON.stringify(analysisResult)
           );
 
           setAnalysis(analysisResult);
           unlockAchievement('resume_analyzed');
+          
+          // Log success and result structure
+          console.log('Analysis completed successfully:', {
+            hasStrengths: !!analysisResult.keyStrengths?.length,
+            hasWeaknesses: !!analysisResult.developmentAreas?.length,
+            hasStage: !!analysisResult.currentStage,
+            hasPath: !!analysisResult.progressionPath
+          });
+          
         } else {
+          console.error('Missing career analysis in response:', parsedBody);
           throw new Error('Career analysis data not available');
         }
       } else {
@@ -158,77 +267,71 @@ const ResumeAnalysis = ({ setStage }) => {
     }
   };
 
-  // Modified useEffect for resume data
   useEffect(() => {
-    const getResumeData = async () => {
-      const storedResume = sessionStorage.getItem('userResume');
-      console.log('Checking session storage for resume data:', storedResume ? 'Found' : 'Not found');
-
-      if (storedResume) {
-        try {
-          const parsedResume = JSON.parse(storedResume);
-          console.log('Parsing resume data:', {
-            name: parsedResume.name,
-            type: parsedResume.type,
-            hasContent: !!parsedResume.content
-          });
-          
-          if (parsedResume.content) {
-            // Set resume data
-            setResumeData(parsedResume);
-            return parsedResume;
-          }
-        } catch (err) {
-          console.error('Error parsing stored resume:', err);
-        }
-      }
-
-      // If no stored resume, try to download from S3
-      if (user?.resume?.path) {
-        try {
-          const resumeContent = await downloadResumeFromS3(user.resume.path);
-          const newResumeData = {
-            ...user.resume,
-            content: resumeContent,
-          };
-          sessionStorage.setItem('userResume', JSON.stringify(newResumeData));
-          setResumeData(newResumeData);
-          return newResumeData;
-        } catch (err) {
-          console.error('Error downloading resume:', err);
-        }
-      }
-
-      return null;
-    };
-
     const initResumeData = async () => {
-      const resumeData = await getResumeData();
-      
-      if (!resumeData) {
-        console.log('No valid resume found, redirecting to upload...');
-        setStage(4);
-        return;
-      }
+      try {
+        console.log('Initializing resume data...');
+        const resumeData = await getResumeData();
+        
+        if (!resumeData) {
+          console.log('No valid resume found, redirecting to upload...');
+          setStage(4);
+          return;
+        }
 
-      // Now that we have resume data, check for cached analysis
-      const cachedAnalysis = getStoredAnalysis(user.userID, resumeData.path);
-      if (cachedAnalysis) {
-        console.log('Found cached analysis, using it');
-        setAnalysis(cachedAnalysis);
+        setResumeData(resumeData);
+        console.log('Resume data initialized, starting analysis');
+        
+        // Now that we have resume data, check for cached analysis
+        const cachedAnalysis = getStoredAnalysis(user.userID, resumeData.path);
+        if (cachedAnalysis) {
+          console.log('Found cached analysis, using it');
+          setAnalysis(cachedAnalysis);
+          setLoading(false);
+        } else {
+          // Start analysis with the confirmed resume data
+          console.log('Starting fresh analysis');
+          await analyzeResume(false);
+        }
+      } catch (error) {
+        console.error('Error during resume initialization:', error);
+        setError('Failed to load resume data. Please try uploading again.');
         setLoading(false);
-      } else {
-        // Start analysis with the confirmed resume data
-        console.log('Starting fresh analysis with resume data:', resumeData.name);
-        analyzeResume(false);
       }
     };
 
     initResumeData();
   }, [user?.resume, setStage]);
 
+  // Rendering functions...
+  const renderLoadingState = () => (
+    <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+      <div className="text-center">
+        <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
+        <p className="mt-4 text-xl font-medium">Analyzing Your Resume...</p>
+        <p className="mt-2 text-gray-600">
+          We're conducting an in-depth review against industry standards and your chosen career path
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderErrorState = () => (
+    <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+      <div className="text-center">
+        <AlertCircle className="h-12 w-12 text-red-600 mx-auto" />
+        <p className="mt-4 text-xl font-medium text-red-600">{error}</p>
+        <button
+          onClick={() => setStage(4)}
+          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Upload Resume
+        </button>
+      </div>
+    </div>
+  );
+
   const toggleSection = (sectionId) => {
-    console.log('Toggling section:', sectionId);
     setExpandedSections(prev => ({
       ...prev,
       [sectionId]: !prev[sectionId]
@@ -245,7 +348,7 @@ const ResumeAnalysis = ({ setStage }) => {
         category: 'Relevance',
         maxPoints: 25,
         evaluate: () => {
-          const relevanceScore = analysis.keyStrengths.length * 5;
+          const relevanceScore = analysis.keyStrengths?.length * 5 || 0;
           return Math.min(relevanceScore, 25);
         }
       },
@@ -253,8 +356,7 @@ const ResumeAnalysis = ({ setStage }) => {
         category: 'Clarity',
         maxPoints: 20,
         evaluate: () => {
-          // Check for concise, well-structured descriptions
-          const clarityScore = analysis.keyStrengths.every(s => s.length < 100) ? 20 : 10;
+          const clarityScore = analysis.keyStrengths?.every(s => s.length < 100) ? 20 : 10;
           return clarityScore;
         }
       },
@@ -270,8 +372,9 @@ const ResumeAnalysis = ({ setStage }) => {
         category: 'Skill Depth',
         maxPoints: 15,
         evaluate: () => {
-          const skillDepthScore = analysis.developmentAreas.length < 3 ? 15 : 
-                                   analysis.developmentAreas.length < 5 ? 10 : 5;
+          const skillDepthScore = !analysis.developmentAreas?.length ? 15 :
+                                 analysis.developmentAreas.length < 3 ? 12 :
+                                 analysis.developmentAreas.length < 5 ? 8 : 5;
           return skillDepthScore;
         }
       },
@@ -280,13 +383,13 @@ const ResumeAnalysis = ({ setStage }) => {
         maxPoints: 15,
         evaluate: () => {
           const impactScore = analysis.currentStage === 'Highly Competitive' ? 15 :
-                               analysis.currentStage === 'Competitive' ? 10 : 5;
+                             analysis.currentStage === 'Competitive' ? 10 : 5;
           return impactScore;
         }
       }
     ];
 
-    // Calculate total score
+    // Calculate total score with validation
     const scoreBreakdown = scoringRules.map(rule => ({
       category: rule.category,
       score: rule.evaluate(),
@@ -313,7 +416,7 @@ const ResumeAnalysis = ({ setStage }) => {
         priority: 'High',
         icon: Zap,
         title: 'Skill Alignment',
-        description: `Focus on highlighting skills directly related to ${user.selectedCareerPath?.title}. 
+        description: `Focus on highlighting skills directly related to ${user.selectedCareerPath?.title || 'your target role'}. 
           Your current resume shows potential gaps in skill presentation.`,
         steps: [
           'List skills explicitly mentioned in job descriptions',
@@ -329,7 +432,7 @@ const ResumeAnalysis = ({ setStage }) => {
         steps: [
           'Restructure job descriptions to show progression',
           'Use action verbs that demonstrate leadership and impact',
-          'Align job descriptions with career path goals'
+          'Align experience descriptions with career path goals'
         ]
       },
       {
@@ -413,7 +516,7 @@ const ResumeAnalysis = ({ setStage }) => {
             <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                <plan.icon className={`h-5 w-5 ${
+                  <plan.icon className={`h-5 w-5 ${
                     plan.priority === 'High' ? 'text-red-500' :
                     plan.priority === 'Medium' ? 'text-yellow-500' :
                     'text-green-500'
@@ -440,33 +543,6 @@ const ResumeAnalysis = ({ setStage }) => {
       </div>
     );
   };
-
-  const renderLoadingState = () => (
-    <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-      <div className="text-center">
-        <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
-        <p className="mt-4 text-xl font-medium">Analyzing Your Resume...</p>
-        <p className="mt-2 text-gray-600">
-          We're conducting an in-depth review against industry standards and your chosen career path
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderErrorState = () => (
-    <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-      <div className="text-center">
-        <AlertCircle className="h-12 w-12 text-red-600 mx-auto" />
-        <p className="mt-4 text-xl font-medium text-red-600">{error}</p>
-        <button
-          onClick={() => setStage(4)}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Upload Resume
-        </button>
-      </div>
-    </div>
-  );
 
   const renderDetailedAnalysis = () => {
     const sections = [
@@ -513,11 +589,11 @@ const ResumeAnalysis = ({ setStage }) => {
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <h3 className="font-medium text-blue-900">Current Stage</h3>
-                  <p className="text-blue-700 mt-2">{content.currentStage}</p>
+                  <p className="text-blue-700 mt-2">{content.currentStage || 'Not available'}</p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-medium text-gray-900">Progression Path</h3>
-                  <p className="text-gray-700 mt-2">{content.progressionPath}</p>
+                  <p className="text-gray-700 mt-2">{content.progressionPath || 'Not available'}</p>
                 </div>
               </div>
             )}
@@ -525,12 +601,14 @@ const ResumeAnalysis = ({ setStage }) => {
             {id === 'strengths' && (
               <div className="space-y-4">
                 <ul className="mt-2 space-y-2">
-                  {content.map((strength, index) => (
+                  {content.length > 0 ? content.map((strength, index) => (
                     <li key={index} className="flex items-center gap-2 text-gray-700">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                       {strength}
                     </li>
-                  ))}
+                  )) : (
+                    <li className="text-gray-500">No strengths identified yet</li>
+                  )}
                 </ul>
               </div>
             )}
@@ -538,12 +616,14 @@ const ResumeAnalysis = ({ setStage }) => {
             {id === 'improvements' && (
               <div className="space-y-4">
                 <ul className="mt-2 space-y-2">
-                  {content.map((improvement, index) => (
+                  {content.length > 0 ? content.map((improvement, index) => (
                     <li key={index} className="flex items-center gap-2 text-gray-700">
-                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                      <AlertCircle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
                       {improvement}
                     </li>
-                  ))}
+                  )) : (
+                    <li className="text-gray-500">No improvement areas identified yet</li>
+                  )}
                 </ul>
               </div>
             )}
@@ -583,7 +663,7 @@ const ResumeAnalysis = ({ setStage }) => {
           Comprehensive Resume Analysis
         </h1>
         <p className="text-gray-600">
-          Detailed insights for your career path: {user.selectedCareerPath?.title}
+          Detailed insights for your career path: {user.selectedCareerPath?.title || 'Not selected'}
         </p>
       </div>
 
