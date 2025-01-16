@@ -200,11 +200,53 @@ function OnboardingFlow({ onNext }) {
 
     console.log('Complete user data:', completeUserData);
 
+    // Check if user has a selected career path stored
+    const storedCareerPath = sessionStorage.getItem('selectedCareerPath');
+    let pathData = null;
+    if (storedCareerPath) {
+      try {
+        pathData = JSON.parse(storedCareerPath);
+        console.log('Found stored career path:', pathData);
+      } catch (err) {
+        console.error('Error parsing stored career path:', err);
+      }
+    }
+
+    // Check for stored resume data
+    const storedResume = sessionStorage.getItem('userResume');
+    let resumeData = null;
+    if (storedResume) {
+      try {
+        resumeData = JSON.parse(storedResume);
+        console.log('Found stored resume data:', resumeData?.name);
+      } catch (err) {
+        console.error('Error parsing stored resume data:', err);
+      }
+    }
+
+    // Create final user data with all stored information
+     // Create final user data with all stored information
+     const finalUserData = {
+      ...completeUserData,
+      selectedCareerPath: pathData,
+      resume: resumeData
+    };
+
+    console.log('Final user data for context:', finalUserData);
+
     // Update the global user context
-    setUser(completeUserData);
-    
-    // Navigate to main content
-    onNext(completeUserData, true);
+    setUser(finalUserData);
+
+    // Determine where to redirect based on whether they have a career path
+    // We'll use onNext with isLogin=true for dashboard, isLogin=false for Career Compass
+    if (pathData) {
+      console.log('Career path found, redirecting to dashboard');
+      onNext(finalUserData, true); // Go to dashboard
+    } else {
+      console.log('No career path found, redirecting to Career Compass');
+      onNext(finalUserData, false); // Go to Career Compass
+    }
+
   } catch (error) {
     console.error('Login error:', error);
     setErrors(prev => ({ 

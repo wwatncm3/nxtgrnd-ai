@@ -44,12 +44,17 @@ function App() {
         return (
           <OnboardingLayout>
             <ProfileCreation 
-              onNext={(profileData, isLogin = false) => {
-                handleStageComplete(
-                  profileData,
-                  isLogin ? 6 : 2 // Login goes to Career Compass, signup continues flow
-                );
-              }} 
+             onNext={(profileData, isLogin = false) => {
+              // If it's a login and we have a selectedCareerPath, go to dashboard
+              // Otherwise for new accounts, continue the normal flow
+              if (isLogin) {
+                console.log('Login flow - navigating to dashboard');
+                handleStageComplete(profileData, 6); // Go directly to dashboard
+              } else {
+                console.log('Signup flow - continuing to career compass');
+                handleStageComplete(profileData, 2); // Continue normal signup flow
+              }
+            }}
             />
           </OnboardingLayout>
         );

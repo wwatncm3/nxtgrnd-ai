@@ -484,13 +484,15 @@ const pathsKey = `career_compass_paths_${user?.userID}`;
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <button
-          onClick={() => setStage(3)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          Back to Dashboard
-        </button>
+      {user?.selectedCareerPath && (
+          <button
+            onClick={() => setStage(6)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+          >
+            <ChevronLeft className="h-5 w-5" />
+            Back to Dashboard
+          </button>
+        )}
 
         <div className="mb-8">
           <div className="flex items-center gap-3">

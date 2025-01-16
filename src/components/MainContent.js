@@ -2,11 +2,25 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
   Compass, BookOpen, Target, Award, Users, Menu, 
   UserCircle, BellIcon, Search, Building2, 
-  Calendar, Link, Star,Clock, ArrowRight,FileText
+  Calendar, Link, Star,Clock, ArrowRight,FileText,RefreshCw,ChevronRight,MapPin,CircleDollarSign
 } from 'lucide-react';
 import { UserContext } from '../App';
 
+// Add these at the top of MainContent component
+const USER_DASHBOARD_KEY = 'userDashboard';
 
+// Add this helper function
+const getDashboardFromSession = (userId) => {
+  try {
+    const stored = sessionStorage.getItem(`${USER_DASHBOARD_KEY}_${userId}`);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (err) {
+    console.error('Error reading dashboard from session:', err);
+  }
+  return null;
+};
 // Resource Card Component
 const ResourceCard = ({ resource }) => {
   const getIconForType = (type) => {
@@ -495,50 +509,99 @@ const MainContent = ({ setStage }) => {
     }
   };
 
-  const loadPersonalizedContent = async () => {
-    setIsDashboardLoading(true);
-    setDashboardError(null);
+  // Modified loadPersonalizedContent function
+const loadPersonalizedContent = async (forceRefresh = false) => {
+  console.log('Starting to load personalized content...');
+  setIsDashboardLoading(true);
+  setDashboardError(null);
 
-    try {
-      // Load essential data first
-      const [learningPaths, opportunities] = await Promise.all([
-        loadLearningPaths(),
-        loadOpportunities()
+  try {
+    // Check session storage first unless force refresh is requested
+    if (!forceRefresh) {
+      const storedDashboard = getDashboardFromSession(user.userID);
+      if (storedDashboard) {
+        console.log('Using stored dashboard data');
+        setPersonalizedLearningPaths(storedDashboard.learningPaths);
+        setPersonalizedOpportunities(storedDashboard.opportunities);
+        setPersonalizedGoals(storedDashboard.goals);
+        setPersonalizedEvents(storedDashboard.events);
+        setIsDashboardLoading(false);
+        return;
+      }
+    }
+
+    console.log('Loading fresh dashboard data...');
+    const [learningPaths, opportunities] = await Promise.all([
+      loadLearningPaths(),
+      loadOpportunities()
+    ]);
+
+    if (learningPaths && opportunities) {
+      const [goals, events] = await Promise.all([
+        loadGoals(),
+        loadEvents()
       ]);
 
-      // Only proceed if we have the essential data
-      if (learningPaths && opportunities) {
-        // Load supplementary data
-        const [goals, events] = await Promise.all([
-          loadGoals(),
-          loadEvents()
-        ]);
+      // Create dashboard data object
+      const dashboardData = {
+        learningPaths,
+        opportunities,
+        goals,
+        events,
+        timestamp: new Date().toISOString()
+      };
 
-        // Update all states at once to minimize re-renders
-        setPersonalizedLearningPaths(learningPaths);
-        setPersonalizedOpportunities(opportunities);
-        setPersonalizedGoals(goals);
-        setPersonalizedEvents(events);
-      } else {
-        throw new Error('Failed to load essential career data');
-      }
-    } catch (error) {
-      console.error('Error loading personalized content:', error);
-      setDashboardError(
-        'Unable to load some personalized content. Please try refreshing or contact support.'
+      // Store in session
+      sessionStorage.setItem(
+        `${USER_DASHBOARD_KEY}_${user.userID}`,
+        JSON.stringify(dashboardData)
       );
-    } finally {
-      // Reset all loading states
-      setIsDashboardLoading(false);
-    }
-  };
 
+      // Update state
+      setPersonalizedLearningPaths(learningPaths);
+      setPersonalizedOpportunities(opportunities);
+      setPersonalizedGoals(goals);
+      setPersonalizedEvents(events);
+    } else {
+      throw new Error('Failed to load essential career data');
+    }
+  } catch (error) {
+    console.error('Error loading personalized content:', error);
+    setDashboardError(
+      'Unable to load some personalized content. Please try refreshing or contact support.'
+    );
+  } finally {
+    setIsDashboardLoading(false);
+  }
+};
+
+// Add refresh button component
+const refreshRecommendations = () => (
+  <button
+    onClick={() => loadPersonalizedContent(true)}
+    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 
+               hover:bg-blue-50 rounded-lg"
+  >
+    <RefreshCw className="h-4 w-4" />
+    Refresh Dashboard
+  </button>
+);
+
+  // Career path check effect
   useEffect(() => {
-    console.log('Selected Career Path:', selectedCareerPath);
-    if (selectedCareerPath) {
+    // Check if user has a career path selected
+    if (!user?.selectedCareerPath && user?.userID) {
+      console.log('No career path found, redirecting to Career Compass');
+      setStage(5); // Redirect to AICareerCompass
+      return;
+    }
+
+    // If we have a career path, load the personalized content
+    if (user?.selectedCareerPath) {
+      console.log('Career path found, loading personalized content:', user.selectedCareerPath.title);
       loadPersonalizedContent();
     }
-  }, [selectedCareerPath]);
+  }, [user?.selectedCareerPath, user?.userID]); // Add loadPersonalizedContent to dependencies if needed
 
   if (isDashboardLoading) {
     return (
@@ -731,111 +794,187 @@ const navigationItems = [
                 Change Career Path
               </button>
             </div>
+            </div>
 
             {/* Dashboard Sections */}
 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
   {/* Main Content Area */}
   <div className="lg:col-span-2 space-y-6">
     {/* Learning Paths Section */}
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-6 w-6 text-blue-600" />
-          <h2 className="text-xl font-semibold">Learning Paths</h2>
-        </div>
-      </div>
-      <div className="space-y-4">
-        {isLearningPathsLoading ? (
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        ) : (
-          personalizedLearningPaths.map((course, index) => (
-            <div key={index} className="border rounded-lg p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-medium">{course.title}</h3>
-                  <p className="text-sm text-gray-600">{course.provider}</p>
-                </div>
-                <span className="text-sm font-medium text-blue-600">
-                  {course.progress}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                <div
-                  className="bg-blue-600 rounded-full h-2"
-                  style={{ width: `${course.progress}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-600">
-                  Next: {course.nextLesson}
-                </span>
-                <button className="text-sm text-blue-600 hover:text-blue-700">
-                  Continue
-                </button>
-              </div>
-              
-              {/* Resources Section */}
-              {course.resources && course.resources.length > 0 && (
-                <div className="mt-4 border-t pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Learning Resources</h4>
-                  <div className="space-y-3">
-                    {course.resources.map((resource, idx) => (
-                      <ResourceCard key={idx} resource={resource} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+<div className="bg-white rounded-xl shadow-sm p-6">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center gap-3">
+      <BookOpen className="h-6 w-6 text-blue-600" />
+      <h2 className="text-xl font-semibold">Learning Paths</h2>
     </div>
+    {/* Add view all link */}
+    <a href="#" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
+      View All
+      <ChevronRight className="h-4 w-4" />
+    </a>
+  </div>
+  <div className="space-y-6">
+    {isLearningPathsLoading ? (
+      <div className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    ) : (
+      personalizedLearningPaths.map((course, index) => (
+        <div key={index} className="border rounded-lg p-6 hover:border-blue-200 transition-colors">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h3 className="font-medium text-lg mb-1">{course.title}</h3>
+              <p className="text-sm text-gray-600 mb-3">{course.provider}</p>
+              <p className="text-sm text-gray-700">{course.description}</p>
+            </div>
+            <div className="ml-4 flex flex-col items-end">
+              <span className="text-lg font-semibold text-blue-600">
+                {course.progress}%
+              </span>
+              <span className="text-sm text-gray-500">Complete</span>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="w-full bg-gray-100 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 rounded-full h-2.5 transition-all duration-300"
+                style={{ width: `${course.progress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div>
+              <span className="text-sm font-medium text-gray-700">Next Up:</span>
+              <span className="text-sm text-gray-600 ml-2">{course.nextLesson}</span>
+            </div>
+            <button className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+              Continue
+            </button>
+          </div>
+
+          {course.resources && course.resources.length > 0 && (
+            <div className="mt-6 pt-4 border-t">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Learning Resources</h4>
+              <div className="grid gap-3">
+                {course.resources.map((resource, idx) => (
+                  <ResourceCard key={idx} resource={resource} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ))
+    )}
+  </div>
+</div>
                   
 
                 {/* Opportunities Section */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-6 w-6 text-blue-600" />
-                      <h2 className="text-xl font-semibold">Matched Opportunities</h2>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    {isOpportunitiesLoading ? (
-                      <div className="animate-pulse">
-                        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                      </div>
-                    ) : (
-                      personalizedOpportunities.map((opp, index) => (
-                        <div key={index} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">{opp.role}</h3>
-                              <p className="text-sm text-gray-600">{opp.company}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-sm text-gray-600">{opp.location}</span>
-                                <span className="text-sm text-gray-600">•</span>
-                                <span className="text-sm text-gray-600">{opp.postedDate}</span>
-                              </div>
-                            </div>
-                            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
-                              {opp.matchScore}% Match
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+<div className="bg-white rounded-xl shadow-sm p-6">
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center gap-3">
+      <Building2 className="h-6 w-6 text-blue-600" />
+      <h2 className="text-xl font-semibold">Matched Opportunities</h2>
+    </div>
+    <button 
+      onClick={refreshRecommendations}
+      className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-2"
+    >
+      <RefreshCw className="h-4 w-4" />
+      Refresh
+    </button>
+  </div>
+  <div className="space-y-4">
+    {isOpportunitiesLoading ? (
+      <div className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+      </div>
+    ) : (
+      personalizedOpportunities.map((opp, index) => {
+        // Generate job search URLs
+        const encodedTitle = encodeURIComponent(opp.role);
+        const jobLinks = {
+          linkedin: `https://www.linkedin.com/jobs/search/?keywords=${encodedTitle}`,
+          indeed: `https://www.indeed.com/jobs?q=${encodedTitle}`,
+          handshake: `https://app.joinhandshake.com/stu/postings?text=${encodedTitle}`
+        };
+
+        return (
+          <div key={index} className="border rounded-lg p-6 hover:border-blue-200 transition-colors">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h3 className="font-medium text-lg text-gray-900 mb-1">{opp.role}</h3>
+                <p className="text-sm text-gray-600">{opp.company}</p>
+                <div className="flex flex-wrap gap-4 mt-3">
+                  <span className="inline-flex items-center text-sm text-gray-600">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    {opp.location}
+                  </span>
+                  <span className="inline-flex items-center text-sm text-gray-600">
+                    <Clock className="h-4 w-4 mr-1" />
+                    {opp.postedDate}
+                  </span>
+                  {opp.salaryRange && (
+                    <span className="inline-flex items-center text-sm text-gray-600">
+                      <CircleDollarSign className="h-4 w-4 mr-1" />
+                      {opp.salaryRange}
+                    </span>
+                  )}
                 </div>
               </div>
+              <div className="ml-4">
+                <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                  {opp.matchScore}% Match
+                </span>
+              </div>
+            </div>
+
+            {opp.description && (
+              <p className="text-sm text-gray-700 mb-4">{opp.description}</p>
+            )}
+
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+              <a 
+                href={jobLinks.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+              >
+                View on LinkedIn
+                <ChevronRight className="h-4 w-4" />
+              </a>
+              <a 
+                href={jobLinks.indeed}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+              >
+                View on Indeed
+                <ChevronRight className="h-4 w-4" />
+              </a>
+              <a 
+                href={jobLinks.handshake}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+              >
+                View on Handshake
+                <ChevronRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        );
+      })
+    )}
+  </div>
+</div>
 
               {/* Sidebar Content */}
               <div className="space-y-6">

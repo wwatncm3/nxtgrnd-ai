@@ -7,6 +7,22 @@ import {
 } from 'lucide-react';
 import { useAchievements } from './AchievementSystem';
 
+const ANALYSIS_CACHE_KEY = 'resumeAnalysisCache';
+
+const getStoredAnalysis = (userId, resumePath) => {
+  try {
+    const stored = sessionStorage.getItem(
+      `${ANALYSIS_CACHE_KEY}_${userId}_${resumePath}`
+    );
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (err) {
+    console.error('Error reading analysis from session:', err);
+  }
+  return null;
+};
+
 const downloadResumeFromS3 = async (path) => {
   try {
     console.log('Downloading resume from S3:', path);
@@ -22,7 +38,7 @@ const downloadResumeFromS3 = async (path) => {
     
     const data = await response.json();
     console.log('Resume download response received');
-    return data.fileContent; // This should be the base64 content
+    return data.fileContent;
   } catch (error) {
     console.error('Error downloading resume:', error);
     throw error;
@@ -43,7 +59,106 @@ const ResumeAnalysis = ({ setStage }) => {
     actionPlan: false
   });
 
-  // Resume data retrieval effect
+  const analyzeResume = async (forceRefresh = false) => {
+    if (!resumeData?.content) {
+      console.log('No resume content available for analysis');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Check cache first unless force refresh is requested
+      if (!forceRefresh) {
+        const cachedAnalysis = getStoredAnalysis(user.userID, resumeData.path);
+        if (cachedAnalysis) {
+          console.log('Using cached analysis results');
+          setAnalysis(cachedAnalysis);
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log('Starting fresh resume analysis...');
+      
+      const recommendationPayload = {
+        userId: user?.userID,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        pathType: user?.pathType,
+        careerStage: user?.careerStage,
+        primaryGoal: user?.primaryGoal,
+        interests: Array.isArray(user?.interests) ? user.interests : [],
+        skills: Array.isArray(user?.skills) ? user.skills : [],
+        experienceLevel: user?.experienceLevel || user?.careerStage || 'entry',
+        includeEnhancedDetails: true,
+        location: 'United States',
+        resume: {
+          content: resumeData.content,
+          name: resumeData.name,
+          type: resumeData.type,
+          path: resumeData.path
+        },
+        selectedCareerPath: user.selectedCareerPath?.title,
+        detailsRequested: [
+          'resumeAnalysis',
+          'skillGapAnalysis',
+          'improvementSuggestions',
+          'careerAlignment'
+        ]
+      };
+  
+      const recPayload = {
+        httpMethod: 'POST',
+        path: '/recommendations/generate',
+        body: JSON.stringify(recommendationPayload),
+      };
+  
+      const response = await fetch(
+        'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/generate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recPayload),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to analyze resume');
+
+      const data = await response.json();
+      
+      if (data.body) {
+        const cleanBody = data.body.replace(/```json\n|\n```/g, '');
+        const parsedBody = typeof cleanBody === 'string' ? JSON.parse(cleanBody) : cleanBody;
+        
+        if (parsedBody.recommendations?.careerAnalysis) {
+          const analysisResult = parsedBody.recommendations.careerAnalysis;
+          
+          // Store in session
+          sessionStorage.setItem(
+            `${ANALYSIS_CACHE_KEY}_${user.userID}_${resumeData.path}`,
+            JSON.stringify(analysisResult)
+          );
+
+          setAnalysis(analysisResult);
+          unlockAchievement('resume_analyzed');
+        } else {
+          throw new Error('Career analysis data not available');
+        }
+      } else {
+        throw new Error('Empty response received');
+      }
+    } catch (error) {
+      console.error('Resume analysis failed:', error);
+      setError('Failed to analyze resume. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Modified useEffect for resume data
   useEffect(() => {
     const getResumeData = async () => {
       const storedResume = sessionStorage.getItem('userResume');
@@ -52,150 +167,65 @@ const ResumeAnalysis = ({ setStage }) => {
       if (storedResume) {
         try {
           const parsedResume = JSON.parse(storedResume);
-          console.log('Resume data from session storage:', {
+          console.log('Parsing resume data:', {
             name: parsedResume.name,
             type: parsedResume.type,
             hasContent: !!parsedResume.content
           });
           
           if (parsedResume.content) {
+            // Set resume data
             setResumeData(parsedResume);
-            return true;
+            return parsedResume;
           }
         } catch (err) {
           console.error('Error parsing stored resume:', err);
         }
       }
 
-      // Check user context if not found in session storage
+      // If no stored resume, try to download from S3
       if (user?.resume?.path) {
         try {
           const resumeContent = await downloadResumeFromS3(user.resume.path);
-          const resumeData = {
+          const newResumeData = {
             ...user.resume,
             content: resumeContent,
           };
-          console.log('Found resume in user context:', {
-            name: resumeData.name,
-            type: resumeData.type,
-          });
-          sessionStorage.setItem('userResume', JSON.stringify(resumeData));
-          setResumeData(resumeData);
-          return true;
+          sessionStorage.setItem('userResume', JSON.stringify(newResumeData));
+          setResumeData(newResumeData);
+          return newResumeData;
         } catch (err) {
           console.error('Error downloading resume:', err);
         }
       }
 
-      console.log('No valid resume data found');
-      return false;
+      return null;
     };
 
     const initResumeData = async () => {
-      const hasResume = await getResumeData();
-      if (!hasResume) {
+      const resumeData = await getResumeData();
+      
+      if (!resumeData) {
         console.log('No valid resume found, redirecting to upload...');
         setStage(4);
+        return;
+      }
+
+      // Now that we have resume data, check for cached analysis
+      const cachedAnalysis = getStoredAnalysis(user.userID, resumeData.path);
+      if (cachedAnalysis) {
+        console.log('Found cached analysis, using it');
+        setAnalysis(cachedAnalysis);
+        setLoading(false);
+      } else {
+        // Start analysis with the confirmed resume data
+        console.log('Starting fresh analysis with resume data:', resumeData.name);
+        analyzeResume(false);
       }
     };
 
     initResumeData();
   }, [user?.resume, setStage]);
-
-  // Analysis effect
-  useEffect(() => {
-    const analyzeResume = async () => {
-      if (!resumeData?.content) {
-        console.log('No resume content available for analysis');
-        return;
-      }
-
-      console.log('Starting resume analysis for:', {
-        fileName: resumeData.name,
-        fileType: resumeData.type,
-        uploadDate: resumeData.uploadDate,
-        path: resumeData.path
-      });
-
-      try {
-        const recommendationPayload = {
-          userId: user?.userID,
-          firstName: user?.firstName,
-          lastName: user?.lastName,
-          email: user?.email,
-          pathType: user?.pathType,
-          careerStage: user?.careerStage,
-          primaryGoal: user?.primaryGoal,
-          interests: Array.isArray(user?.interests) ? user.interests : [],
-          skills: Array.isArray(user?.skills) ? user.skills : [],
-          experienceLevel: user?.experienceLevel || user?.careerStage || 'entry',
-          includeEnhancedDetails: true,
-          location: 'United States',
-          resume: {
-            content: resumeData.content,
-            name: resumeData.name,
-            type: resumeData.type,
-            path: resumeData.path
-          },
-          selectedCareerPath: user.selectedCareerPath?.title,
-          detailsRequested: [
-            'resumeAnalysis',
-            'skillGapAnalysis',
-            'improvementSuggestions',
-            'careerAlignment'
-          ]
-        };
-
-        console.log('Sending resume analysis request...');
-
-        const recPayload = {
-          httpMethod: 'POST',
-          path: '/recommendations/generate',
-          body: JSON.stringify(recommendationPayload),
-        };
-
-        const response = await fetch(
-          'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/generate',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(recPayload),
-          }
-        );
-
-        if (!response.ok) throw new Error('Failed to analyze resume');
-
-        const data = await response.json();
-        console.log('Resume analysis raw response:', data);
-        
-        if (data.body) {
-          const cleanBody = data.body.replace(/```json\n|\n```/g, '');
-          const parsedBody = typeof cleanBody === 'string' ? JSON.parse(cleanBody) : cleanBody;
-          console.log('Parsed analysis response:', parsedBody);
-          
-          if (parsedBody.recommendations?.careerAnalysis) {
-            setAnalysis(parsedBody.recommendations.careerAnalysis);
-            unlockAchievement('resume_analyzed');
-          } else {
-            console.warn('Career analysis data not found in response');
-            setError('Career analysis data not available. Please try again later.');
-          }
-        } else {
-          console.warn('Empty response body received');
-          setError('Unable to analyze resume. Please try again later.');
-        }
-      } catch (error) {
-        console.error('Resume analysis failed:', error);
-        setError('Failed to analyze resume. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (resumeData?.content) {
-      analyzeResume();
-    }
-  }, [resumeData, user, unlockAchievement]);
 
   const toggleSection = (sectionId) => {
     console.log('Toggling section:', sectionId);
@@ -383,7 +413,7 @@ const ResumeAnalysis = ({ setStage }) => {
             <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <plan.icon className={`h-5 w-5 ${
+                <plan.icon className={`h-5 w-5 ${
                     plan.priority === 'High' ? 'text-red-500' :
                     plan.priority === 'Medium' ? 'text-yellow-500' :
                     'text-green-500'
@@ -399,15 +429,15 @@ const ResumeAnalysis = ({ setStage }) => {
                 </span>
               </div>
               <p className="text-gray-700 mb-2">{plan.description}</p>
-                                <ul className="list-disc list-inside text-gray-600">
-                    {plan.steps.map((step, stepIndex) => (
-                      <li key={stepIndex}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-          </div>
+              <ul className="list-disc list-inside text-gray-600">
+                {plan.steps.map((step, stepIndex) => (
+                  <li key={stepIndex}>{step}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
+      </div>
     );
   };
 
@@ -460,99 +490,106 @@ const ResumeAnalysis = ({ setStage }) => {
       }
     ];
 
-    return (
-      <div className="max-w-4xl mx-auto p-6">
+    return sections.map(({ id, title, content, icon: Icon }) => (
+      <div key={id} className="bg-white rounded-xl shadow-sm p-6 mb-6">
         <button
-          onClick={() => setStage(6)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+          onClick={() => toggleSection(id)}
+          className="w-full flex items-center justify-between"
         >
-          <ArrowLeft className="h-5 w-5" />
-          Back to Dashboard
+          <div className="flex items-center gap-3">
+            <Icon className="h-6 w-6 text-blue-600" />
+            <h2 className="text-xl font-semibold">{title}</h2>
+          </div>
+          {expandedSections[id] ? (
+            <ChevronUp className="h-5 w-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+          )}
         </button>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Comprehensive Resume Analysis</h1>
-          <p className="text-gray-600">
-            Detailed insights for your career path: {user.selectedCareerPath?.title}
-          </p>
-        </div>
-
-        {renderScoreCard()}
-
-        {sections.map(({ id, title, content, icon: Icon }) => (
-          <div key={id} className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <button
-              onClick={() => toggleSection(id)}
-              className="w-full flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <Icon className="h-6 w-6 text-blue-600" />
-                <h2 className="text-xl font-semibold">{title}</h2>
+        {expandedSections[id] && (
+          <div className="mt-4 pl-9">
+            {id === 'overview' && (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h3 className="font-medium text-blue-900">Current Stage</h3>
+                  <p className="text-blue-700 mt-2">{content.currentStage}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900">Progression Path</h3>
+                  <p className="text-gray-700 mt-2">{content.progressionPath}</p>
+                </div>
               </div>
-              {expandedSections[id] ? (
-                <ChevronUp className="h-5 w-5 text-gray-400" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-gray-400" />
-              )}
-            </button>
+            )}
 
-            {expandedSections[id] && (
-              <div className="mt-4 pl-9">
-                {id === 'overview' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <h3 className="font-medium text-blue-900">Current Stage</h3>
-                      <p className="text-blue-700 mt-2">{content.currentStage}</p>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <h3 className="font-medium text-gray-900">Progression Path</h3>
-                      <p className="text-gray-700 mt-2">{content.progressionPath}</p>
-                    </div>
-                  </div>
-                )}
+            {id === 'strengths' && (
+              <div className="space-y-4">
+                <ul className="mt-2 space-y-2">
+                  {content.map((strength, index) => (
+                    <li key={index} className="flex items-center gap-2 text-gray-700">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      {strength}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-                {id === 'strengths' && (
-                  <div className="space-y-4">
-                    <ul className="mt-2 space-y-2">
-                      {content.map((strength, index) => (
-                        <li key={index} className="flex items-center gap-2 text-gray-700">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          {strength}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {id === 'improvements' && (
-                  <div className="space-y-4">
-                    <ul className="mt-2 space-y-2">
-                      {content.map((improvement, index) => (
-                        <li key={index} className="flex items-center gap-2 text-gray-700">
-                          <AlertCircle className="h-4 w-4 text-yellow-500" />
-                          {improvement}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+            {id === 'improvements' && (
+              <div className="space-y-4">
+                <ul className="mt-2 space-y-2">
+                  {content.map((improvement, index) => (
+                    <li key={index} className="flex items-center gap-2 text-gray-700">
+                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                      {improvement}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
-        ))}
+        )}
       </div>
-    );
+    ));
   };
 
-  // Main render method
   if (loading) return renderLoadingState();
   if (error) return renderErrorState();
   if (!analysis) return null;
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={() => setStage(6)}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Back to Dashboard
+        </button>
+
+        <button
+          onClick={() => analyzeResume(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white 
+                   rounded-lg hover:bg-blue-700 transition-all"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh Analysis
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Comprehensive Resume Analysis
+        </h1>
+        <p className="text-gray-600">
+          Detailed insights for your career path: {user.selectedCareerPath?.title}
+        </p>
+      </div>
+
+      {renderScoreCard()}
       {renderDetailedAnalysis()}
-    </>
+    </div>
   );
 };
 
