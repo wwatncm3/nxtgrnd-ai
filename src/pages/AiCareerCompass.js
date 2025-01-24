@@ -63,6 +63,10 @@ const CareerPathCard = ({ path, onSelect, isSelected }) => (
 
 // Enhanced recommendation generation with additional data points
 const generateEnhancedRecommendations = async (user, includePredictions = true) => {
+  if (!user?.userID) {
+    console.error('No user ID provided for recommendations');
+    return null;
+  }
   console.log('Starting generateEnhancedRecommendations...');
   console.log('User data:', {
     userID: user?.userID,
@@ -359,13 +363,26 @@ const MarketInsights = ({ pathId, path }) => {
 };
 
 // Enhanced AI Career Compass Component
-const EnhancedAICareerCompass = ({ setStage }) => {
+const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
+  const { setStage: setStageFromContext } = useContext(UserContext);
+  const setStage = setStageFromProps || setStageFromContext;
   const { user, setUser } = useContext(UserContext);
   const [selectedPath, setSelectedPath] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [enhancedData, setEnhancedData] = useState(null);
+  console.log('Component mounted with setStage:', setStage);
+
+  // Debugging log for stage navigation
+  const handleStageChange = (newStage) => {
+    console.log('Attempting to change stage to:', newStage);
+    if (typeof setStage === 'function') {
+      setStage(newStage);
+    } else {
+      console.error('setStage is not a function:', setStage);
+    }
+  };
 
   // Fetch enhanced recommendations on component mount
   useEffect(() => {
@@ -404,7 +421,7 @@ const EnhancedAICareerCompass = ({ setStage }) => {
         <div className="text-center">
           <p className="text-red-600">{error}</p>
           <button
-            onClick={() => setStage(3)}
+            onClick={() => handleStageChange(3)}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
           >
             Return to Dashboard
@@ -418,7 +435,7 @@ const EnhancedAICareerCompass = ({ setStage }) => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <button
-          onClick={() => setStage(3)}
+                      onClick={() => handleStageChange(3)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -702,7 +719,7 @@ const EnhancedAICareerCompass = ({ setStage }) => {
                         
                         sessionStorage.setItem('selectedCareerPath', JSON.stringify(selectedPath));
                         
-                        setStage(6);
+                        handleStageChange(6);
                       }}
                       className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
