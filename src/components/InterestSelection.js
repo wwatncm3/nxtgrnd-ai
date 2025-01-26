@@ -99,69 +99,104 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
   };
 
   // Updated handleResumeUpload function
-const handleResumeUpload = async (e) => {
-  const file = e.target.files[0];
-  console.log('Resume upload initiated:', file?.name);
-
-  if (!file) {
-    alert('Please select a file to upload.');
-    return;
-  }
-
-  if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-    alert('Invalid file type. Please upload a .pdf, .doc, or .docx file.');
-    return;
-  }
-
-  try {
-    const base64Content = await toBase64(file);
-    console.log('File converted to base64, uploading to S3...');
-
-    const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: `${user.userID}/resume/${file.name}`,
-        fileContent: base64Content,
-      }),
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0];
+    console.log('Resume upload initiated:', {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size
     });
-
-    const responseData = await response.json();
-    console.log('File upload response:', responseData);
-
-    if (response.ok) {
-      const resumeData = {
-        name: file.name,
-        type: file.type,
-        content: base64Content,
-        uploadDate: new Date().toISOString(),
-        path: `${user.userID}/resume/${file.name}`
-      };
-
-      // Store resume data in session storage
-      console.log('Storing resume data in session storage:', resumeData);
-      sessionStorage.setItem('userResume', JSON.stringify(resumeData));
-
-      // Update component state
-      setResumeFile(file);
-      setResumeName(file.name);
-      
-      // Update user context
-      setUser(prevUser => ({
-        ...prevUser,
-        resume: resumeData
-      }));
-
-      console.log('Resume upload complete and data stored');
-      alert('File uploaded successfully!');
-    } else {
-      throw new Error(responseData.message || 'Unknown error occurred.');
+  
+    if (!file) {
+      alert('Please select a file to upload.');
+      return;
     }
-  } catch (error) {
-    console.error('Upload failed:', error);
-    alert('Failed to upload the file. Please try again.');
-  }
-};
+  
+    // Enhanced file validation
+    const validTypes = {
+      'application/pdf': '.pdf',
+      'application/msword': '.doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
+    };
+    
+    if (!validTypes[file.type]) {
+      alert(`Invalid file type. Please upload a PDF, DOC, or DOCX file. Current type: ${file.type}`);
+      return;
+    }
+
+    // Check file size (10MB limit)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      alert('File size too large. Please upload a file smaller than 10MB.');
+      return;
+    }
+  
+    try {
+      const base64Content = await toBase64(file);
+      console.log('File converted to base64:', {
+        contentLength: base64Content?.length,
+        filename: `${user.userID}/resume/${file.name}`
+      });
+  
+      const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: `${user.userID}/resume/${file.name}`,
+          fileContent: base64Content,
+          fileType: file.type
+        }),
+      });
+  
+      const responseData = await response.json();
+      console.log('Upload response:', {
+        status: response.ok,
+        hasTextract: !!responseData.textractAnalysis
+      });
+  
+      if (response.ok) {
+        const resumeData = {
+          name: file.name,
+          type: file.type,
+          content: base64Content,
+          uploadDate: new Date().toISOString(),
+          path: `${user.userID}/resume/${file.name}`,
+          textract: responseData.textractAnalysis || null
+        };
+  
+        // Store complete resume data in session storage
+        console.log('Storing resume data:', {
+          name: resumeData.name,
+          type: resumeData.type,
+          hasTextract: !!resumeData.textract,
+          path: resumeData.path
+        });
+        
+        sessionStorage.setItem('userResume', JSON.stringify(resumeData));
+  
+        // Update component state
+        setResumeFile(file);
+        setResumeName(file.name);
+        
+        // Update user context
+        setUser(prevUser => ({
+          ...prevUser,
+          resume: resumeData
+        }));
+  
+        console.log('Resume upload and analysis complete');
+        alert('File uploaded and analyzed successfully!');
+      } else {
+        throw new Error(responseData.message || 'Unknown error occurred.');
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload the file. Please try again.');
+    }
+  };
 
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {

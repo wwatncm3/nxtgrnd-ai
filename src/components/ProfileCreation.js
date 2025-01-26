@@ -139,6 +139,7 @@ function OnboardingFlow({ onNext }) {
   };
 
  // Updated handleLogin function using Cognito
+ // Updated handleLogin function using Cognito
  const handleLogin = async (e) => {
   e.preventDefault();
   try {
@@ -146,7 +147,7 @@ function OnboardingFlow({ onNext }) {
 
     // Sign in using Cognito with email
     const { isSignedIn, nextStep } = await signIn({
-      username: loginData.username, // This should be email
+      username: loginData.username,
       password: loginData.password
     });
 
@@ -155,43 +156,43 @@ function OnboardingFlow({ onNext }) {
       
       // Create user data object from Cognito attributes
       const completeUserData = {
-        userID: loginData.username, // Using email as ID
-        username: userAttributes.preferred_username || loginData.username, // Get custom username if exists
+        userID: loginData.username,
+        username: userAttributes.preferred_username || loginData.username,
         email: userAttributes.email,
         firstName: userAttributes.given_name,
         lastName: userAttributes.family_name,
       };
 
-      // Check if user has a selected career path stored
-      const storedCareerPath = sessionStorage.getItem('selectedCareerPath');
-      let pathData = null;
-      if (storedCareerPath) {
-        try {
-          pathData = JSON.parse(storedCareerPath);
-          console.log('Found stored career path:', pathData);
-        } catch (err) {
-          console.error('Error parsing stored career path:', err);
-        }
-      }
+      // Check for path preferences in session storage
+      const storedPreferences = sessionStorage.getItem('userPathPreferences');
+      const pathPreferences = storedPreferences ? JSON.parse(storedPreferences) : null;
 
-      // Create final user data with stored information
+      // Update user data with path preferences if they exist
       const finalUserData = {
         ...completeUserData,
-        selectedCareerPath: pathData,
+        ...(pathPreferences || {})
       };
 
       // Update the global user context
       setUser(finalUserData);
 
-      // Determine where to redirect
-      if (pathData) {
-        console.log('Career path found, redirecting to dashboard');
-        onNext(finalUserData, true); // Go to dashboard
+      // If no path preferences, move to path selection
+      if (!pathPreferences) {
+        console.log('No path preferences found, redirecting to path selection');
+        setView('signup');
+        setCurrentSection('compass');
       } else {
-        console.log('No career path found, redirecting to Interest Selection');
-        onNext(finalUserData, false); // Go to Interest Selection
+        // Check for career path
+        const storedCareerPath = sessionStorage.getItem('selectedCareerPath');
+        if (storedCareerPath) {
+          console.log('Career path found, redirecting to dashboard');
+          onNext(finalUserData, true);
+        } else {
+          console.log('No career path found, redirecting to Interest Selection');
+          onNext(finalUserData, false);
+        }
       }
-    } // Added closing bracket here for isSignedIn check
+    }
 
   } catch (error) {
     console.error('Login error:', error);
@@ -674,7 +675,7 @@ const handleResendCode = async () => {
             email: formData.email,
             given_name: formData.firstName,
             family_name: formData.lastName,
-            preferred_username: formData.username // Store username as preferred_username
+            preferred_username: formData.username
           };
   
           // Sign up using email as username
@@ -691,7 +692,7 @@ const handleResendCode = async () => {
   
           // Store user credentials for verification
           setUnverifiedUser({
-            username: formData.email, // Store email as username for verification
+            username: formData.email,
             password: formData.password
           });
   
@@ -712,41 +713,36 @@ const handleResendCode = async () => {
   
           setErrors(prev => ({ ...prev, accountStep: errorMessage }));
         }
-  
-    }
-  } else if (currentSection === 'compass') {
-    if (await validateCompassStep()) {
-      try {
-        // Update user attributes in Cognito
-        const currentUser = await getCurrentUser();
-        await updateUserAttributes({
-          user: currentUser,
-          userAttributes: {
-            'custom:pathType': formData.pathType,
-            'custom:careerStage': formData.careerStage,
-            'custom:primaryGoal': formData.primaryGoal,
-          }
-        });
-  
-        // Update local user state
-        setUser(prevUser => ({
-          ...prevUser,
-          pathType: formData.pathType,
-          careerStage: formData.careerStage,
-          primaryGoal: formData.primaryGoal,
-        }));
-  
-        onNext(formData);
-      } catch (error) {
-        console.error('Error saving preferences:', error);
-        setErrors(prev => ({ 
-          ...prev, 
-          compassStep: 'Failed to save preferences. Please try again.'
-        }));
+      }
+    } else if (currentSection === 'compass') {
+      if (await validateCompassStep()) {
+        try {
+          // Store path preferences in session storage
+          const pathPreferences = {
+            pathType: formData.pathType,
+            careerStage: formData.careerStage,
+            primaryGoal: formData.primaryGoal
+          };
+          
+          sessionStorage.setItem('userPathPreferences', JSON.stringify(pathPreferences));
+
+          // Update local user state
+          setUser(prevUser => ({
+            ...prevUser,
+            ...pathPreferences
+          }));
+
+          onNext(formData);
+        } catch (error) {
+          console.error('Error saving preferences:', error);
+          setErrors(prev => ({ 
+            ...prev, 
+            compassStep: 'Failed to save preferences. Please try again.'
+          }));
+        }
       }
     }
-  }
-};
+  };
 
 
 

@@ -6,6 +6,7 @@ import {
   Zap, Book, Star, Award, Briefcase, Clock 
 } from 'lucide-react';
 import { useAchievements } from './AchievementSystem';
+import * as lucide from 'lucide-react';
 
 const ANALYSIS_CACHE_KEY = 'resumeAnalysisCache';
 
@@ -35,7 +36,7 @@ const getStoredAnalysis = (userId, resumePath) => {
 
 const downloadResumeFromS3 = async (path) => {
   try {
-    console.log('Downloading resume from S3:', path);
+    console.log('Downloading and analyzing resume:', path);
     const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -47,8 +48,15 @@ const downloadResumeFromS3 = async (path) => {
     if (!response.ok) throw new Error('Failed to download resume');
     
     const data = await response.json();
-    console.log('Resume download successful, content length:', data.fileContent?.length);
-    return data.fileContent;
+    console.log('Resume download successful:', {
+      contentLength: data.fileContent?.length,
+      hasTextractAnalysis: !!data.textractAnalysis
+    });
+
+    return {
+      content: data.fileContent,
+      textractAnalysis: data.textractAnalysis
+    };
   } catch (error) {
     console.error('Error downloading resume:', error);
     throw error;
@@ -75,47 +83,37 @@ const ResumeAnalysis = ({ setStage }) => {
     // First try session storage
     const storedResume = sessionStorage.getItem('userResume');
     console.log('Session storage resume check:', storedResume ? 'Found' : 'Not found');
-
+  
     if (storedResume) {
       try {
         const parsedResume = JSON.parse(storedResume);
-        console.log('Resume data parsed:', {
-          name: parsedResume.name,
-          type: parsedResume.type,
-          hasContent: !!parsedResume.content,
-          contentLength: parsedResume.content?.length,
-          path: parsedResume.path
-        });
-
         if (isValidResumeData(parsedResume)) {
           console.log('Valid resume data found in session storage');
           return parsedResume;
-        } else {
-          console.warn('Invalid resume data structure in session storage');
         }
       } catch (err) {
         console.error('Error parsing stored resume:', err);
       }
     }
-
+  
     // If session storage failed, try S3
     if (user?.resume?.path) {
       try {
-        console.log('Attempting S3 download with path:', user.resume.path);
-        const resumeContent = await downloadResumeFromS3(user.resume.path);
+        const { content, textractAnalysis } = await downloadResumeFromS3(user.resume.path);
         
-        if (!resumeContent) {
+        if (!content) {
           throw new Error('No content received from S3');
         }
-
+  
         const newResumeData = {
-          content: resumeContent,
+          content,
           name: user.resume.name || 'resume.pdf',
           type: user.resume.type || 'application/pdf',
-          path: user.resume.path
+          path: user.resume.path,
+          textractAnalysis
         };
-
-        console.log('Successfully downloaded resume from S3');
+  
+        console.log('Successfully downloaded and analyzed resume from S3');
         sessionStorage.setItem('userResume', JSON.stringify(newResumeData));
         return newResumeData;
       } catch (err) {
@@ -123,7 +121,7 @@ const ResumeAnalysis = ({ setStage }) => {
         throw err;
       }
     }
-
+  
     console.warn('No valid resume source found');
     return null;
   };
@@ -192,7 +190,12 @@ const ResumeAnalysis = ({ setStage }) => {
           content: currentResumeData.content,
           name: currentResumeData.name,
           type: currentResumeData.type,
-          path: currentResumeData.path
+          path: currentResumeData.path,
+          textract: {
+            rawText: currentResumeData.textractAnalysis?.rawText || '',
+            formFields: currentResumeData.textractAnalysis?.forms || {},
+            tables: currentResumeData.textractAnalysis?.tables || [],
+          }
         },
         selectedCareerPath: user.selectedCareerPath?.title,
         detailsRequested: [
@@ -232,8 +235,12 @@ const ResumeAnalysis = ({ setStage }) => {
         const cleanBody = data.body.replace(/```json\n|\n```/g, '');
         const parsedBody = typeof cleanBody === 'string' ? JSON.parse(cleanBody) : cleanBody;
         
-        if (parsedBody.recommendations?.careerAnalysis) {
-          const analysisResult = parsedBody.recommendations.careerAnalysis;
+        if (parsedBody.recommendations) {
+          const analysisResult = {
+            careerAnalysis: parsedBody.recommendations.careerAnalysis,
+            resumeScore: parsedBody.recommendations.resumeScore,
+            actionPlan: parsedBody.recommendations.actionPlan
+          };
           
           // Store in session
           sessionStorage.setItem(
@@ -243,18 +250,9 @@ const ResumeAnalysis = ({ setStage }) => {
 
           setAnalysis(analysisResult);
           unlockAchievement('resume_analyzed');
-          
-          // Log success and result structure
-          console.log('Analysis completed successfully:', {
-            hasStrengths: !!analysisResult.keyStrengths?.length,
-            hasWeaknesses: !!analysisResult.developmentAreas?.length,
-            hasStage: !!analysisResult.currentStage,
-            hasPath: !!analysisResult.progressionPath
-          });
-          
         } else {
-          console.error('Missing career analysis in response:', parsedBody);
-          throw new Error('Career analysis data not available');
+          console.error('Missing recommendations in response:', parsedBody);
+          throw new Error('Recommendations data not available');
         }
       } else {
         throw new Error('Empty response received');
@@ -338,134 +336,9 @@ const ResumeAnalysis = ({ setStage }) => {
     }));
   };
 
-  const calculateResumeScore = (analysis) => {
-    let score = 0;
-    const maxScore = 100;
-
-    // Scoring Criteria
-    const scoringRules = [
-      { 
-        category: 'Relevance',
-        maxPoints: 25,
-        evaluate: () => {
-          const relevanceScore = analysis.keyStrengths?.length * 5 || 0;
-          return Math.min(relevanceScore, 25);
-        }
-      },
-      { 
-        category: 'Clarity',
-        maxPoints: 20,
-        evaluate: () => {
-          const clarityScore = analysis.keyStrengths?.every(s => s.length < 100) ? 20 : 10;
-          return clarityScore;
-        }
-      },
-      { 
-        category: 'Career Alignment',
-        maxPoints: 25,
-        evaluate: () => {
-          const careerAlignmentScore = analysis.progressionPath ? 25 : 10;
-          return careerAlignmentScore;
-        }
-      },
-      { 
-        category: 'Skill Depth',
-        maxPoints: 15,
-        evaluate: () => {
-          const skillDepthScore = !analysis.developmentAreas?.length ? 15 :
-                                 analysis.developmentAreas.length < 3 ? 12 :
-                                 analysis.developmentAreas.length < 5 ? 8 : 5;
-          return skillDepthScore;
-        }
-      },
-      { 
-        category: 'Professional Impact',
-        maxPoints: 15,
-        evaluate: () => {
-          const impactScore = analysis.currentStage === 'Highly Competitive' ? 15 :
-                             analysis.currentStage === 'Competitive' ? 10 : 5;
-          return impactScore;
-        }
-      }
-    ];
-
-    // Calculate total score with validation
-    const scoreBreakdown = scoringRules.map(rule => ({
-      category: rule.category,
-      score: rule.evaluate(),
-      maxPoints: rule.maxPoints
-    }));
-
-    score = scoreBreakdown.reduce((total, item) => total + item.score, 0);
-
-    return {
-      totalScore: Math.round(score),
-      scoreBreakdown,
-      performance: 
-        score >= 90 ? 'Exceptional' :
-        score >= 80 ? 'Strong' :
-        score >= 70 ? 'Good' :
-        score >= 60 ? 'Needs Improvement' :
-        'Requires Significant Work'
-    };
-  };
-
-  const generateActionPlan = (analysis, resumeScore) => {
-    return [
-      {
-        priority: 'High',
-        icon: Zap,
-        title: 'Skill Alignment',
-        description: `Focus on highlighting skills directly related to ${user.selectedCareerPath?.title || 'your target role'}. 
-          Your current resume shows potential gaps in skill presentation.`,
-        steps: [
-          'List skills explicitly mentioned in job descriptions',
-          'Use industry-specific keywords',
-          'Quantify skill impact with metrics and achievements'
-        ]
-      },
-      {
-        priority: 'Medium',
-        icon: Target,
-        title: 'Experience Narrative',
-        description: 'Craft a more compelling story about your professional journey.',
-        steps: [
-          'Restructure job descriptions to show progression',
-          'Use action verbs that demonstrate leadership and impact',
-          'Align experience descriptions with career path goals'
-        ]
-      },
-      {
-        priority: resumeScore.totalScore < 70 ? 'High' : 'Low',
-        icon: Book,
-        title: 'Continuous Learning',
-        description: 'Address skill development areas identified in the analysis.',
-        steps: [
-          'Create a learning plan for identified skill gaps',
-          'Consider online courses or certifications',
-          'Seek projects that demonstrate emerging skills'
-        ]
-      },
-      {
-        priority: 'Low',
-        icon: Award,
-        title: 'Professional Branding',
-        description: 'Enhance your professional narrative and visibility.',
-        steps: [
-          'Update LinkedIn profile to match resume',
-          'Create a personal portfolio website',
-          'Engage in professional networking'
-        ]
-      }
-    ];
-  };
-
   const renderScoreCard = () => {
-    if (!analysis) return null;
-
-    const resumeScore = calculateResumeScore(analysis);
-    const actionPlan = generateActionPlan(analysis, resumeScore);
-
+    if (!analysis || !analysis.resumeScore) return null;
+  
     return (
       <div className="space-y-6">
         {/* Overall Score Section */}
@@ -476,19 +349,19 @@ const ResumeAnalysis = ({ setStage }) => {
               <h2 className="text-2xl font-bold text-gray-900">Overall Resume Score</h2>
             </div>
             <div className={`text-3xl font-bold ${
-              resumeScore.totalScore >= 90 ? 'text-green-600' :
-              resumeScore.totalScore >= 80 ? 'text-green-500' :
-              resumeScore.totalScore >= 70 ? 'text-yellow-600' :
+              analysis.resumeScore.totalScore >= 90 ? 'text-green-600' :
+              analysis.resumeScore.totalScore >= 80 ? 'text-green-500' :
+              analysis.resumeScore.totalScore >= 70 ? 'text-yellow-600' :
               'text-red-600'
             }`}>
-              {resumeScore.totalScore}/100
+              {analysis.resumeScore.totalScore}/100
             </div>
           </div>
-          
+  
           <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-2">Performance: {resumeScore.performance}</h3>
+            <h3 className="text-lg font-semibold mb-2">Performance: {analysis.resumeScore.performance}</h3>
             <div className="space-y-2">
-              {resumeScore.scoreBreakdown.map((category, index) => (
+              {analysis.resumeScore.scoreBreakdown.map((category, index) => (
                 <div key={index} className="flex items-center">
                   <div className="w-1/3 text-gray-700">{category.category}</div>
                   <div className="w-2/3">
@@ -512,17 +385,19 @@ const ResumeAnalysis = ({ setStage }) => {
             <h2 className="text-xl font-semibold">Personalized Action Plan</h2>
           </div>
           
-          {actionPlan.map((plan, index) => (
-            <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <plan.icon className={`h-5 w-5 ${
-                    plan.priority === 'High' ? 'text-red-500' :
-                    plan.priority === 'Medium' ? 'text-yellow-500' :
-                    'text-green-500'
-                  }`} />
-                  <h3 className="font-semibold text-gray-900">{plan.title}</h3>
-                </div>
+          {analysis.actionPlan.map((plan, index) => (
+  <div key={index} className="mb-4 p-4 bg-gray-50 rounded-lg">
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-3">
+        <span className={`h-5 w-5 ${
+          plan.priority === 'High' ? 'text-red-500' :
+          plan.priority === 'Medium' ? 'text-yellow-500' :
+          'text-green-500'
+        }`}>
+          {React.createElement(lucide[plan.icon])}
+        </span>
+        <h3 className="font-semibold text-gray-900">{plan.title}</h3>
+      </div>
                 <span className={`text-sm font-medium ${
                   plan.priority === 'High' ? 'text-red-600' :
                   plan.priority === 'Medium' ? 'text-yellow-600' :
@@ -549,19 +424,19 @@ const ResumeAnalysis = ({ setStage }) => {
       {
         id: 'overview',
         title: 'Overview',
-        content: analysis || {},
+        content: analysis?.careerAnalysis || {},
         icon: File
       },
       {
         id: 'strengths',
         title: 'Key Strengths',
-        content: analysis?.keyStrengths || [],
+        content: analysis?.careerAnalysis?.keyStrengths || [],
         icon: CheckCircle
       },
       {
         id: 'improvements',
         title: 'Development Areas',
-        content: analysis?.developmentAreas || [],
+        content: analysis?.careerAnalysis?.developmentAreas || [],
         icon: AlertCircle
       }
     ];
@@ -640,26 +515,26 @@ const ResumeAnalysis = ({ setStage }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-      <button
-  onClick={() => {
-    const storedDashboard = sessionStorage.getItem(`userDashboard_${user.userID}`);
-    if (storedDashboard) {
-      setStage(6);
-    } else {
-      alert('Session data lost. Please navigate to Career Compass first.');
-      setStage(5);
-    }
-  }}
-  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
->
-  <ArrowLeft className="h-5 w-5" />
-  Back to Dashboard
-</button>
+        <button
+          onClick={() => {
+            const storedDashboard = sessionStorage.getItem(`userDashboard_${user.userID}`);
+            if (storedDashboard) {
+              setStage(6);
+            } else {
+              alert('Session data lost. Please navigate to Career Compass first.');
+              setStage(5);
+            }
+          }}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Back to Dashboard
+        </button>
 
         <button
           onClick={() => analyzeResume(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white 
-                   rounded-lg hover:bg-blue-700 transition-all"
+                     rounded-lg hover:bg-blue-700 transition-all"
         >
           <RefreshCw className="h-4 w-4" />
           Refresh Analysis

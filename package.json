@@ -5,6 +5,7 @@
   "dependencies": {
     "@aws-amplify/auth": "^6.10.1",
     "@aws-amplify/core": "^6.9.2",
+    "@aws-sdk/client-textract": "^3.734.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.3.0",
