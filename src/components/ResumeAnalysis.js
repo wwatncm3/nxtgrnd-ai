@@ -640,13 +640,21 @@ const ResumeAnalysis = ({ setStage }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => setStage(6)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Back to Dashboard
-        </button>
+      <button
+  onClick={() => {
+    const storedDashboard = sessionStorage.getItem(`userDashboard_${user.userID}`);
+    if (storedDashboard) {
+      setStage(6);
+    } else {
+      alert('Session data lost. Please navigate to Career Compass first.');
+      setStage(5);
+    }
+  }}
+  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+>
+  <ArrowLeft className="h-5 w-5" />
+  Back to Dashboard
+</button>
 
         <button
           onClick={() => analyzeResume(true)}

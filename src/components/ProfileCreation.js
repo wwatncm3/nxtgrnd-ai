@@ -1,4 +1,13 @@
 import React, { useState, useContext } from 'react';
+import { 
+  signIn, 
+  signUp, 
+  confirmSignUp, 
+  fetchUserAttributes,
+  updateUserAttributes,
+  resendSignUpCode,
+  getCurrentUser 
+} from '@aws-amplify/auth';
 import { User, Upload, BookOpen, Users, Rocket, Target, Briefcase, Compass, Shield } from 'lucide-react';
 import CareerInterests from './InterestSelection';
 import { UserContext } from '../App';
@@ -25,6 +34,8 @@ function OnboardingFlow({ onNext }) {
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [errors, setErrors] = useState({});
+  const [verificationCode, setVerificationCode] = useState('');
+  const [unverifiedUser, setUnverifiedUser] = useState(null);
 
   // New Landing Page Component
   const renderLandingPage = () => (
@@ -127,132 +138,75 @@ function OnboardingFlow({ onNext }) {
     ]
   };
 
- // In ProfileCreation.js, update the handleLogin function:
+ // Updated handleLogin function using Cognito
  const handleLogin = async (e) => {
   e.preventDefault();
   try {
     console.log('Login attempt with:', loginData);
 
-    // First authenticate the user
-    const loginResponse = await fetch(
-      'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/users/login',
-      {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Origin': 'http://localhost:3000'
-        },
-        body: JSON.stringify({
-          httpMethod: 'POST',
-          path: '/users/login',
-          body: JSON.stringify({
-            Username: loginData.username,
-            Password: loginData.password
-          })
-        })
-      }
-    );
+    // Sign in using Cognito with email
+    const { isSignedIn, nextStep } = await signIn({
+      username: loginData.username, // This should be email
+      password: loginData.password
+    });
 
-    const loginResponseData = await loginResponse.json();
-    console.log('Login response:', loginResponseData);
-
-    // Handle login errors
-    if (loginResponseData.statusCode === 401) {
-      throw new Error('Invalid username or password');
-    }
-
-    if (loginResponseData.statusCode !== 200) {
-      throw new Error('Login failed');
-    }
-
-    // Parse the user data from the response
-    let userData;
-    try {
-      const parsedBody = JSON.parse(loginResponseData.body);
-      userData = parsedBody.user;
+    if (isSignedIn) {
+      const userAttributes = await fetchUserAttributes();
       
-      // Validate user data
-      if (!userData || !userData.UserID || !userData.Username) {
-        throw new Error('Invalid user data in response');
+      // Create user data object from Cognito attributes
+      const completeUserData = {
+        userID: loginData.username, // Using email as ID
+        username: userAttributes.preferred_username || loginData.username, // Get custom username if exists
+        email: userAttributes.email,
+        firstName: userAttributes.given_name,
+        lastName: userAttributes.family_name,
+      };
+
+      // Check if user has a selected career path stored
+      const storedCareerPath = sessionStorage.getItem('selectedCareerPath');
+      let pathData = null;
+      if (storedCareerPath) {
+        try {
+          pathData = JSON.parse(storedCareerPath);
+          console.log('Found stored career path:', pathData);
+        } catch (err) {
+          console.error('Error parsing stored career path:', err);
+        }
       }
-    } catch (parseError) {
-      console.error('Error parsing login response:', parseError);
-      throw new Error('Invalid response format');
-    }
 
-    console.log('Parsed user data:', userData);
+      // Create final user data with stored information
+      const finalUserData = {
+        ...completeUserData,
+        selectedCareerPath: pathData,
+      };
 
-    // Create complete user data object from login response
-    const completeUserData = {
-      userID: userData.UserID,
-      username: userData.Username,
-      email: userData.Email || '',
-      firstName: userData.FirstName || '',
-      lastName: userData.LastName || '',
-      avatar: userData.Avatar || null,
-      interests: userData.Interests || [],
-      skills: userData.Skills || [],
-      pathType: userData.PathType || '',
-      careerStage: userData.CareerStage || '',
-      primaryGoal: userData.PrimaryGoal || '',
-      ...userData // Include any additional fields from the response
-    };
+      // Update the global user context
+      setUser(finalUserData);
 
-    console.log('Complete user data:', completeUserData);
-
-    // Check if user has a selected career path stored
-    const storedCareerPath = sessionStorage.getItem('selectedCareerPath');
-    let pathData = null;
-    if (storedCareerPath) {
-      try {
-        pathData = JSON.parse(storedCareerPath);
-        console.log('Found stored career path:', pathData);
-      } catch (err) {
-        console.error('Error parsing stored career path:', err);
+      // Determine where to redirect
+      if (pathData) {
+        console.log('Career path found, redirecting to dashboard');
+        onNext(finalUserData, true); // Go to dashboard
+      } else {
+        console.log('No career path found, redirecting to Interest Selection');
+        onNext(finalUserData, false); // Go to Interest Selection
       }
-    }
-
-    // Check for stored resume data
-    const storedResume = sessionStorage.getItem('userResume');
-    let resumeData = null;
-    if (storedResume) {
-      try {
-        resumeData = JSON.parse(storedResume);
-        console.log('Found stored resume data:', resumeData?.name);
-      } catch (err) {
-        console.error('Error parsing stored resume data:', err);
-      }
-    }
-
-    // Create final user data with all stored information
-     // Create final user data with all stored information
-     const finalUserData = {
-      ...completeUserData,
-      selectedCareerPath: pathData,
-      resume: resumeData
-    };
-
-    console.log('Final user data for context:', finalUserData);
-
-    // Update the global user context
-    setUser(finalUserData);
-
-    // Determine where to redirect based on whether they have a career path
-    // We'll use onNext with isLogin=true for dashboard, isLogin=false for Career Compass
-    if (pathData) {
-      console.log('Career path found, redirecting to dashboard');
-      onNext(finalUserData, true); // Go to dashboard
-    } else {
-      console.log('No career path found, redirecting to Career Compass');
-      onNext(finalUserData, false); // Go to Career Compass
-    }
+    } // Added closing bracket here for isSignedIn check
 
   } catch (error) {
     console.error('Login error:', error);
-    setErrors(prev => ({ 
-      ...prev, 
-      login: error.message || 'An error occurred during login. Please try again.' 
-    }));
+    let errorMessage = 'An error occurred during login. Please try again.';
+    
+    // Handle specific Cognito error messages
+    if (error.code === 'UserNotFoundException') {
+      errorMessage = 'User not found. Please check your username.';
+    } else if (error.code === 'NotAuthorizedException') {
+      errorMessage = 'Incorrect username or password.';
+    } else if (error.code === 'UserNotConfirmedException') {
+      errorMessage = 'Please verify your email before logging in.';
+    }
+    
+    setErrors(prev => ({ ...prev, login: errorMessage }));
   }
 };
   const handleAvatarChange = (e) => {
@@ -299,6 +253,45 @@ function OnboardingFlow({ onNext }) {
     );
   }
 
+  const isValidPassword = (password) => {
+    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordPolicy.test(password);
+  };
+
+  // Replace these handlers:
+  const handleVerification = async (e) => {
+    e.preventDefault();
+    try {
+      await confirmSignUp({
+        username: unverifiedUser.username,
+        confirmationCode: verificationCode
+      });
+      
+      setView('login');
+    } catch (error) {
+      console.error('Verification error:', error);
+      setErrors(prev => ({
+        ...prev,
+        verification: error.message || 'Error verifying email'
+      }));
+    }
+  };
+
+const handleResendCode = async () => {
+  try {
+    await resendSignUpCode({
+      username: unverifiedUser.username
+    });
+    alert('Verification code has been resent to your email');
+  } catch (error) {
+    console.error('Error resending code:', error);
+    setErrors(prev => ({
+      ...prev,
+      verification: 'Error resending verification code'
+    }));
+  }
+};
+
   // Modified Login Section with Back Button
   const renderLoginSection = () => (
     <div className="space-y-6">
@@ -309,15 +302,17 @@ function OnboardingFlow({ onNext }) {
 
       <form onSubmit={handleLogin} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Username</label>
-          <input
-            type="text"
-            value={loginData.username}
-            onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                     focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
+        
+  <label className="block text-sm font-medium text-gray-700">Email</label>
+  <input
+    type="email"
+    value={loginData.username}
+    onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
+    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
+             focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+    placeholder="Enter your email"
+  />
+</div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -360,7 +355,50 @@ function OnboardingFlow({ onNext }) {
       </div>
     </div>
   );
+  // Add this with your other render functions (after renderLoginSection and before renderCompassSection)
+  
+  const renderVerificationSection = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+        <p className="text-gray-600">We've sent a verification code to your email</p>
+      </div>
 
+      <form onSubmit={handleVerification} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Verification Code</label>
+          <input
+            type="text"
+            value={verificationCode}
+            onChange={(e) => setVerificationCode(e.target.value)}
+            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
+                     focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        {errors.verification && (
+          <p className="text-red-600 text-sm text-center">{errors.verification}</p>
+        )}
+
+        <button
+          type="submit"
+          className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg 
+                   hover:bg-blue-700 focus:outline-none focus:ring-2 
+                   focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Verify Email
+        </button>
+
+        <button
+          type="button"
+          onClick={handleResendCode}
+          className="w-full py-2 px-4 text-blue-600 hover:text-blue-700"
+        >
+          Resend Code
+        </button>
+      </form>
+    </div>
+  );
   const renderCompassSection = () => (
     <div className="space-y-8">
       <div className="text-center mb-6">
@@ -618,97 +656,99 @@ function OnboardingFlow({ onNext }) {
     return valid;
   };
   
+  
+  // Updated handleNext function for signup using Cognito
   const handleNext = async () => {
     if (currentSection === 'account') {
       if (validateAccountStep()) {
+        if (!isValidPassword(formData.password)) {
+          setErrors(prev => ({ 
+            ...prev, 
+            accountStep: 'Password must contain at least 8 characters, an uppercase letter, a number and a special character'
+          }));
+          return;
+        }
         try {
-          const userPayload = {
-            UserID: formData.username,
-            Email: formData.email,
-            Username: formData.username,
-            Password: formData.password,
-            FirstName: formData.firstName,
-            LastName: formData.lastName,
-            Avatar: formData.avatar ? formData.avatar.name : null,
-          };
-          
-          const userResponsePayload = {
-            httpMethod: 'POST',
-            path: '/users',
-            body: JSON.stringify(userPayload),
+          // Prepare user attributes 
+          const userAttributes = {
+            email: formData.email,
+            given_name: formData.firstName,
+            family_name: formData.lastName,
+            preferred_username: formData.username // Store username as preferred_username
           };
   
-          const response = await fetch(
-            'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/users',
-            {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Origin': 'http://localhost:3000'
-              },
-              body: JSON.stringify(userResponsePayload)
+          // Sign up using email as username
+          const { isSignUpComplete, userId, nextStep } = await signUp({
+            username: formData.email, 
+            password: formData.password,
+            options: {
+              userAttributes,
+              authenticationFlowType: 'USER_SRP_AUTH'
             }
-          );
+          });
   
-          const responseData = await response.json();
-          console.log('Full response:', responseData);
-          
-          if (!response.ok) {
-            throw new Error(responseData.message || 'Failed to create user');
-          }
-          
-          // Try to parse the body of the response
-          let createdUserData;
-          try {
-            createdUserData = responseData.body ? JSON.parse(responseData.body) : responseData;
-          } catch (parseError) {
-            console.error('Error parsing user data:', parseError);
-            createdUserData = responseData;
-          }
-          
-          console.log('Created user data:', createdUserData);
-          
-          // Ensure we have the correct user data structure
-          const userData = {
-            userID: createdUserData.UserID || formData.username,
-            email: createdUserData.Email || formData.email,
-            firstName: createdUserData.FirstName || formData.firstName,
-            lastName: createdUserData.LastName || formData.lastName,
-            username: createdUserData.Username || formData.username,
-            avatar: createdUserData.Avatar || (formData.avatar ? formData.avatar.name : null)
-          };
-          
-          setUser(userData);
-          setCurrentSection('compass');
+          console.log('Cognito signup successful');
+  
+          // Store user credentials for verification
+          setUnverifiedUser({
+            username: formData.email, // Store email as username for verification
+            password: formData.password
+          });
+  
+          // Move to verification section
+          setCurrentSection('verify');
+  
         } catch (error) {
           console.error('Error creating user:', error);
-          setErrors(prev => ({ 
-            ...prev, 
-            accountStep: error.message || 'Failed to create user. Please try again.'
-          }));
+          let errorMessage = 'Failed to create user. Please try again.';
+  
+          if (error.code === 'UsernameExistsException') {
+            errorMessage = 'An account with this email already exists.';
+          } else if (error.code === 'InvalidPasswordException') {
+            errorMessage = 'Password does not meet requirements. Please use a stronger password.';
+          } else if (error.code === 'InvalidParameterException') {
+            errorMessage = 'Please check your input and try again.';
+          }
+  
+          setErrors(prev => ({ ...prev, accountStep: errorMessage }));
         }
-      }
-    } else if (currentSection === 'compass') {
-      if (await validateCompassStep()) {
-        try {
-          setUser(prevUser => ({
-            ...prevUser,
-            pathType: formData.pathType,
-            careerStage: formData.careerStage,
-            primaryGoal: formData.primaryGoal,
-          }));
-
-          onNext(formData);
-        } catch (error) {
-          console.error('Error saving preferences:', error);
-          setErrors(prev => ({ 
-            ...prev, 
-            compassStep: 'Failed to save preferences. Please try again.'
-          }));
-        }
+  
+    }
+  } else if (currentSection === 'compass') {
+    if (await validateCompassStep()) {
+      try {
+        // Update user attributes in Cognito
+        const currentUser = await getCurrentUser();
+        await updateUserAttributes({
+          user: currentUser,
+          userAttributes: {
+            'custom:pathType': formData.pathType,
+            'custom:careerStage': formData.careerStage,
+            'custom:primaryGoal': formData.primaryGoal,
+          }
+        });
+  
+        // Update local user state
+        setUser(prevUser => ({
+          ...prevUser,
+          pathType: formData.pathType,
+          careerStage: formData.careerStage,
+          primaryGoal: formData.primaryGoal,
+        }));
+  
+        onNext(formData);
+      } catch (error) {
+        console.error('Error saving preferences:', error);
+        setErrors(prev => ({ 
+          ...prev, 
+          compassStep: 'Failed to save preferences. Please try again.'
+        }));
       }
     }
-  };
+  }
+};
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -721,10 +761,10 @@ function OnboardingFlow({ onNext }) {
           {view === 'landing' && renderLandingPage()}
           {view === 'login' && renderLoginSection()}
           {view === 'signup' && (
-            currentSection === 'compass' 
-              ? renderCompassSection() 
-              : renderAccountSection()
-          )}
+  currentSection === 'verify' ? renderVerificationSection() :
+  currentSection === 'compass' ? renderCompassSection() :
+  renderAccountSection()
+)}
   
           {view === 'signup' && (
             <div className="flex justify-between mt-8">

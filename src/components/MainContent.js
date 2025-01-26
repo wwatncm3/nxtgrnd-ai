@@ -1,10 +1,13 @@
 import React, { useState, useContext, useEffect } from 'react';
+import { signOut } from '@aws-amplify/auth';
 import {
   Compass, BookOpen, Target, Award, Users, Menu, 
   UserCircle, BellIcon, Search, Building2, 
-  Calendar, Link, Star,Clock, ArrowRight,FileText,RefreshCw,ChevronRight,MapPin,CircleDollarSign
+  Calendar, Link, Star, Clock, ArrowRight, FileText,
+  RefreshCw, ChevronRight, MapPin, CircleDollarSign
 } from 'lucide-react';
 import { UserContext } from '../App';
+
 
 // Add these at the top of MainContent component
 const USER_DASHBOARD_KEY = 'userDashboard';
@@ -152,11 +155,18 @@ const MainContent = ({ setStage }) => {
   const [personalizedGoals, setPersonalizedGoals] = useState([]);
   const [personalizedEvents, setPersonalizedEvents] = useState([]);
 
-  const handleLogout = () => {
-    sessionStorage.removeItem(`${USER_DASHBOARD_KEY}_${user.userID}`);
-    setUser({});
-    setStage(1);
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      localStorage.clear();
+      sessionStorage.clear();
+      setUser(null);
+      setStage(1);  // Redirect to login/signup
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
+  
 
   const loadLearningPaths = async () => {
     setIsLearningPathsLoading(true);
@@ -676,18 +686,27 @@ const navigationItems = [
     onClick: () => {} // Add handler if needed
   },
   { 
-    icon: FileText, // Make sure to import FileText from lucide-react
+    icon: FileText,
     label: 'Resume Analysis',
     onClick: () => {
       // Check if resume exists in session storage
       const storedResume = sessionStorage.getItem('userResume');
       if (!storedResume) {
         alert('Please upload your resume first to access the analysis.');
-        setStage(4); // Navigate to resume upload stage
+        setStage(4);
         return;
       }
-      console.log('Navigating to resume analysis with stored resume');
-      setStage(7); // New stage for Resume Analysis
+      // Store current dashboard state before navigation
+      if (personalizedLearningPaths.length || personalizedOpportunities.length) {
+        storeDashboardData(user?.userID, {
+          learningPaths: personalizedLearningPaths,
+          opportunities: personalizedOpportunities,
+          goals: personalizedGoals,
+          events: personalizedEvents,
+          careerPath: user.selectedCareerPath
+        });
+      }
+      setStage(7);
     }
   },
   { 

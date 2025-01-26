@@ -1,10 +1,12 @@
-import React, { useState, createContext } from 'react';
+import React, { useState, createContext, useEffect } from 'react';
+import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
 import MainContent from './components/MainContent';
 import AICareerCompass from './pages/AiCareerCompass';
 import ResumeAnalysis from './components/ResumeAnalysis';
 import { AchievementProvider } from './components/AchievementSystem';
+
 
 export const UserContext = createContext();
 
@@ -18,6 +20,37 @@ function App() {
   const [stage, setStage] = useState(1);
   const [user, setUser] = useState({});
   const [selectedCareerPath, setSelectedCareerPath] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication status on app load
+  useEffect(() => {
+    localStorage.clear();
+  sessionStorage.clear();
+    checkAuthState();
+  }, []);
+
+  const checkAuthState = async () => {
+    try {
+      const cognitoUser = await getCurrentUser();
+      const userAttributes = await fetchUserAttributes();
+      
+      // Convert Cognito attributes to user object
+      const userData = {
+        username: cognitoUser.username,
+        email: userAttributes.email,
+        firstName: userAttributes.given_name,
+        lastName: userAttributes.family_name,
+      };
+      
+      setUser(userData);
+      setStage(6); // Go to dashboard if authenticated
+    } catch (error) {
+      console.log('User is not authenticated');
+      setStage(1); // Go to login/signup if not authenticated
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleStageComplete = (newData, nextStage) => {
     // Update user data if provided
@@ -27,6 +60,7 @@ function App() {
     // Move to next stage
     setStage(nextStage);
   };
+
 
   const handleCareerPathSelect = (path) => {
     setSelectedCareerPath(path);
@@ -41,23 +75,23 @@ function App() {
   const renderContent = () => {
     switch (stage) {
       case 1: // Account Creation
-        return (
-          <OnboardingLayout>
-            <ProfileCreation 
-             onNext={(profileData, isLogin = false) => {
-              // If it's a login and we have a selectedCareerPath, go to dashboard
-              // Otherwise for new accounts, continue the normal flow
-              if (isLogin) {
-                console.log('Login flow - navigating to dashboard');
-                handleStageComplete(profileData, 6); // Go directly to dashboard
-              } else {
-                console.log('Signup flow - continuing to career compass');
-                handleStageComplete(profileData, 2); // Continue normal signup flow
-              }
-            }}
-            />
-          </OnboardingLayout>
-        );
+  return (
+    <OnboardingLayout>
+      <ProfileCreation 
+        onNext={(profileData, isLogin = false) => {
+          // If it's a login and we have a selectedCareerPath, go to dashboard
+          // Otherwise for new accounts or login without career path, continue to interest selection
+          if (isLogin && profileData.selectedCareerPath) {
+            console.log('Login flow - navigating to dashboard');
+            handleStageComplete(profileData, 6); // Go directly to dashboard
+          } else {
+            console.log('Signup flow or login without career path - continuing to interest selection');
+            handleStageComplete(profileData, 3); // Continue to interest selection
+          }
+        }}
+      />
+    </OnboardingLayout>
+  );
 
       case 2: // Path Selection (Start Your Journey)
         return (
