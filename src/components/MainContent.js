@@ -1248,24 +1248,24 @@ const MainContent = ({ setStage }) => {
             <div className="max-w-7xl mx-auto">
               {/* Title Section - Responsive */}
               <div className="mb-6 sm:mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                      {selectedCareerPath.title} Career Dashboard
-                    </h1>
-                    <p className="mt-1 text-sm sm:text-base text-gray-600">
-                      Your personalized roadmap to becoming a {selectedCareerPath.title}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setStage(4)}
-                    className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 w-full sm:w-auto"
-                  >
-                    <Compass className="h-4 w-4" />
-                    Change Career Path
-                  </button>
-                </div>
-              </div>
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+        Welcome {user?.firstName ? `${user.firstName}` : 'back'} to your {selectedCareerPath.title} Dashboard!
+      </h1>
+      <p className="mt-1 text-sm sm:text-base text-gray-600">
+        Your personalized roadmap to becoming a {selectedCareerPath.title}
+      </p>
+    </div>
+    <button
+      onClick={() => setStage(4)}
+      className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 w-full sm:w-auto"
+    >
+      <Compass className="h-4 w-4" />
+      Change Career Path
+    </button>
+  </div>
+</div>
 
               {/* Search Results Info */}
               <SearchResultsInfo 
