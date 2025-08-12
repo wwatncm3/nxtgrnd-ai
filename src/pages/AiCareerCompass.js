@@ -1088,89 +1088,95 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                 )}
 
                 {activeTab === 'market' && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-semibold mb-4">Market Analysis</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-medium mb-2">Growth Rate</h4>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-blue-600">
-                            {selectedPath.marketData?.growthRate ? 
-                              `${selectedPath.marketData.growthRate}%` : 
-                              selectedPath.growthRate ? 
-                                `${selectedPath.growthRate}%` : 
-                                'Loading...'
-                            }
-                          </span>
-                          <span className="text-sm text-gray-600">Annual</span>
-                        </div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <h4 className="font-medium mb-2">Market Demand</h4>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-green-600">
-                            {selectedPath.marketData?.demand || 
-                             selectedPath.demand || 
-                             'Loading...'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <h4 className="font-medium mb-2">Job Openings</h4>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-purple-600">
-                            {selectedPath.marketData?.jobOpenings?.toLocaleString() || 
-                             'Loading...'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+  <div className="space-y-6">
+    <h3 className="text-xl font-semibold mb-4">Market Analysis</h3>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h4 className="font-medium mb-2">Growth Rate</h4>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold text-blue-600">
+            {selectedPath.marketData?.growthRate ? 
+              // Check if growthRate already includes % symbol
+              (selectedPath.marketData.growthRate.toString().includes('%') ? 
+                selectedPath.marketData.growthRate : 
+                `${selectedPath.marketData.growthRate}%`) : 
+              selectedPath.growthRate ? 
+                // Check if growthRate already includes % symbol
+                (selectedPath.growthRate.toString().includes('%') ? 
+                  selectedPath.growthRate : 
+                  `${selectedPath.growthRate}%`) : 
+                'Loading...'
+            }
+          </span>
+          <span className="text-sm text-gray-600">Annual</span>
+        </div>
+      </div>
+      <div className="bg-green-50 p-4 rounded-lg">
+        <h4 className="font-medium mb-2">Market Demand</h4>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold text-green-600">
+            {selectedPath.marketData?.demand || 
+             selectedPath.demand || 
+             'Loading...'
+            }
+          </span>
+        </div>
+      </div>
+      <div className="bg-purple-50 p-4 rounded-lg">
+        <h4 className="font-medium mb-2">Job Openings</h4>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold text-purple-600">
+            {selectedPath.marketData?.jobOpenings?.toLocaleString() || 
+             'Loading...'
+            }
+          </span>
+        </div>
+      </div>
+    </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <h4 className="font-medium mb-4">Top Skills in Demand</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(selectedPath.marketData?.topSkills || selectedPath.requiredSkills || []).map((skill, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                          >
-                            {typeof skill === 'object' ? `${skill.name} (${skill.demand}%)` : skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+      <h4 className="font-medium mb-4">Top Skills in Demand</h4>
+      <div className="flex flex-wrap gap-2">
+        {(selectedPath.marketData?.topSkills || selectedPath.requiredSkills || []).map((skill, index) => (
+          <span
+            key={index}
+            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+          >
+            {typeof skill === 'object' ? `${skill.name} (${skill.demand}%)` : skill}
+          </span>
+        ))}
+      </div>
+    </div>
 
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <h4 className="font-medium mb-4">Industry Distribution</h4>
-                      <div className="space-y-3">
-                        {selectedPath.marketData?.industries?.length > 0 ? (
-                          selectedPath.marketData.industries.map((industry, index) => (
-                            <div key={industry.id || industry.name || index}>
-                              <div className="flex justify-between mb-1">
-                                <span className="text-sm text-gray-600">{industry.name}</span>
-                                <span className="text-sm font-medium">{industry.percentage}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-blue-600 rounded-full h-2"
-                                  style={{ width: `${industry.percentage}%` }}
-                                />
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-4">
-                            <p className="text-gray-500">Loading industry distribution data...</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+      <h4 className="font-medium mb-4">Industry Distribution</h4>
+      <div className="space-y-3">
+        {selectedPath.marketData?.industries?.length > 0 ? (
+          selectedPath.marketData.industries.map((industry, index) => (
+            <div key={industry.id || industry.name || index}>
+              <div className="flex justify-between mb-1">
+                <span className="text-sm text-gray-600">{industry.name}</span>
+                <span className="text-sm font-medium">{industry.percentage}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 rounded-full h-2"
+                  style={{ width: `${industry.percentage}%` }}
+                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-gray-500">Loading industry distribution data...</p>
+          </div>
+        )}
+      </div>
+    </div>
 
-                    <MarketInsights pathId={selectedPath.id} path={selectedPath} />
-                  </div>
-                )}
+    <MarketInsights pathId={selectedPath.id} path={selectedPath} />
+  </div>
+)}
 
                 {activeTab === 'simulation' && (
                   <div className="space-y-6">

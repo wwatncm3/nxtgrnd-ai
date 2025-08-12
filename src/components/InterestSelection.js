@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Compass, ChevronRight, ChevronDown, ChevronUp, X, Search, Check, Upload } from 'lucide-react';
 import { UserContext } from '../App';
-import Papa from 'papaparse';
+import  skillsData  from '../data/skills';
 import { storageUtils } from '../utils/authUtils';
 
 const CareerInterests = ({ onComplete, initialData = {} }) => {
@@ -24,49 +24,19 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   useEffect(() => {
-    const fetchSkills = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/skills.csv');
-        const text = await response.text();
+  const loadSkills = () => {
+    setIsLoading(true);
+    
+    // Use imported skills data (exactly from your CSV)
+    const skills = [...skillsData].sort();
+    
+    setSkillOptions(skills);
+    setIsLoading(false);
+    console.log(`Loaded ${skills.length} skills from your CSV data`);
+  };
 
-        Papa.parse(text, {
-          header: true,
-          dynamicTyping: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            // Filter base skills (remove text after hyphen)
-            const skills = [...new Set(
-              results.data
-                .map((row) => {
-                  const skillText = row['Skill'] || row['skill'];
-                  if (typeof skillText === 'string') {
-                    const index = skillText.indexOf('-');
-                    return index !== -1 ? skillText.substring(0, index).trim() : skillText.trim();
-                  }
-                  return null;
-                })
-                .filter(Boolean)
-                .sort() // Sort alphabetically
-            )];
-
-            setSkillOptions(skills);
-            setIsLoading(false);
-            console.log(`Parsed ${skills.length} skills`);
-          },
-          error: (error) => {
-            console.error('Error parsing CSV:', error);
-            setIsLoading(false);
-          },
-        });
-      } catch (error) {
-        console.error('Error fetching CSV:', error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchSkills();
-  }, []);
+  loadSkills();
+}, []);
 
   // Memoized filtered skills with pagination
   const filteredSkills = useMemo(() => {
@@ -303,115 +273,194 @@ const handleSubmit = async () => {
         </p>
 
         {step === 1 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Select Skills</h2>
-            
-            {/* Display selected skills as badges ABOVE the search */}
-            <div className="flex flex-wrap gap-2 min-h-[40px]">
-              {selectedSkills.map((skill, index) => (
-                <span
-                  key={`selected-${skill}-${index}`}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full flex items-center
-                           border border-blue-100 hover:bg-blue-100 transition-colors"
+  <div className="space-y-6">
+    <h2 className="text-xl font-semibold">Select Skills</h2>
+    
+    {/* Display selected skills as badges ABOVE the search */}
+    <div className="flex flex-wrap gap-2 min-h-[40px]">
+      {selectedSkills.map((skill, index) => (
+        <span
+          key={`selected-${skill}-${index}`}
+          className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full flex items-center
+                   border border-blue-100 hover:bg-blue-100 transition-colors"
+        >
+          {skill}
+          <button
+            onClick={() => handleSkillRemove(skill)}
+            className="ml-2 hover:text-blue-800 focus:outline-none"
+          >
+            <X size={14} />
+          </button>
+        </span>
+      ))}
+    </div>
+
+    {/* Enhanced search input with add functionality */}
+    <div className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Type to search or add custom skills..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(1);
+            setIsDropdownOpen(true);
+          }}
+          onKeyDown={(e) => {
+            // Allow adding custom skills with Enter key
+            if (e.key === 'Enter' && searchTerm.trim()) {
+              e.preventDefault();
+              const trimmedSkill = searchTerm.trim();
+              if (trimmedSkill && !selectedSkills.includes(trimmedSkill)) {
+                setSelectedSkills((prev) => [...prev, trimmedSkill]);
+                setSearchTerm('');
+                setIsDropdownOpen(false);
+              }
+            }
+            // Close dropdown with Escape key
+            if (e.key === 'Escape') {
+              setIsDropdownOpen(false);
+            }
+          }}
+          className="w-full px-4 py-2 pl-10 pr-20 border border-gray-200 rounded-lg 
+                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          onFocus={() => setIsDropdownOpen(true)}
+        />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+        
+        {/* Add custom skill button */}
+        {searchTerm.trim() && !selectedSkills.includes(searchTerm.trim()) && (
+          <button
+            onClick={() => {
+              const trimmedSkill = searchTerm.trim();
+              if (trimmedSkill) {
+                setSelectedSkills((prev) => [...prev, trimmedSkill]);
+                setSearchTerm('');
+                setIsDropdownOpen(false);
+              }
+            }}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 
+                     bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+          >
+            Add
+          </button>
+        )}
+      </div>
+
+      {/* Show instructions when no search term */}
+      {!searchTerm && (
+        <div className="mt-2 text-sm text-gray-500">
+          💡 Type to search from our skills database or add your own custom skills by pressing Enter
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      ) : isDropdownOpen && searchTerm && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+          {/* Option to add custom skill at the top */}
+          {searchTerm.trim() && !skillOptions.some(skill => 
+            skill.toLowerCase() === searchTerm.trim().toLowerCase()
+          ) && !selectedSkills.includes(searchTerm.trim()) && (
+            <button
+              onClick={() => {
+                const trimmedSkill = searchTerm.trim();
+                setSelectedSkills((prev) => [...prev, trimmedSkill]);
+                setSearchTerm('');
+                setIsDropdownOpen(false);
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-100
+                       flex items-center gap-2 font-medium text-blue-600"
+            >
+              <span className="text-lg">+</span>
+              Add "{searchTerm.trim()}" as custom skill
+            </button>
+          )}
+          
+          {/* Dropdown list of matching skills */}
+          {filteredSkills.length > 0 && (
+            <div className="max-h-60 overflow-y-auto">
+              {filteredSkills.map((skill, index) => (
+                <button
+                  key={`${skill}-${index}`}
+                  onClick={() => handleSkillSelect(skill)}
+                  className="w-full px-4 py-2 text-left hover:bg-blue-50 text-gray-700
+                           flex items-center justify-between group"
+                  disabled={selectedSkills.includes(skill)}
                 >
-                  {skill}
-                  <button
-                    onClick={() => handleSkillRemove(skill)}
-                    className="ml-2 hover:text-blue-800 focus:outline-none"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
+                  <span className={selectedSkills.includes(skill) ? 'text-gray-400' : ''}>
+                    {skill}
+                  </span>
+                  {selectedSkills.includes(skill) ? (
+                    <span className="text-gray-400">
+                      <Check size={16} />
+                    </span>
+                  ) : (
+                    <span className="opacity-0 group-hover:opacity-100 text-blue-600">
+                      <Check size={16} />
+                    </span>
+                  )}
+                </button>
               ))}
             </div>
-
-            {/* Search input with dropdown */}
-            <div className="relative">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search skills..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setPage(1);
-                    setIsDropdownOpen(true);
-                  }}
-                  className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg 
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onFocus={() => setIsDropdownOpen(true)}
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              </div>
-
-              {isLoading ? (
-                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto"></div>
-                </div>
-              ) : isDropdownOpen && filteredSkills.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
-                  <div className="max-h-60 overflow-y-auto">
-                    {filteredSkills.map((skill, index) => (
-                      <button
-                        key={`${skill}-${index}`}
-                        onClick={() => handleSkillSelect(skill)}
-                        className="w-full px-4 py-2 text-left hover:bg-blue-50 text-gray-700
-                                 flex items-center justify-between group"
-                      >
-                        <span>{skill}</span>
-                        {selectedSkills.includes(skill) && (
-                          <span className="text-blue-600">
-                            <Check size={16} />
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* Pagination at bottom of dropdown */}
-                  <div className="border-t border-gray-100 p-2 flex items-center justify-between bg-gray-50 rounded-b-lg">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setPage(p => Math.max(1, p - 1));
-                      }}
-                      disabled={page === 1}
-                      className="p-1 hover:bg-gray-100 rounded disabled:opacity-50"
-                    >
-                      <ChevronUp size={16} />
-                    </button>
-                    <span className="text-sm text-gray-600">
-                      Page {page} of {totalPages}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setPage(p => Math.min(totalPages, p + 1));
-                      }}
-                      disabled={page === totalPages}
-                      className="p-1 hover:bg-gray-100 rounded disabled:opacity-50"
-                    >
-                      <ChevronDown size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
+          )}
+          
+          {/* No results message */}
+          {filteredSkills.length === 0 && searchTerm.trim() && (
+            <div className="px-4 py-3 text-gray-500 text-center">
+              No matching skills found. Press Enter or click "Add" to create a custom skill.
             </div>
+          )}
+          
+          {/* Pagination at bottom of dropdown (only show if we have results) */}
+          {filteredSkills.length > 0 && totalPages > 1 && (
+            <div className="border-t border-gray-100 p-2 flex items-center justify-between bg-gray-50 rounded-b-lg">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPage(p => Math.max(1, p - 1));
+                }}
+                disabled={page === 1}
+                className="p-1 hover:bg-gray-100 rounded disabled:opacity-50"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPage(p => Math.min(totalPages, p + 1));
+                }}
+                disabled={page === totalPages}
+                className="p-1 hover:bg-gray-100 rounded disabled:opacity-50"
+              >
+                <ChevronDown size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
 
-            <button
-              onClick={() => setStep(2)}
-              disabled={selectedSkills.length === 0}
-              className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold 
-                       hover:bg-blue-700 shadow-md hover:shadow-lg transition-all 
-                       flex items-center justify-center gap-2 disabled:opacity-50
-                       disabled:cursor-not-allowed"
-            >
-              Next Step <ChevronRight size={20} />
-            </button>
-          </div>
-        )}
+    <button
+      onClick={() => setStep(2)}
+      disabled={selectedSkills.length === 0}
+      className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold 
+               hover:bg-blue-700 shadow-md hover:shadow-lg transition-all 
+               flex items-center justify-center gap-2 disabled:opacity-50
+               disabled:cursor-not-allowed"
+    >
+      Next Step <ChevronRight size={20} />
+    </button>
+  </div>
+)}
 
 {step === 2 && (
   <div className="space-y-6">

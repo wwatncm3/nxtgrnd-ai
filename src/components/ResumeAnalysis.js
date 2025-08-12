@@ -8,6 +8,7 @@ import {
 import { useAchievements } from './AchievementSystem';
 import * as lucide from 'lucide-react';
 import { storageUtils } from '../utils/authUtils';
+import analytics from '../utils/analytics';
 
 const ANALYSIS_CACHE_KEY = 'resumeAnalysisCache';
 
@@ -96,6 +97,10 @@ const ResumeAnalysis = ({ setStage }) => {
       try {
         const parsedResume = JSON.parse(storedResume);
         if (isValidResumeData(parsedResume)) {
+          analytics.trackEvent('resume_loaded_from_storage', {
+          fileType: parsedResume.type,
+          hasContent: !!parsedResume.content
+        });
           console.log('Valid resume data found in session storage');
           return parsedResume;
         }
@@ -108,7 +113,10 @@ const ResumeAnalysis = ({ setStage }) => {
     if (user?.resume?.path) {
       try {
         const { content, textractAnalysis } = await downloadResumeFromS3(user.resume.path);
-        
+        analytics.trackResumeUploaded(
+        user.resume.type || 'application/pdf',
+        content?.length || 0
+      );
         if (!content) {
           throw new Error('No content received from S3');
         }
@@ -135,7 +143,8 @@ const ResumeAnalysis = ({ setStage }) => {
   };
 
   const analyzeResume = async (forceRefresh = false) => {
-  console.log('Starting resume analysis...', {
+const analysisStartTime = Date.now();
+console.log('Starting resume analysis...', {
     hasResumeData: !!resumeData,
     contentLength: resumeData?.content?.length,
     name: resumeData?.name
@@ -331,6 +340,10 @@ const ResumeAnalysis = ({ setStage }) => {
       resumeScore: recommendations.resumeScore || defaultScore,
       actionPlan: recommendations.actionPlan || defaultActionPlan
     };
+    analytics.trackResumeAnalyzed(
+      analysisResult.resumeScore.totalScore,
+      Date.now() - analysisStartTime // if you track start time
+    );
     
     console.log('✅ Analysis result created with fallbacks');
 
