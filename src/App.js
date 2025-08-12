@@ -5,8 +5,10 @@ import InterestSelection from './components/InterestSelection';
 import MainContent from './components/MainContent';
 import AICareerCompass from './pages/AiCareerCompass';
 import ResumeAnalysis from './components/ResumeAnalysis';
+import CreatorProfile from './components/CreatorProfile';
+import SettingsPage from './pages/SettingsPage';
 import { AchievementProvider } from './components/AchievementSystem';
-
+import analytics  from './utils/analytics';
 
 export const UserContext = createContext();
 
@@ -24,14 +26,18 @@ function App() {
 
   // Check authentication status on app load
   useEffect(() => {
-    localStorage.clear();
-  sessionStorage.clear();
+    // localStorage.clear();
+    // sessionStorage.clear();
+    analytics.init();
     checkAuthState();
+    return () => analytics.cleanup();
+
   }, []);
 
   const checkAuthState = async () => {
     try {
       const cognitoUser = await getCurrentUser();
+      // FIX: Corrected the function name to match the import (fetchUserAttributes)
       const userAttributes = await fetchUserAttributes();
       
       // Convert Cognito attributes to user object
@@ -43,7 +49,13 @@ function App() {
       };
       
       setUser(userData);
-      setStage(6); // Go to dashboard if authenticated
+      analytics.setUser(userData.username, {
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName
+    });
+      // Instead of going directly to dashboard, start at the beginning of the flow
+      setStage(1);
     } catch (error) {
       console.log('User is not authenticated');
       setStage(1); // Go to login/signup if not authenticated
@@ -52,46 +64,70 @@ function App() {
     }
   };
 
-  const handleStageComplete = (newData, nextStage) => {
-    // Update user data if provided
-    if (newData) {
-      setUser(prev => ({ ...prev, ...newData }));
+  const handleStageComplete = (data) => {
+    console.log('🎯 Stage completed with data:', data);
+    
+    // ✅ FIX: Update user state with the complete data passed from child component
+    if (data && typeof data === 'object') {
+      console.log('📝 Updating user state with complete data');
+      setUser(prevUser => {
+        const updatedUser = {
+          ...prevUser,
+          ...data  // This now contains all the data from InterestSelection
+        };
+        console.log('👤 User state updated:', updatedUser);
+        return updatedUser;
+      });
     }
-    // Move to next stage
-    setStage(nextStage);
+    
+    // ✅ FIX: Use setStage instead of setCurrentStage
+    setStage(prevStage => {
+      const nextStage = prevStage + 1;
+      console.log(`🚀 Moving from stage ${prevStage} to stage ${nextStage}`);
+      return nextStage;
+    });
   };
-
 
   const handleCareerPathSelect = (path) => {
     setSelectedCareerPath(path);
-    // When a career path is selected, update user data and move to dashboard
+    // When a career path is selected, update user data but stay on the AICareerCompass page
     setUser(prev => ({
       ...prev,
       selectedCareerPath: path
     }));
-    handleStageComplete(null, 6); // Move to dashboard after path selection
+    // Store the selection in session storage for persistence
+    sessionStorage.setItem('selectedCareerPath', JSON.stringify(path));
+    
+    // Removed navigation to dashboard (stage 6)
+    // We'll stay on the AICareerCompass page (stage 5)
   };
 
   const renderContent = () => {
     switch (stage) {
       case 1: // Account Creation
-  return (
-    <OnboardingLayout>
-      <ProfileCreation 
-        onNext={(profileData, isLogin = false) => {
-          // If it's a login and we have a selectedCareerPath, go to dashboard
-          // Otherwise for new accounts or login without career path, continue to interest selection
-          if (isLogin && profileData.selectedCareerPath) {
-            console.log('Login flow - navigating to dashboard');
-            handleStageComplete(profileData, 6); // Go directly to dashboard
-          } else {
-            console.log('Signup flow or login without career path - continuing to interest selection');
-            handleStageComplete(profileData, 3); // Continue to interest selection
-          }
-        }}
-      />
-    </OnboardingLayout>
-  );
+        return (
+          <OnboardingLayout>
+            <ProfileCreation 
+              // The new onNext handler that trusts the decision from the login logic
+              onNext={(profileData, navigation) => {
+                console.log('🎯 App.js received navigation:', { profileData, navigation });
+                
+                // ✅ FIX: Trust the navigation decision made by authUtils/LoginHandler
+                if (navigation && navigation.skipToEnd) {
+                  console.log(`✅ Returning user -> Navigating to stage ${navigation.stage} based on restored state.`);
+                  setUser(prev => ({...prev, ...profileData}));
+                  // Use the stage number provided by the navigation object
+                  setStage(navigation.stage); 
+                } else {
+                  // New user signup - proceed to interest selection
+                  console.log('👤 New user -> Interest Selection (Stage 3)');
+                  setUser(prev => ({...prev, ...profileData}));
+                  setStage(3);
+                }
+              }}
+            />
+          </OnboardingLayout>
+        );
 
       case 2: // Path Selection (Start Your Journey)
         return (
@@ -103,28 +139,20 @@ function App() {
           </OnboardingLayout>
         );
 
-      case 3: // Skills Selection
+      // ✅ FIX: Stage 3 is now the complete Interests & Resume flow
+      case 3: 
         return (
           <OnboardingLayout>
             <InterestSelection
+              // After completing skills/resume, go directly to Career Compass (new stage 4)
               onComplete={(data) => handleStageComplete(data, 4)}
               initialData={user}
             />
           </OnboardingLayout>
         );
 
-      case 4: // Resume Upload
-        return (
-          <OnboardingLayout>
-            <InterestSelection
-              step={2}
-              onComplete={(data) => handleStageComplete(data, 5)}
-              initialData={user}
-            />
-          </OnboardingLayout>
-        );
-
-      case 5: // AI Career Compass
+      // ✅ FIX: Stages are re-numbered. Career Compass is now stage 4.
+      case 4: // AI Career Compass
         return (
           <OnboardingLayout>
             <AICareerCompass
@@ -133,21 +161,21 @@ function App() {
           </OnboardingLayout>
         );
 
-        case 6: // Personalized Dashboard
-        return (
-          <MainContent 
-            userData={user}
-            selectedCareerPath={selectedCareerPath}
-            setStage={setStage}
-          />
-        );
-  
-      case 7: // Resume Analysis
-        return (
-          <OnboardingLayout>
-            <ResumeAnalysis setStage={setStage} />
-          </OnboardingLayout>
-        );
+      // ✅ FIX: Dashboard is now stage 5
+      case 5: 
+        return <MainContent setStage={setStage} />;
+
+      // ✅ FIX: Resume Analysis is now stage 6
+      case 6: 
+        return <ResumeAnalysis setStage={setStage} />;
+
+      // ✅ NEW: Creator Profile is stage 7
+      case 7:
+        return <CreatorProfile setStage={setStage} />;
+
+      // ✅ NEW: Settings Page is stage 8
+      case 8:
+        return <SettingsPage setStage={setStage} />;
 
       default:
         return (
@@ -155,7 +183,7 @@ function App() {
             <div className="text-center p-8">
               <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
               <button 
-                onClick={() => handleStageComplete(null, 1)}
+                onClick={() => setStage(1)}
                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
               >
                 Return Home

@@ -136,7 +136,7 @@ const AchievementNotifications = () => {
         const achievementDetails = ACHIEVEMENTS[achievement] || {
           title: 'Unknown Achievement',
           description: 'An achievement was unlocked',
-          points: 0,
+          points: 50,
           icon: Award
         };
 

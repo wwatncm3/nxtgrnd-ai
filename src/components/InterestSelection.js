@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Compass, ChevronRight, ChevronDown, ChevronUp, X, Search, Check, Upload } from 'lucide-react';
 import { UserContext } from '../App';
 import Papa from 'papaparse';
+import { storageUtils } from '../utils/authUtils';
 
 const CareerInterests = ({ onComplete, initialData = {} }) => {
   const { user, setUser } = useContext(UserContext);
@@ -18,6 +19,9 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
 
   // Pagination constants
   const skillsPerPage = 20;
+
+  // ✅ FIX: State to manage the success message visibility
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   useEffect(() => {
     const fetchSkills = async () => {
@@ -98,105 +102,116 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
     setSelectedSkills((prev) => prev.filter((s) => s !== skill));
   };
 
-  // Updated handleResumeUpload function
-  const handleResumeUpload = async (e) => {
-    const file = e.target.files[0];
-    console.log('Resume upload initiated:', {
-      name: file?.name,
-      type: file?.type,
-      size: file?.size
-    });
-  
-    if (!file) {
-      alert('Please select a file to upload.');
-      return;
-    }
-  
-    // Enhanced file validation
-    const validTypes = {
-      'application/pdf': '.pdf',
-      'application/msword': '.doc',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
-    };
-    
-    if (!validTypes[file.type]) {
-      alert(`Invalid file type. Please upload a PDF, DOC, or DOCX file. Current type: ${file.type}`);
-      return;
-    }
+  // Add a new state variable to track upload loading status
+const [isUploading, setIsUploading] = useState(false);
 
-    // Check file size (10MB limit)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-    if (file.size > MAX_FILE_SIZE) {
-      alert('File size too large. Please upload a file smaller than 10MB.');
-      return;
-    }
-  
-    try {
-      const base64Content = await toBase64(file);
-      console.log('File converted to base64:', {
-        contentLength: base64Content?.length,
-        filename: `${user.userID}/resume/${file.name}`
-      });
-  
-      const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          filename: `${user.userID}/resume/${file.name}`,
-          fileContent: base64Content,
-          fileType: file.type
-        }),
-      });
-  
-      const responseData = await response.json();
-      console.log('Upload response:', {
-        status: response.ok,
-        hasTextract: !!responseData.textractAnalysis
-      });
-  
-      if (response.ok) {
-        const resumeData = {
-          name: file.name,
-          type: file.type,
-          content: base64Content,
-          uploadDate: new Date().toISOString(),
-          path: `${user.userID}/resume/${file.name}`,
-          textract: responseData.textractAnalysis || null
-        };
-  
-        // Store complete resume data in session storage
-        console.log('Storing resume data:', {
-          name: resumeData.name,
-          type: resumeData.type,
-          hasTextract: !!resumeData.textract,
-          path: resumeData.path
-        });
-        
-        sessionStorage.setItem('userResume', JSON.stringify(resumeData));
-  
-        // Update component state
-        setResumeFile(file);
-        setResumeName(file.name);
-        
-        // Update user context
-        setUser(prevUser => ({
-          ...prevUser,
-          resume: resumeData
-        }));
-  
-        console.log('Resume upload and analysis complete');
-        alert('File uploaded and analyzed successfully!');
-      } else {
-        throw new Error(responseData.message || 'Unknown error occurred.');
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload the file. Please try again.');
-    }
+// Then modify the handleResumeUpload function to use this state
+const handleResumeUpload = async (e) => {
+  const file = e.target.files[0];
+  console.log('Resume upload initiated:', {
+    name: file?.name,
+    type: file?.type,
+    size: file?.size
+  });
+
+  if (!file) {
+    // No alert needed if the user cancels the file dialog
+    return;
+  }
+
+  // Enhanced file validation
+  const validTypes = {
+    'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
   };
+  
+  if (!validTypes[file.type]) {
+    alert(`Invalid file type. Please upload a PDF, DOC, or DOCX file. Current type: ${file.type}`);
+    return;
+  }
+
+  // Check file size (10MB limit)
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  if (file.size > MAX_FILE_SIZE) {
+    alert('File size too large. Please upload a file smaller than 10MB.');
+    return;
+  }
+
+  // Set uploading state to true to show loading animation
+  setIsUploading(true);
+
+  try {
+    const base64Content = await toBase64(file);
+    console.log('File converted to base64:', {
+      contentLength: base64Content?.length,
+      filename: `${user.userID}/resume/${file.name}`
+    });
+
+    const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        filename: `${user.userID}/resume/${file.name}`,
+        fileContent: base64Content,
+        fileType: file.type
+      }),
+    });
+
+    const responseData = await response.json();
+    console.log('Upload response:', {
+      status: response.ok,
+      hasTextract: !!responseData.textractAnalysis
+    });
+
+    if (response.ok) {
+      const resumeData = {
+        name: file.name,
+        type: file.type,
+        content: base64Content,
+        uploadDate: new Date().toISOString(),
+        path: `${user.userID}/resume/${file.name}`,
+        textract: responseData.textractAnalysis || null
+      };
+
+      // Store complete resume data in session storage
+      console.log('Storing resume data:', {
+        name: resumeData.name,
+        type: resumeData.type,
+        hasTextract: !!resumeData.textract,
+        path: resumeData.path
+      });
+      
+      storageUtils.setItem('userResume', JSON.stringify(resumeData));
+
+      // Update component state
+      setResumeFile(file);
+      setResumeName(file.name);
+      
+      // Update user context
+      setUser(prevUser => ({
+        ...prevUser,
+        resume: resumeData
+      }));
+
+      // ✅ FIX: Remove alert and set success state instead
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000); // Hide message after 3 seconds
+
+    } else {
+      throw new Error(responseData.message || 'Unknown error occurred.');
+    }
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to upload the file. Please try again.');
+  } finally {
+    // Set uploading state back to false when done (success or error)
+    setIsUploading(false);
+  }
+};
 
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -206,13 +221,18 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
       reader.onerror = (error) => reject(error);
     });
 
-  // Updated handleSubmit function
+  // Add this state
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// Then modify the handleSubmit function
 const handleSubmit = async () => {
-  if (!user || !user.userID) {
-    console.error('UserID is missing');
+  if (isSubmitting || !user || !user.userID) {
+    console.log('Preventing duplicate submission');
     return;
   }
-
+  
+  setIsSubmitting(true);
+  
   console.log('Submitting profile with:', {
     skills: selectedSkills.length,
     experienceLevel,
@@ -250,28 +270,25 @@ const handleSubmit = async () => {
 
     console.log('Preferences saved successfully');
 
-    // Update user context with all data including resume
-    setUser(prevUser => {
-      const updatedUser = {
-        ...prevUser,
-        skills: selectedSkills,
-        experienceLevel,
-        resume: storedResume ? JSON.parse(storedResume) : null
-      };
-      console.log('Updated user context:', updatedUser);
-      return updatedUser;
-    });
-
-    // Complete the flow with all data
-    onComplete({
+    // ✅ FIX: Create the complete updated user data
+    const updatedUserData = {
+      ...user,
       skills: selectedSkills,
       experienceLevel,
       resume: storedResume ? JSON.parse(storedResume) : null
-    });
-    
-    console.log('Profile completion successful');
+    };
+
+    console.log('Passing complete user data to parent:', updatedUserData);
+
+    // ✅ FIX: Pass complete data to parent - let parent handle setUser
+    // Remove the local setUser call and setTimeout
+    onComplete(updatedUserData);
+
   } catch (error) {
-    console.error('Error during profile completion:', error);
+    console.error('Error:', error);
+    alert('Failed to save preferences. Please try again.');
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -396,60 +413,81 @@ const handleSubmit = async () => {
           </div>
         )}
 
-        {step === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Upload Your Resume</h2>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={handleResumeUpload}
-                className="hidden"
-                id="resume-upload"
-              />
-              <label
-                htmlFor="resume-upload"
-                className="cursor-pointer text-blue-600 hover:text-blue-700 flex flex-col items-center"
-              >
-                <Upload className="h-8 w-8 mb-2" />
-                <span className="font-medium">Click to upload your resume</span>
-                <span className="text-sm text-gray-500 mt-1">PDF, DOC, or DOCX</span>
-              </label>
-            </div>
-            
-            {resumeName && (
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="text-green-700">{resumeName}</span>
-                <button
-                  onClick={() => {
-                    setResumeFile(null);
-                    setResumeName('');
-                  }}
-                  className="text-green-700 hover:text-green-800"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
+{step === 2 && (
+  <div className="space-y-6">
+    <h2 className="text-xl font-semibold">Upload Your Resume</h2>
+    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+      <input
+        type="file"
+        accept=".pdf,.doc,.docx"
+        onChange={handleResumeUpload}
+        className="hidden"
+        id="resume-upload"
+        disabled={isUploading}
+      />
+      {isUploading ? (
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-blue-600 font-medium">Uploading & Analyzing Resume...</p>
+          <p className="text-sm text-gray-500 mt-1">This may take a moment</p>
+        </div>
+      ) : (
+        <label
+          htmlFor="resume-upload"
+          className="cursor-pointer text-blue-600 hover:text-blue-700 flex flex-col items-center"
+        >
+          <Upload className="h-8 w-8 mb-2" />
+          <span className="font-medium">Click to upload your resume</span>
+          <span className="text-sm text-gray-500 mt-1">PDF, DOC, or DOCX</span>
+        </label>
+      )}
+    </div>
+    
+    {/* ✅ FIX: Conditionally render success message or file name */}
+    {uploadSuccess ? (
+      <div className="flex items-center justify-center gap-2 p-3 bg-green-100 text-green-800 rounded-lg transition-all">
+        <Check size={20} />
+        <span className="font-medium">Upload Successful!</span>
+      </div>
+    ) : resumeName && !isUploading && (
+      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+        <span className="text-green-700 truncate pr-2">{resumeName}</span>
+        <button
+          onClick={() => {
+            setResumeFile(null);
+            setResumeName('');
+            // ✅ FIX: Ensure resume is cleared from session and context
+            sessionStorage.removeItem('userResume');
+            setUser(prev => ({...prev, resume: null}));
+          }}
+          className="text-green-700 hover:text-green-800 flex-shrink-0"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    )}
 
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(1)}
-                className="flex-1 py-3 rounded-lg border border-gray-300 font-medium
-                         hover:bg-gray-50 transition-all"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex-1 py-3 rounded-lg bg-blue-600 text-white font-semibold
-                         hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
-              >
-                Complete Profile
-              </button>
-            </div>
-          </div>
-        )}
+    <div className="flex gap-4">
+      <button
+        onClick={() => setStep(1)}
+        className="flex-1 py-3 rounded-lg border border-gray-300 font-medium
+                 hover:bg-gray-50 transition-all"
+        disabled={isUploading}
+      >
+        Back
+      </button>
+      <button
+  onClick={handleSubmit}
+  className="flex-1 py-3 rounded-lg bg-blue-600 text-white font-semibold
+           hover:bg-blue-700 shadow-md hover:shadow-lg transition-all
+           disabled:opacity-50 disabled:cursor-not-allowed"
+  disabled={isUploading || isSubmitting}
+>
+  {isSubmitting ? 'Submitting...' : 'Complete Profile'}
+</button>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
