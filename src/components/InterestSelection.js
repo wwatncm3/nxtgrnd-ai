@@ -27,7 +27,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
     const fetchSkills = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${window.location.origin}/skills.csv`);
+        const response = await fetch('/skills.csv');
         const text = await response.text();
 
         Papa.parse(text, {
