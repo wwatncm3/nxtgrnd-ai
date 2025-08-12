@@ -27,7 +27,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
     const fetchSkills = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/skills.csv');
+        const response = await fetch(`${process.env.PUBLIC_URL}/skills.csv`);
         const text = await response.text();
 
         Papa.parse(text, {
@@ -241,7 +241,7 @@ const handleSubmit = async () => {
 
   try {
     // Get resume data from session storage
-    const storedResume = sessionStorage.getItem('userResume');
+    const storedResume = storageUtils.getItem('userResume');
     console.log('Retrieved resume from session storage:', storedResume ? 'Found' : 'Not found');
 
     const preferencesPayload = {
@@ -457,7 +457,7 @@ const handleSubmit = async () => {
             setResumeFile(null);
             setResumeName('');
             // ✅ FIX: Ensure resume is cleared from session and context
-            sessionStorage.removeItem('userResume');
+            storageUtils.removeItem('userResume');
             setUser(prev => ({...prev, resume: null}));
           }}
           className="text-green-700 hover:text-green-800 flex-shrink-0"
