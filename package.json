@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "NxtGrnd AI - AI-powered career development platform",
-  "homepage": "https://github.com/wwatncm3/nxtgrnd-ai",
+  "homepage": ".",
   "repository": {
     "type": "git",
     "url": "https://github.com/wwatncm3/nxtgrnd-ai.git"
