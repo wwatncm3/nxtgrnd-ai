@@ -46,10 +46,14 @@ function OnboardingFlow({ onNext }) {
     <div className="text-center mb-8">
       <div className="inline-flex items-center justify-center mb-4">
   <img 
-    src="ng-logo-2.png" 
-    alt="NxtGrnd AI Logo" 
-    className="w-36 h-36" // Maybe make it slightly bigger without the circle
-  />
+  src={`${process.env.PUBLIC_URL}/ng-logo-2.png`}
+  alt="NxtGrnd AI Logo" 
+  className="w-36 h-36"
+  onError={(e) => {
+    console.log('Logo failed to load:', e.target.src);
+    e.target.style.display = 'none'; // Hide broken image
+  }}
+/>
 </div>
       <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to NxtGrnd AI</h2>
       <p className="text-gray-600 text-lg mb-8">Your AI-powered career development platform</p>
