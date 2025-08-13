@@ -1,7 +1,18 @@
 {
-  "name": "careerday",
+  "name": "nxtgrnd-ai",
   "version": "0.1.0",
   "private": true,
+  "description": "NxtGrnd AI - AI-powered career development platform",
+  "homepage": "https://github.com/wwatncm3/nxtgrnd-ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wwatncm3/nxtgrnd-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wwatncm3/nxtgrnd-ai/issues"
+  },
+  "keywords": ["react", "career", "ai", "development", "nxtgrnd"],
+  "author": "Will Walton",
   "dependencies": {
     "@aws-amplify/auth": "^6.10.1",
     "@aws-amplify/core": "^6.9.2",

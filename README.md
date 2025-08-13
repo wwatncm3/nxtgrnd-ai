@@ -1,6 +1,6 @@
-# CareerDay
+# NxtGrnd AI
 
-CareerDay: A platform showcasing predictive career pathways using AI-driven analysis. Helps students and professionals visualize their career goals, explore future scenarios, and build actionable steps for success.
+NxtGrnd AI: An AI-powered career development platform that provides predictive career pathways using advanced AI-driven analysis. Helps students and professionals visualize their career goals, explore future scenarios, and build actionable steps for success with personalized guidance and intelligent recommendations.
 
 ---
 
