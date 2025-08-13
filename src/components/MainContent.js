@@ -1049,18 +1049,22 @@ useEffect(() => {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
       <header className="bg-white border-b sticky top-0 z-50">
-        <div className="flex items-center px-4 h-16">
-          <button
-            id="mobile-menu-button"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
-          >
-            <Menu size={24} />
-          </button>
+  <div className="flex items-center px-4 h-16">
+    <button
+      id="mobile-menu-button"
+      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+    >
+      <Menu size={24} />
+    </button>
 
-          <div className="flex items-center ml-2 lg:ml-4">
-            <span className="text-lg sm:text-xl font-bold text-blue-600">NxtGrnd AI</span>
-          </div>
+    <div className="flex items-center ml-2 lg:ml-4">
+      <img 
+        src="/nxtgrnd_full_logo_2.png" 
+        alt="NxtGrnd AI Logo" 
+        className="h-32 sm:h-40 lg:h-48 w-auto"
+      />
+    </div>
 
           {/* Enhanced Search - Hidden on small mobile, shown on tablet+ */}
           <div className="hidden sm:flex flex-1 max-w-2xl mx-4">
