@@ -222,11 +222,11 @@ const CreatorProfile = ({ setStage }) => {
             
             <div className="flex items-center space-x-3">
               {saveSuccess && (
-                <div className="flex items-center text-green-600 text-sm">
-                  <Check size={16} className="mr-1" />
-                  Saved!
-                </div>
-              )}
+  <div className="flex items-center text-green-600 text-sm">
+    <Check size={16} className="mr-1" />
+    Saved!
+  </div>
+)}
               
               {isEditing ? (
                 <div className="flex space-x-2">
@@ -245,12 +245,12 @@ const CreatorProfile = ({ setStage }) => {
                 </div>
               ) : (
                 <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Edit3 size={16} className="mr-2" />
-                  Edit Profile
-                </button>
+  onClick={() => setIsEditing(true)}
+  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+>
+  <Edit3 size={16} className="mr-2" />
+  Edit Profile
+</button>
               )}
             </div>
           </div>
@@ -291,9 +291,9 @@ const CreatorProfile = ({ setStage }) => {
                 
                 {user?.selectedCareerPath && (
                   <div className="mt-3">
-                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                      {user.selectedCareerPath.title}
-                    </span>
+                    <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+  {user.selectedCareerPath.title}
+</span>
                   </div>
                 )}
               </div>
@@ -480,12 +480,12 @@ const CreatorProfile = ({ setStage }) => {
                 <h3 className="text-lg font-semibold text-gray-900">Portfolio & Projects</h3>
                 {isEditing && (
                   <button
-                    onClick={addPortfolioItem}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Item
-                  </button>
+  onClick={addPortfolioItem}
+  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+>
+  <Plus size={16} className="mr-2" />
+  Add Item
+</button>
                 )}
               </div>
               

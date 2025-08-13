@@ -462,13 +462,13 @@ console.log('Starting resume analysis...', {
               <h2 className="text-2xl font-bold text-gray-900">Overall Resume Score</h2>
             </div>
             <div className={`text-3xl font-bold ${
-              analysis.resumeScore.totalScore >= 90 ? 'text-green-600' :
-              analysis.resumeScore.totalScore >= 80 ? 'text-green-500' :
-              analysis.resumeScore.totalScore >= 70 ? 'text-yellow-600' :
-              'text-red-600'
-            }`}>
-              {analysis.resumeScore.totalScore}/100
-            </div>
+  analysis.resumeScore.totalScore >= 90 ? 'text-green-600' :
+  analysis.resumeScore.totalScore >= 80 ? 'text-green-500' :
+  analysis.resumeScore.totalScore >= 70 ? 'text-orange-600' :
+  'text-red-600'
+}`}>
+  {analysis.resumeScore.totalScore}/100
+</div>
           </div>
   
           <div className="bg-gray-50 rounded-lg p-4">
@@ -479,10 +479,10 @@ console.log('Starting resume analysis...', {
                   <div className="w-1/3 text-gray-700">{category.category}</div>
                   <div className="w-2/3">
                     <div className="bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-blue-600 rounded-full h-2.5" 
-                        style={{width: `${(category.score / category.maxPoints) * 100}%`}}
-                      ></div>
+                      <div className="bg-green-600 rounded-full h-2.5" 
+     style={{width: `${(category.score / category.maxPoints) * 100}%`}}
+></div>
+
                     </div>
                   </div>
                 </div>
@@ -516,12 +516,12 @@ console.log('Starting resume analysis...', {
                     <h3 className="font-semibold text-gray-900">{plan.title}</h3>
                   </div>
                   <span className={`text-sm font-medium ${
-                    plan.priority === 'High' ? 'text-red-600' :
-                    plan.priority === 'Medium' ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`}>
-                    {plan.priority} Priority
-                  </span>
+  plan.priority === 'High' ? 'text-orange-600' :
+  plan.priority === 'Medium' ? 'text-orange-500' :
+  'text-green-600'
+}`}>
+  {plan.priority} Priority
+</span>
                 </div>
                 <p className="text-gray-700 mb-2">{plan.description}</p>
                 <ul className="list-disc list-inside text-gray-600">

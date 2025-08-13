@@ -847,11 +847,11 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                AI Career Compass™
-              </h1>
-              <p className="text-gray-600 mt-1">
-                AI-Powered career insights and personalized guidance
-              </p>
+  AI Career Compass™
+</h1>
+<p className="text-gray-600 mt-1">
+  AI-Powered career insights and personalized guidance
+</p>
             </div>
           </div>
         </div>
@@ -887,13 +887,13 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                 </div>
                 {/* Add refresh button next to title */}
                 <button
-                  onClick={handleRefreshRecommendations}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
+  onClick={handleRefreshRecommendations}
+  disabled={isRefreshing}
+  className="flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+>
+  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+  Refresh
+</button>
               </div>
               
               <div className="space-y-4">
@@ -1094,7 +1094,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
       <div className="bg-blue-50 p-4 rounded-lg">
         <h4 className="font-medium mb-2">Growth Rate</h4>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-blue-600">
+          <span className="text-2xl font-bold text-green-600">
             {selectedPath.marketData?.growthRate ? 
               // Check if growthRate already includes % symbol
               (selectedPath.marketData.growthRate.toString().includes('%') ? 
@@ -1298,8 +1298,8 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                       // Progress to dashboard
                       handleStageChange(5);
                     }}
-                    className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
+                     className="w-full mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+>
                     Select This Path
                   </button>
                 </div>

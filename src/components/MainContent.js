@@ -557,7 +557,7 @@ const MainContent = ({ setStage }) => {
           learningPaths.push({
             title: `${selectedCareerPath.title} Core Skills`,
             progress: 0,
-            provider: "CareerDay Pro",
+            provider: "NxtGrnd AI Pro",
             nextLesson: "Fundamentals",
             description: mainPath.description || "Master the essential skills required for your role",
             skills: mainPath.requiredSkills || [],
@@ -585,7 +585,7 @@ const MainContent = ({ setStage }) => {
           learningPaths.push({
             title: "Professional Development",
             progress: 0,
-            provider: "CareerDay Pro",
+            provider: "NxtGrnd AI Pro",
             nextLesson: "Industry Standards",
             description: "Enhance your professional capabilities",
             resources: [
@@ -651,7 +651,7 @@ const MainContent = ({ setStage }) => {
       return [{
         title: `${selectedCareerPath.title} Fundamentals`,
         progress: 0,
-        provider: "CareerDay Pro",
+        provider: "NxtGrnd AI Pro",
         nextLesson: "Introduction to " + selectedCareerPath.title,
         description: `Essential skills and knowledge for ${selectedCareerPath.title}`,
         resources: [
@@ -872,58 +872,96 @@ const MainContent = ({ setStage }) => {
   };
 
   useEffect(() => {
-    if (!user?.selectedCareerPath && user?.userID) {
-      console.log('No career path found, redirecting to Career Compass');
-      setStage(4);
-      return;
-    }
+  console.log('useEffect triggered with:', {
+    userCareerPath: user?.selectedCareerPath?.title,
+    userId: user?.userID,
+    lastCareerPathTitle: lastCareerPath?.title,
+    selectedCareerPathTitle: selectedCareerPath?.title
+  });
 
-    const currentCareerPathId = selectedCareerPath?.id || selectedCareerPath?.title;
-    const lastCareerPathId = lastCareerPath?.id || lastCareerPath?.title;
+  // If no career path selected, redirect to Career Compass
+  if (!user?.selectedCareerPath && user?.userID) {
+    console.log('No career path found, redirecting to Career Compass');
+    setStage(4);
+    return;
+  }
+
+  // Early return if no user or career path
+  if (!user?.userID || !selectedCareerPath) {
+    console.log('Missing user ID or career path, skipping load');
+    setIsDashboardLoading(false);
+    return;
+  }
+
+  const currentCareerPathId = selectedCareerPath?.id || selectedCareerPath?.title;
+  const lastCareerPathId = lastCareerPath?.id || lastCareerPath?.title;
+  
+  console.log('Career path comparison:', {
+    current: currentCareerPathId,
+    last: lastCareerPathId,
+    isChange: currentCareerPathId !== lastCareerPathId,
+    isFirstLoad: lastCareerPath === null
+  });
+
+  // Check if career path has changed (but not on first load when lastCareerPath is null)
+  if (lastCareerPath !== null && currentCareerPathId !== lastCareerPathId) {
+    console.log('Career path changed, forcing refresh:', {
+      from: lastCareerPathId,
+      to: currentCareerPathId
+    });
     
-    if (currentCareerPathId !== lastCareerPathId && lastCareerPath !== null) {
-      console.log('Career path changed, forcing refresh:', {
-        from: lastCareerPathId,
-        to: currentCareerPathId
-      });
-      
-      setPersonalizedLearningPaths([]);
-      setPersonalizedOpportunities([]);
-      setPersonalizedGoals([]);
-      setPersonalizedEvents([]);
-      
-      loadPersonalizedContent(true);
-      return;
-    }
-
-    const loadContent = () => {
-      const storedDashboard = getDashboardFromSession(user?.userID, selectedCareerPath);
-      if (storedDashboard) {
-        console.log('Restoring dashboard data from session storage');
-        setPersonalizedLearningPaths(storedDashboard.learningPaths || []);
-        setPersonalizedOpportunities(storedDashboard.opportunities || []);
-        setPersonalizedGoals(storedDashboard.goals || []);
-        setPersonalizedEvents(storedDashboard.events || []);
-
-        setIsDashboardLoading(false);
-        setIsLearningPathsLoading(false);
-        setIsOpportunitiesLoading(false);
-        setIsGoalsLoading(false);
-        setIsEventsLoading(false);
-        
-        setLastCareerPath(selectedCareerPath);
-        
-      } else if (user?.selectedCareerPath) {
-        console.log('Career path found, loading fresh personalized content');
-        loadPersonalizedContent();
-      } else {
-        setIsDashboardLoading(false);
-      }
-    };
-
-    loadContent();
+    // Clear existing data
+    setPersonalizedLearningPaths([]);
+    setPersonalizedOpportunities([]);
+    setPersonalizedGoals([]);
+    setPersonalizedEvents([]);
     
-  }, [user?.selectedCareerPath, user?.userID, selectedCareerPath]);
+    // Update last career path immediately
+    setLastCareerPath(selectedCareerPath);
+    
+    // Force refresh
+    loadPersonalizedContent(true);
+    return;
+  }
+
+  // Check for existing dashboard data
+  const storedDashboard = getDashboardFromSession(user.userID, selectedCareerPath);
+  
+  if (storedDashboard) {
+    console.log('Restoring dashboard data from session storage');
+    setPersonalizedLearningPaths(storedDashboard.learningPaths || []);
+    setPersonalizedOpportunities(storedDashboard.opportunities || []);
+    setPersonalizedGoals(storedDashboard.goals || []);
+    setPersonalizedEvents(storedDashboard.events || []);
+
+    // Update loading states
+    setIsDashboardLoading(false);
+    setIsLearningPathsLoading(false);
+    setIsOpportunitiesLoading(false);
+    setIsGoalsLoading(false);
+    setIsEventsLoading(false);
+    
+    // Set last career path if this is the first load
+    if (lastCareerPath === null) {
+      setLastCareerPath(selectedCareerPath);
+    }
+  } else {
+    console.log('No stored dashboard found, loading fresh content');
+    // Set last career path before loading
+    setLastCareerPath(selectedCareerPath);
+    loadPersonalizedContent(false);
+  }
+  
+}, [user?.selectedCareerPath, user?.userID]); // Removed lastCareerPath from dependencies
+
+// Add a separate useEffect to handle career path initialization
+useEffect(() => {
+  // Initialize lastCareerPath on component mount if it's not set
+  if (lastCareerPath === null && selectedCareerPath) {
+    console.log('Initializing lastCareerPath on mount:', selectedCareerPath.title);
+    setLastCareerPath(selectedCareerPath);
+  }
+}, []); // Empty dependency array for one-time initialization
 
   if (isDashboardLoading) {
     return (
@@ -1021,7 +1059,7 @@ const MainContent = ({ setStage }) => {
           </button>
 
           <div className="flex items-center ml-2 lg:ml-4">
-            <span className="text-lg sm:text-xl font-bold text-blue-600">CareerDay</span>
+            <span className="text-lg sm:text-xl font-bold text-blue-600">NxtGrnd AI</span>
           </div>
 
           {/* Enhanced Search - Hidden on small mobile, shown on tablet+ */}
@@ -1347,7 +1385,7 @@ const MainContent = ({ setStage }) => {
                                 <div className="mb-4">
                                   <div className="w-full bg-gray-100 rounded-full h-2.5">
                                     <div
-                                      className="bg-blue-600 rounded-full h-2.5 transition-all duration-300"
+                                      className="bg-green-600 rounded-full h-2.5 transition-all duration-300"
                                       style={{ width: `${courseProgress[originalIndex] || course.progress || 0}%` }}
                                     />
                                   </div>
@@ -1425,12 +1463,12 @@ const MainContent = ({ setStage }) => {
                                   </div>
                                   
                                   {(courseProgress[originalIndex] || 0) === 100 ? (
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm">
-                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                      Completed!
-                                    </div>
+  <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm">
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+    </svg>
+    Completed!
+  </div>
                                   ) : (
                                     <button 
                                       onClick={() => {
@@ -1445,8 +1483,7 @@ const MainContent = ({ setStage }) => {
                                           }
                                         }
                                       }}
-                                      className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm"
-                                    >
+                                      className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors text-sm">
                                       Continue Learning
                                     </button>
                                   )}
@@ -1537,7 +1574,7 @@ const MainContent = ({ setStage }) => {
                                     </div>
                                   </div>
                                   <div className="w-full sm:w-auto sm:ml-4">
-                                    <span className="inline-block px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium w-full sm:w-auto text-center">
+                                    <span className="inline-block px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium w-full sm:w-auto text-center">
                                       {opp.matchScore}% Match
                                     </span>
                                   </div>
@@ -1555,7 +1592,7 @@ const MainContent = ({ setStage }) => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => analytics.trackJobApplicationClick(opp.role, 'LinkedIn')}
-                                    className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center justify-center gap-1 text-sm"
+                                    className="flex-1 px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors inline-flex items-center justify-center gap-1 text-sm"
                                   >
                                     LinkedIn
                                     <ChevronRight className="h-4 w-4" />
@@ -1565,7 +1602,7 @@ const MainContent = ({ setStage }) => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => analytics.trackJobApplicationClick(opp.role, 'Indeed')}
-                                    className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center justify-center gap-1 text-sm"
+                                    className="flex-1 px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors inline-flex items-center justify-center gap-1 text-sm"
                                   >
                                     Indeed
                                     <ChevronRight className="h-4 w-4" />
@@ -1575,7 +1612,7 @@ const MainContent = ({ setStage }) => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={() => analytics.trackJobApplicationClick(opp.role, 'Handshake')}
-                                    className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center justify-center gap-1 text-sm"
+                                    className="flex-1 px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors inline-flex items-center justify-center gap-1 text-sm"
                                   >
                                     Handshake
                                     <ChevronRight className="h-4 w-4" />

@@ -266,8 +266,8 @@ const handleSubmit = async () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6 flex items-center justify-center">
       <div className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <h1 className="text-3xl font-bold text-center">CareerDay</h1>
-        </div>
+  <h1 className="text-3xl font-bold text-center">NxtGrnd AI</h1>
+</div>
         <p className="text-gray-600 text-center mb-8">
           Help us understand your interests to personalize your career journey
         </p>
@@ -280,18 +280,18 @@ const handleSubmit = async () => {
     <div className="flex flex-wrap gap-2 min-h-[40px]">
       {selectedSkills.map((skill, index) => (
         <span
-          key={`selected-${skill}-${index}`}
-          className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full flex items-center
-                   border border-blue-100 hover:bg-blue-100 transition-colors"
-        >
-          {skill}
-          <button
-            onClick={() => handleSkillRemove(skill)}
-            className="ml-2 hover:text-blue-800 focus:outline-none"
-          >
-            <X size={14} />
-          </button>
-        </span>
+  key={`selected-${skill}-${index}`}
+  className="px-3 py-1.5 bg-green-50 text-green-700 rounded-full flex items-center
+           border border-green-100 hover:bg-green-100 transition-colors"
+>
+  {skill}
+  <button
+    onClick={() => handleSkillRemove(skill)}
+    className="ml-2 hover:text-green-800 focus:outline-none"
+  >
+    <X size={14} />
+  </button>
+</span>
       ))}
     </div>
 
@@ -332,19 +332,19 @@ const handleSubmit = async () => {
         {/* Add custom skill button */}
         {searchTerm.trim() && !selectedSkills.includes(searchTerm.trim()) && (
           <button
-            onClick={() => {
-              const trimmedSkill = searchTerm.trim();
-              if (trimmedSkill) {
-                setSelectedSkills((prev) => [...prev, trimmedSkill]);
-                setSearchTerm('');
-                setIsDropdownOpen(false);
-              }
-            }}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 
-                     bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-          >
-            Add
-          </button>
+  onClick={() => {
+    const trimmedSkill = searchTerm.trim();
+    if (trimmedSkill) {
+      setSelectedSkills((prev) => [...prev, trimmedSkill]);
+      setSearchTerm('');
+      setIsDropdownOpen(false);
+    }
+  }}
+  className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 
+           bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+>
+  Add
+</button>
         )}
       </div>
 
@@ -450,15 +450,15 @@ const handleSubmit = async () => {
     </div>
 
     <button
-      onClick={() => setStep(2)}
-      disabled={selectedSkills.length === 0}
-      className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold 
-               hover:bg-blue-700 shadow-md hover:shadow-lg transition-all 
-               flex items-center justify-center gap-2 disabled:opacity-50
-               disabled:cursor-not-allowed"
-    >
-      Next Step <ChevronRight size={20} />
-    </button>
+  onClick={() => setStep(2)}
+  disabled={selectedSkills.length === 0}
+  className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold 
+           hover:bg-blue-700 shadow-md hover:shadow-lg transition-all 
+           flex items-center justify-center gap-2 disabled:opacity-50
+           disabled:cursor-not-allowed"
+>
+  Next Step <ChevronRight size={20} />
+</button>
   </div>
 )}
 

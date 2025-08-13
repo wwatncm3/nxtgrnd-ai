@@ -42,40 +42,45 @@ function OnboardingFlow({ onNext }) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   // New Landing Page Component
   const renderLandingPage = () => (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center p-3 bg-blue-100 rounded-full mb-6">
-          <Compass className="w-12 h-12 text-blue-600" />
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to CareerDay</h2>
-        <p className="text-gray-600 text-lg mb-8">Your AI-powered career development platform</p>
-      </div>
-
-      <div className="space-y-4">
-        <button
-          onClick={() => setView('signup')}
-          className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg 
-                   hover:bg-blue-700 focus:outline-none focus:ring-2 
-                   focus:ring-blue-500 focus:ring-offset-2 text-lg"
-        >
-          Get Started
-        </button>
-        
-        <button
-          onClick={() => setView('login')}
-          className="w-full py-3 px-4 border-2 border-blue-600 text-blue-600 
-                   rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 
-                   focus:ring-blue-500 focus:ring-offset-2 text-lg"
-        >
-          Sign In
-        </button>
-      </div>
-
-      <p className="text-center text-gray-500 mt-6">
-        Join thousands of professionals advancing their careers
-      </p>
+  <div className="space-y-8">
+    <div className="text-center mb-8">
+      <div className="inline-flex items-center justify-center mb-4">
+  <img 
+    src="/ng-logo.png" 
+    alt="NxtGrnd AI Logo" 
+    className="w-36 h-36" // Maybe make it slightly bigger without the circle
+  />
+</div>
+      <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to NxtGrnd AI</h2>
+      <p className="text-gray-600 text-lg mb-8">Your AI-powered career development platform</p>
     </div>
-  );
+
+    <div className="space-y-4">
+      <button
+        onClick={() => setView('signup')}
+        className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg 
+                 hover:bg-blue-700 focus:outline-none focus:ring-2 
+                 focus:ring-blue-500 focus:ring-offset-2 text-lg"
+      >
+        Get Started
+      </button>
+      
+      <button
+        onClick={() => setView('login')}
+        className="w-full py-3 px-4 border-2 border-blue-600 text-blue-600 
+                 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 
+                 focus:ring-blue-500 focus:ring-offset-2 text-lg"
+      >
+        Sign In
+      </button>
+    </div>
+
+    <p className="text-center text-gray-500 mt-6">
+      Join thousands of professionals advancing their careers
+    </p>
+  </div>
+);
+
 
   // Navigation options for AI Career Compass
   const navigationOptions = {
@@ -211,93 +216,93 @@ function OnboardingFlow({ onNext }) {
     
   }
   function PasswordRequirements({ password }) {
-    const requirements = [
-      {
-        id: 'length',
-        label: 'At least 8 characters',
-        test: (pwd) => pwd.length >= 8
-      },
-      {
-        id: 'lowercase',
-        label: 'One lowercase letter (a-z)',
-        test: (pwd) => /[a-z]/.test(pwd)
-      },
-      {
-        id: 'uppercase',
-        label: 'One uppercase letter (A-Z)',
-        test: (pwd) => /[A-Z]/.test(pwd)
-      },
-      {
-        id: 'number',
-        label: 'One number (0-9)',
-        test: (pwd) => /\d/.test(pwd)
-      },
-      {
-        id: 'special',
-        label: 'One special character (@$!%*?&)',
-        test: (pwd) => /[@$!%*?&]/.test(pwd)
-      }
-    ];
+  const requirements = [
+    {
+      id: 'length',
+      label: 'At least 8 characters',
+      test: (pwd) => pwd.length >= 8
+    },
+    {
+      id: 'lowercase',
+      label: 'One lowercase letter (a-z)',
+      test: (pwd) => /[a-z]/.test(pwd)
+    },
+    {
+      id: 'uppercase',
+      label: 'One uppercase letter (A-Z)',
+      test: (pwd) => /[A-Z]/.test(pwd)
+    },
+    {
+      id: 'number',
+      label: 'One number (0-9)',
+      test: (pwd) => /\d/.test(pwd)
+    },
+    {
+      id: 'special',
+      label: 'One special character (@$!%*?&)',
+      test: (pwd) => /[@$!%*?&]/.test(pwd)
+    }
+  ];
 
-    const isPasswordValid = password ? (/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) : false;
-    const validCount = requirements.filter(req => req.test(password || '')).length;
+  const isPasswordValid = password ? (/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) : false;
+  const validCount = requirements.filter(req => req.test(password || '')).length;
 
-    return (
-      <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-gray-700">Password Requirements:</p>
-          {isPasswordValid && (
-            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-              ✓ Valid
-            </span>
-          )}
-        </div>
-        
-        <div className="space-y-1">
-          {requirements.map((req) => {
-            const isValid = password ? req.test(password) : false;
-            return (
-              <div
-                key={req.id}
-                className={`flex items-center text-xs transition-colors ${
-                  isValid ? 'text-green-600' : 'text-gray-500'
-                }`}
-              >
-                <div className={`mr-2 w-4 h-4 rounded-full flex items-center justify-center ${
-                  isValid 
-                    ? 'bg-green-100 text-green-600' 
-                    : 'bg-gray-200 text-gray-400'
-                }`}>
-                  {isValid ? '✓' : '○'}
-                </div>
-                <span className={isValid ? 'line-through' : ''}>{req.label}</span>
+  return (
+    <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-gray-700">Password Requirements:</p>
+        {isPasswordValid && (
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+            ✓ Valid
+          </span>
+        )}
+      </div>
+      
+      <div className="space-y-1">
+        {requirements.map((req) => {
+          const isValid = password ? req.test(password) : false;
+          return (
+            <div
+              key={req.id}
+              className={`flex items-center text-xs transition-colors ${
+                isValid ? 'text-green-600' : 'text-gray-500'
+              }`}
+            >
+              <div className={`mr-2 w-4 h-4 rounded-full flex items-center justify-center ${
+                isValid 
+                  ? 'bg-green-100 text-green-600' 
+                  : 'bg-gray-200 text-gray-400'
+              }`}>
+                {isValid ? '✓' : '○'}
               </div>
-            );
-          })}
-        </div>
-        
-        <div className="mt-2 pt-2 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-600">Status:</span>
-            <span className={`text-xs font-medium ${
-              isPasswordValid 
-                ? 'text-green-600' 
-                : validCount === 0 
-                ? 'text-gray-400' 
-                : 'text-amber-600'
-            }`}>
-              {isPasswordValid 
-                ? '✓ Meets all requirements' 
-                : validCount === 0 
-                ? 'Enter password' 
-                : `${validCount}/5 requirements met`
-              }
-            </span>
-          </div>
+              <span className={isValid ? 'line-through' : ''}>{req.label}</span>
+            </div>
+          );
+        })}
+      </div>
+      
+      <div className="mt-2 pt-2 border-t border-gray-200">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-600">Status:</span>
+          <span className={`text-xs font-medium ${
+            isPasswordValid 
+              ? 'text-green-600' 
+              : validCount === 0 
+              ? 'text-gray-400' 
+              : 'text-orange-600'
+          }`}>
+            {isPasswordValid 
+              ? '✓ Meets all requirements' 
+              : validCount === 0 
+              ? 'Enter password' 
+              : `${validCount}/5 requirements met`
+            }
+          </span>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
   
   const isValidPassword = (password) => {
     const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -626,7 +631,7 @@ const handleResendCode = async () => {
         <User className="w-8 h-8 text-blue-500" />
       </div>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Your Account</h2>
-      <p className="text-gray-600">Set up your CareerDay profile to get started</p>
+      <p className="text-gray-600">Set up your NxtGrnd AI profile to get started</p>
     </div>
 
     {errors.accountStep && (
@@ -723,52 +728,52 @@ const handleResendCode = async () => {
         )}
       </div>
 
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700">Password *</label>
-        <div className="relative">
-          <input
-            type="password"
-            value={formData.password}
-            onChange={(e) => handleSelectionCard('password', e.target.value)}
-            className={`mt-1 block w-full rounded-lg border px-3 py-2 pr-10
-                      focus:ring-1 transition-colors ${
-                        formData.password && isValidPassword(formData.password)
-                          ? 'border-green-300 focus:border-green-500 focus:ring-green-500 bg-green-50'
-                          : formData.password && formData.password.length > 0
-                          ? 'border-amber-300 focus:border-amber-500 focus:ring-amber-500'
-                          : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                      }`}
-            placeholder="Create a strong password"
-            required
-          />
-          
-          {/* Success checkmark when password is valid */}
-          {formData.password && isValidPassword(formData.password) && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">✓</span>
-              </div>
-            </div>
-          )}
+     <div className="md:col-span-2">
+  <label className="block text-sm font-medium text-gray-700">Password *</label>
+  <div className="relative">
+    <input
+      type="password"
+      value={formData.password}
+      onChange={(e) => handleSelectionCard('password', e.target.value)}
+      className={`mt-1 block w-full rounded-lg border px-3 py-2 pr-10
+                focus:ring-1 transition-colors ${
+                  formData.password && isValidPassword(formData.password)
+                    ? 'border-green-300 focus:border-green-500 focus:ring-green-500 bg-green-50'
+                    : formData.password && formData.password.length > 0
+                    ? 'border-orange-300 focus:border-orange-500 focus:ring-orange-500'
+                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                }`}
+      placeholder="Create a strong password"
+      required
+    />
+    
+    {/* Success checkmark when password is valid */}
+    {formData.password && isValidPassword(formData.password) && (
+      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+          <span className="text-white text-xs font-bold">✓</span>
         </div>
-        
-        {/* Show password requirements when user starts typing */}
-        {formData.password && formData.password.length > 0 && (
-          <PasswordRequirements password={formData.password} />
-        )}
-        
-        {/* Show static hint when password field is empty */}
-        {(!formData.password || formData.password.length === 0) && (
-          <p className="text-xs text-gray-500 mt-1">
-            Must contain at least 8 characters, uppercase letter, number, and special character
-          </p>
-        )}
-        
-        {/* Show validation errors */}
-        {errors.password && (
-          <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-        )}
       </div>
+    )}
+  </div>
+  
+  {/* Show password requirements when user starts typing */}
+  {formData.password && formData.password.length > 0 && (
+    <PasswordRequirements password={formData.password} />
+  )}
+  
+  {/* Show static hint when password field is empty */}
+  {(!formData.password || formData.password.length === 0) && (
+    <p className="text-xs text-gray-500 mt-1">
+      Must contain at least 8 characters, uppercase letter, number, and special character
+    </p>
+  )}
+  
+  {/* Show validation errors */}
+  {errors.password && (
+    <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+  )}
+</div>
     </div>
     
     {/* REMOVED: Problematic back button that was causing issues */}
@@ -817,46 +822,45 @@ const renderBottomNavigation = () => {
       {/* Next/Submit Button Logic */}
       <div>
         {currentSection === 'account' && (
-  <div className="flex flex-col items-end">
-    <button
-      onClick={handleNext}
-      disabled={
-        !formData.firstName || 
-        !formData.lastName || 
-        !formData.email || 
-        !formData.username || 
-        !formData.password ||
-        !isValidPassword(formData.password)  // ← ADD THIS LINE
-      }
-      className={`px-6 py-2 rounded-lg transition-colors font-medium ${
-        (!formData.firstName || 
-         !formData.lastName || 
-         !formData.email || 
-         !formData.username || 
-         !formData.password ||
-         !isValidPassword(formData.password))
-          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          : 'bg-blue-600 text-white hover:bg-blue-700'
-      }`}
-    >
-      Create Account
-    </button>
-    
-    {/* Show helpful message when password is invalid */}
-    {formData.password && 
-     formData.password.length > 0 && 
-     !isValidPassword(formData.password) && (
-      <p className="text-xs text-amber-600 mt-1 text-right">
-        Complete password requirements to continue
-      </p>
-    )}
-  </div>
-)}
+          <div className="flex flex-col items-end">
+            <button
+              onClick={handleNext}
+              disabled={
+                !formData.firstName || 
+                !formData.lastName || 
+                !formData.email || 
+                !formData.username || 
+                !formData.password ||
+                !isValidPassword(formData.password)
+              }
+              className={`px-6 py-2 rounded-lg transition-colors font-medium ${
+                (!formData.firstName || 
+                 !formData.lastName || 
+                 !formData.email || 
+                 !formData.username || 
+                 !formData.password ||
+                 !isValidPassword(formData.password))
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              Create Account
+            </button>
+            
+            {formData.password && 
+             formData.password.length > 0 && 
+             !isValidPassword(formData.password) && (
+              <p className="text-xs text-orange-600 mt-1 text-right">
+                Complete password requirements to continue
+              </p>
+            )}
+          </div>
+        )}
         {currentSection === 'compass' && (
           <button
             onClick={handleNext}
             disabled={!formData.pathType || !formData.careerStage || !formData.primaryGoal}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
                      transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Complete Setup
@@ -1038,7 +1042,7 @@ return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">CareerDay</h1>
+          {/* <h1 className="text-3xl font-bold text-gray-900">NxtGrnd AI</h1> */}
         </div>
 
         {view === 'landing' && renderLandingPage()}
@@ -1049,7 +1053,6 @@ return (
              currentSection === 'compass' ? renderCompassSection() :
              renderAccountSection()}
             
-            {/* USE THE NEW NAVIGATION FUNCTION */}
             {renderBottomNavigation()}
           </>
         )}

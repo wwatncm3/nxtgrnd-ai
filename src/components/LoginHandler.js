@@ -104,14 +104,33 @@ export const useLoginHandler = () => {
 
       // Step 6: Merge stored data with base user data
       const completeUserData = {
-        ...baseUserData,
-        ...storedState.preferences,
-        // ✅ FIX: Correctly add the restored career path and resume to the user object
-        selectedCareerPath: storedState.careerPath,
-        resume: storedState.resume
-      };
+  ...baseUserData,
+  ...storedState.preferences
+};
 
-      console.log('🔄 Complete user data:', completeUserData);
+// ✅ Parse and add selectedCareerPath if it exists
+if (storedState.careerPath) {
+  try {
+    completeUserData.selectedCareerPath = typeof storedState.careerPath === 'string' 
+      ? JSON.parse(storedState.careerPath) 
+      : storedState.careerPath;
+    console.log('✅ Added selectedCareerPath to user data:', completeUserData.selectedCareerPath?.title);
+  } catch (error) {
+    console.error('❌ Error parsing stored career path:', error);
+  }
+}
+
+// ✅ Parse and add resume if it exists
+if (storedState.resume) {
+  try {
+    completeUserData.resume = typeof storedState.resume === 'string' 
+      ? JSON.parse(storedState.resume) 
+      : storedState.resume;
+    console.log('✅ Added resume to user data');
+  } catch (error) {
+    console.error('❌ Error parsing stored resume:', error);
+  }
+}
 
       // Step 7: Update user context FIRST
       setUser(completeUserData);
