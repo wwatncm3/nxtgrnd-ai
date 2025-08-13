@@ -11,7 +11,13 @@
   "bugs": {
     "url": "https://github.com/wwatncm3/nxtgrnd-ai/issues"
   },
-  "keywords": ["react", "career", "ai", "development", "nxtgrnd"],
+  "keywords": [
+    "react",
+    "career",
+    "ai",
+    "development",
+    "nxtgrnd"
+  ],
   "author": "Will Walton",
   "dependencies": {
     "@aws-amplify/auth": "^6.10.1",
@@ -63,6 +69,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49"
+    "postcss": "^8.4.49",
+    "typescript": "^5.9.2"
   }
 }
