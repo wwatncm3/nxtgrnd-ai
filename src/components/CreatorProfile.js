@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { 
-  ArrowLeft, User, MapPin, Calendar, Award, BookOpen, 
+import {
+  ArrowLeft, User, MapPin, Calendar, Award, BookOpen,
   ExternalLink, Mail, Linkedin, Youtube, Github, Globe,
   Star, Clock, Users, MessageCircle, Share2, Check,
   Plus, Edit3, Camera, RefreshCw
@@ -8,6 +8,7 @@ import {
 import { UserContext } from '../App';
 import { storageUtils } from '../utils/authUtils';
 import analytics from '../utils/analytics';
+import { FullPageLoader } from './ui/AnimatedComponents';
 
 const CreatorProfile = ({ setStage }) => {
   const { user, setUser } = useContext(UserContext);
@@ -43,12 +44,12 @@ const CreatorProfile = ({ setStage }) => {
     setIsLoading(true);
     try {
       // Load stored profile data
+      // storageUtils.getItem already returns parsed data
       const storedProfile = storageUtils.getItem(`creatorProfile_${user.userID}`);
       if (storedProfile) {
-        const parsedProfile = JSON.parse(storedProfile);
-        setProfileData(parsedProfile.profileData || profileData);
-        setPortfolioItems(parsedProfile.portfolioItems || []);
-        setAchievements(parsedProfile.achievements || []);
+        setProfileData(storedProfile.profileData || profileData);
+        setPortfolioItems(storedProfile.portfolioItems || []);
+        setAchievements(storedProfile.achievements || []);
       } else {
         // Initialize with default achievements based on user data
         initializeDefaultAchievements();
@@ -111,8 +112,9 @@ const CreatorProfile = ({ setStage }) => {
         achievements,
         lastUpdated: new Date().toISOString()
       };
-      
-      storageUtils.setItem(`creatorProfile_${user.userID}`, JSON.stringify(profileToSave));
+
+      // storageUtils.setItem handles JSON stringification internally
+      storageUtils.setItem(`creatorProfile_${user.userID}`, profileToSave);
       
       // Update user context with public profile info
       setUser(prev => ({
@@ -192,12 +194,10 @@ const CreatorProfile = ({ setStage }) => {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading your creator profile...</p>
-        </div>
-      </div>
+      <FullPageLoader
+        message="Loading your creator profile..."
+        subMessage="Preparing your personalized experience"
+      />
     );
   }
   

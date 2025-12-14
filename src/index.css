@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
+/* Base styles */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -16,4 +15,357 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* ===== Animation Utilities ===== */
+@layer utilities {
+  /* Stagger animation delays for lists */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-6 { animation-delay: 0.6s; }
+  .stagger-7 { animation-delay: 0.7s; }
+  .stagger-8 { animation-delay: 0.8s; }
+
+  /* Initial state for animations */
+  .animate-on-load {
+    opacity: 0;
+  }
+
+  /* Gradient text effect */
+  .text-gradient {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-dark {
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ===== Skeleton Loading ===== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 231, 235, 0.4) 25%,
+    rgba(229, 231, 235, 0.8) 50%,
+    rgba(229, 231, 235, 0.4) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-dark {
+  background: linear-gradient(
+    90deg,
+    rgba(55, 65, 81, 0.4) 25%,
+    rgba(55, 65, 81, 0.8) 50%,
+    rgba(55, 65, 81, 0.4) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ===== Button Enhancements ===== */
+.btn-primary {
+  @apply relative overflow-hidden transition-all duration-300 ease-out;
+  @apply transform hover:scale-[1.02] hover:shadow-lg;
+  @apply active:scale-[0.98] active:shadow-md;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-secondary {
+  @apply relative overflow-hidden transition-all duration-200 ease-out;
+  @apply transform hover:scale-[1.02];
+  @apply active:scale-[0.98];
+}
+
+/* ===== Card Enhancements ===== */
+.card-hover {
+  @apply transition-all duration-300 ease-out;
+  @apply hover:shadow-xl hover:-translate-y-1;
+}
+
+.card-interactive {
+  @apply transition-all duration-300 ease-out cursor-pointer;
+  @apply hover:shadow-xl hover:-translate-y-2 hover:border-blue-400;
+  @apply active:translate-y-0 active:shadow-lg;
+}
+
+.card-glow {
+  @apply transition-all duration-300;
+}
+
+.card-glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2), 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Progress Bar Animations ===== */
+.progress-bar {
+  @apply relative overflow-hidden;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ===== Input Focus Effects ===== */
+.input-focus {
+  @apply transition-all duration-300 ease-out;
+  @apply focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+  @apply focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/10;
+}
+
+/* ===== Badge Pulse Effect ===== */
+.badge-pulse {
+  @apply relative;
+}
+
+.badge-pulse::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+/* ===== Icon Animations ===== */
+.icon-hover {
+  @apply transition-all duration-200 ease-out;
+  @apply hover:scale-110 hover:text-blue-500;
+}
+
+.icon-spin-hover:hover {
+  animation: spin 0.5s ease-in-out;
+}
+
+/* ===== Link Underline Animation ===== */
+.link-underline {
+  @apply relative;
+}
+
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* ===== Tooltip Enhancement ===== */
+.tooltip-animate {
+  @apply opacity-0 invisible transition-all duration-200 ease-out;
+  @apply translate-y-2;
+}
+
+.group:hover .tooltip-animate {
+  @apply opacity-100 visible translate-y-0;
+}
+
+/* ===== Modal/Overlay Animations ===== */
+.overlay-fade {
+  @apply opacity-0 transition-opacity duration-300;
+}
+
+.overlay-fade.active {
+  @apply opacity-100;
+}
+
+.modal-slide {
+  @apply opacity-0 translate-y-8 transition-all duration-300 ease-out;
+}
+
+.modal-slide.active {
+  @apply opacity-100 translate-y-0;
+}
+
+/* ===== Accordion Animation ===== */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.accordion-content.open {
+  max-height: 500px;
+}
+
+/* ===== Scroll Reveal ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease-out;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== Ripple Effect ===== */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 1s;
+}
+
+.ripple:active::after {
+  transform: scale(0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* ===== Loading Spinner ===== */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.spinner-lg {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+}
+
+/* ===== Gradient Backgrounds ===== */
+.bg-gradient-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.bg-gradient-blue-purple {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+.bg-gradient-radial {
+  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 50%);
+}
+
+/* ===== Smooth Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.8);
+}
+
+/* ===== Selection Color ===== */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+/* ===== Focus Visible ===== */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }

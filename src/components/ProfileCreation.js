@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   signUp, 
   confirmSignUp, 
@@ -7,23 +7,28 @@ import {
   resendSignUpCode,
   getCurrentUser 
 } from '@aws-amplify/auth';
-import { User, Upload, BookOpen, Users, Rocket, Target, Briefcase, Compass, Shield } from 'lucide-react';
-import CareerInterests from './InterestSelection'; // Add this back if needed
+import { User, Upload, BookOpen, Users, Rocket, Target, Briefcase, Compass, Shield, ArrowLeft, ArrowRight, Check, Eye, EyeOff } from 'lucide-react';
+import CareerInterests from './InterestSelection';
 import { UserContext } from '../App';
 import { useLoginHandler } from './LoginHandler';
-import { storageUtils } from '../utils/authUtils';
+import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
+import { storageService } from '../services/storageService';
 import analytics from '../utils/analytics';
-
 
 function OnboardingFlow({ onNext }) {
   const { user, setUser } = useContext(UserContext);
   const { handleLogin } = useLoginHandler();
-  const [view, setView] = useState('landing'); // 'landing', 'login', or 'signup'
+  const [view, setView] = useState('landing');
   const [currentSection, setCurrentSection] = useState('account');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
+  
   const [loginData, setLoginData] = useState({
     username: '',
     password: ''
   });
+  
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -35,77 +40,582 @@ function OnboardingFlow({ onNext }) {
     careerStage: '',
     primaryGoal: ''
   });
+  
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [verificationCode, setVerificationCode] = useState('');
   const [unverifiedUser, setUnverifiedUser] = useState(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  // New Landing Page Component
+
+  // Smooth transition helper
+  const handleViewTransition = (newView, newSection = null) => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setView(newView);
+      if (newSection) setCurrentSection(newSection);
+      setErrors({});
+      setIsTransitioning(false);
+    }, 150);
+  };
+
+  // Enhanced Landing Page with animations
   const renderLandingPage = () => (
-  <div className="space-y-8">
-    <div className="text-center mb-8">
-      <div className="inline-flex items-center justify-center mb-4">
-  <img 
-  src={`${process.env.PUBLIC_URL}/ng-logo-2.png`}
-  alt="NxtGrnd AI Logo" 
-  className="w-36 h-36"
-  onError={(e) => {
-    console.log('Logo failed to load:', e.target.src);
-    e.target.style.display = 'none'; // Hide broken image
-  }}
-/>
-</div>
-      <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome to NxtGrnd AI</h2>
-      <p className="text-gray-600 text-lg mb-8">Your AI-powered career development platform</p>
+    <div className={`transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+      <div className="space-y-8 animate-fadeIn">
+        {/* Logo and Header with staggered animation */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center mb-6 animate-slideDown">
+            <div className="relative">
+              <img 
+                src={`${process.env.PUBLIC_URL}/ng-logo-2.png`}
+                alt="NxtGrnd AI Logo" 
+                className="w-28 h-28 transition-transform duration-300 hover:scale-105"
+                onError={(e) => {
+                  console.log('Logo failed to load:', e.target.src);
+                  e.target.style.display = 'none';
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-20 animate-pulse"></div>
+            </div>
+          </div>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4 animate-slideUp delay-100">
+            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">NxtGrnd AI</span>
+          </h2>
+          <p className="text-gray-600 text-lg mb-8 animate-slideUp delay-200">Your AI-powered career development platform</p>
+        </div>
+
+        {/* Action Buttons with hover effects */}
+        <div className="space-y-4 animate-slideUp delay-300">
+          <button
+            onClick={() => handleViewTransition('signup')}
+            className="group w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl 
+                     hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 
+                     focus:ring-blue-500 focus:ring-offset-2 text-lg font-semibold
+                     transform transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
+                     active:scale-[0.98] relative overflow-hidden"
+          >
+            <span className="relative z-10 flex items-center justify-center">
+              Get Started
+              <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </span>
+            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
+          </button>
+          
+          <button
+            onClick={() => handleViewTransition('login')}
+            className="group w-full py-4 px-6 border-2 border-blue-600 text-blue-600 
+                     rounded-xl hover:bg-blue-50 focus:outline-none focus:ring-2 
+                     focus:ring-blue-500 focus:ring-offset-2 text-lg font-semibold
+                     transform transition-all duration-200 hover:scale-[1.02]
+                     active:scale-[0.98] relative overflow-hidden"
+          >
+            <span className="flex items-center justify-center">
+              Sign In
+            </span>
+          </button>
+        </div>
+
+        {/* Stats/Social Proof with animation */}
+        <div className="text-center animate-slideUp delay-400">
+          <div className="flex justify-center items-center space-x-8 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">1000+</div>
+              <div className="text-sm text-gray-500">Professionals</div>
+            </div>
+            <div className="h-8 w-px bg-gray-300"></div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">50+</div>
+              <div className="text-sm text-gray-500">Career Paths</div>
+            </div>
+            <div className="h-8 w-px bg-gray-300"></div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">95%</div>
+              <div className="text-sm text-gray-500">Success Rate</div>
+            </div>
+          </div>
+          <p className="text-gray-500">Join thousands advancing their careers</p>
+        </div>
+      </div>
     </div>
+  );
 
-    <div className="space-y-4">
-      <button
-        onClick={() => setView('signup')}
-        className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg 
-                 hover:bg-blue-700 focus:outline-none focus:ring-2 
-                 focus:ring-blue-500 focus:ring-offset-2 text-lg"
-      >
-        Get Started
-      </button>
-      
-      <button
-        onClick={() => setView('login')}
-        className="w-full py-3 px-4 border-2 border-blue-600 text-blue-600 
-                 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 
-                 focus:ring-blue-500 focus:ring-offset-2 text-lg"
-      >
-        Sign In
-      </button>
+  // Enhanced Login Section
+  const renderLoginSection = () => (
+    <div className={`transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+      <div className="space-y-6 animate-fadeIn">
+        <div className="text-center mb-8 animate-slideDown">
+          <div className="inline-flex items-center justify-center p-3 bg-blue-50 rounded-full mb-4">
+            <User className="w-8 h-8 text-blue-500" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+          <p className="text-gray-600">Sign in to continue your career journey</p>
+        </div>
+
+        <form onSubmit={handleLoginSubmit} className="space-y-6 animate-slideUp delay-100">
+          {/* Email Field with floating label effect */}
+          <div className="relative">
+            <input
+              type="email"
+              value={loginData.username}
+              onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
+              className="peer w-full h-12 px-4 pt-6 pb-2 bg-gray-50 border-2 border-gray-200 rounded-lg 
+                       focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-transparent"
+              placeholder="Email"
+              id="email"
+            />
+            <label 
+              htmlFor="email"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'email' || loginData.username 
+                  ? 'top-2 text-xs text-blue-600 font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}`}
+            >
+              Email Address
+            </label>
+          </div>
+
+          {/* Password Field with show/hide toggle */}
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={loginData.password}
+              onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
+              className="peer w-full h-12 px-4 pt-6 pb-2 pr-12 bg-gray-50 border-2 border-gray-200 rounded-lg 
+                       focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-transparent"
+              placeholder="Password"
+              id="password"
+            />
+            <label 
+              htmlFor="password"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'password' || loginData.password 
+                  ? 'top-2 text-xs text-blue-600 font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}`}
+            >
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {errors.login && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg animate-shake">
+              <p className="text-red-600 text-sm flex items-center">
+                <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-white text-xs">!</span>
+                </span>
+                {errors.login}
+              </p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoggingIn}
+            className="group w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg 
+                     hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 
+                     focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50
+                     transform transition-all duration-200 hover:scale-[1.02] disabled:hover:scale-100
+                     relative overflow-hidden font-semibold"
+          >
+            <span className="relative z-10 flex items-center justify-center">
+              {isLoggingIn ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Signing In...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </span>
+          </button>
+        </form>
+
+        <div className="flex justify-center items-center space-x-6 animate-slideUp delay-200">
+          <button 
+            onClick={() => handleViewTransition('landing')}
+            className="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </button>
+          <div className="h-4 w-px bg-gray-300"></div>
+          <button
+            onClick={() => handleViewTransition('signup')}
+            className="text-sm text-blue-600 hover:text-blue-700 transition-colors font-medium"
+          >
+            Create an account
+          </button>
+        </div>
+      </div>
     </div>
+  );
 
-    <p className="text-center text-gray-500 mt-6">
-      Join thousands of professionals advancing their careers
-    </p>
-  </div>
-);
+  // Enhanced Account Section with better form styling
+  const renderAccountSection = () => (
+    <div className={`transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+      <div className="space-y-8 animate-fadeIn">
+        <div className="text-center mb-8 animate-slideDown">
+          <div className="inline-flex items-center justify-center p-3 bg-blue-50 rounded-full mb-4">
+            <User className="w-8 h-8 text-blue-500" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h2>
+          <p className="text-gray-600">Set up your NxtGrnd AI profile to get started</p>
+        </div>
 
+        {errors.accountStep && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-6 animate-shake">
+            <p className="text-red-600 text-sm flex items-center">
+              <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white text-xs">!</span>
+              </span>
+              {errors.accountStep}
+            </p>
+          </div>
+        )}
 
-  // Navigation options for AI Career Compass
+        {/* Enhanced Avatar Upload */}
+        <div className="flex justify-center animate-slideUp delay-100">
+          <div className="relative group">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <User className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <label className="absolute bottom-0 right-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full p-3 cursor-pointer 
+                           hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg
+                           transform hover:scale-110 active:scale-95">
+              <Upload className="w-5 h-5 text-white" />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Enhanced Form Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slideUp delay-200">
+          {/* First Name */}
+          <div className="relative">
+            <input
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => handleSelectionCard('firstName', e.target.value)}
+              onFocus={() => setFocusedField('firstName')}
+              onBlur={() => setFocusedField(null)}
+              className="peer w-full h-12 px-4 pt-6 pb-2 bg-gray-50 border-2 border-gray-200 rounded-lg 
+                       focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-transparent"
+              placeholder="First Name"
+              id="firstName"
+            />
+            <label 
+              htmlFor="firstName"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'firstName' || formData.firstName 
+                  ? 'top-2 text-xs text-blue-600 font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}`}
+            >
+              First Name *
+            </label>
+            {errors.firstName && (
+              <p className="text-red-600 text-xs mt-1 animate-slideIn">{errors.firstName}</p>
+            )}
+          </div>
+
+          {/* Last Name */}
+          <div className="relative">
+            <input
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => handleSelectionCard('lastName', e.target.value)}
+              onFocus={() => setFocusedField('lastName')}
+              onBlur={() => setFocusedField(null)}
+              className="peer w-full h-12 px-4 pt-6 pb-2 bg-gray-50 border-2 border-gray-200 rounded-lg 
+                       focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-transparent"
+              placeholder="Last Name"
+              id="lastName"
+            />
+            <label 
+              htmlFor="lastName"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'lastName' || formData.lastName 
+                  ? 'top-2 text-xs text-blue-600 font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}`}
+            >
+              Last Name *
+            </label>
+            {errors.lastName && (
+              <p className="text-red-600 text-xs mt-1 animate-slideIn">{errors.lastName}</p>
+            )}
+          </div>
+
+          {/* Email */}
+          <div className="relative">
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleSelectionCard('email', e.target.value)}
+              onFocus={() => setFocusedField('formEmail')}
+              onBlur={() => setFocusedField(null)}
+              className="peer w-full h-12 px-4 pt-6 pb-2 bg-gray-50 border-2 border-gray-200 rounded-lg 
+                       focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-transparent"
+              placeholder="Email"
+              id="formEmail"
+            />
+            <label 
+              htmlFor="formEmail"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'formEmail' || formData.email 
+                  ? 'top-2 text-xs text-blue-600 font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}`}
+            >
+              Email Address *
+            </label>
+            {errors.email && (
+              <p className="text-red-600 text-xs mt-1 animate-slideIn">{errors.email}</p>
+            )}
+          </div>
+
+          {/* Username */}
+          <div className="relative">
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => handleSelectionCard('username', e.target.value)}
+              onFocus={() => setFocusedField('username')}
+              onBlur={() => setFocusedField(null)}
+              className="peer w-full h-12 px-4 pt-6 pb-2 bg-gray-50 border-2 border-gray-200 rounded-lg 
+                       focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-transparent"
+              placeholder="Username"
+              id="username"
+            />
+            <label 
+              htmlFor="username"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'username' || formData.username 
+                  ? 'top-2 text-xs text-blue-600 font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}`}
+            >
+              Username *
+            </label>
+            {errors.username && (
+              <p className="text-red-600 text-xs mt-1 animate-slideIn">{errors.username}</p>
+            )}
+          </div>
+
+          {/* Enhanced Password Field */}
+          <div className="md:col-span-2 relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={(e) => handleSelectionCard('password', e.target.value)}
+              onFocus={() => setFocusedField('formPassword')}
+              onBlur={() => setFocusedField(null)}
+              className={`peer w-full h-12 px-4 pt-6 pb-2 pr-12 bg-gray-50 border-2 rounded-lg 
+                       focus:bg-white transition-all duration-200 placeholder-transparent ${
+                         formData.password && isValidPassword(formData.password)
+                           ? 'border-green-300 focus:border-green-500 bg-green-50'
+                           : formData.password && formData.password.length > 0
+                           ? 'border-orange-300 focus:border-orange-500'
+                           : 'border-gray-200 focus:border-blue-500'
+                       }`}
+              placeholder="Password"
+              id="formPassword"
+            />
+            <label 
+              htmlFor="formPassword"
+              className={`absolute left-4 transition-all duration-200 pointer-events-none
+                ${focusedField === 'formPassword' || formData.password 
+                  ? 'top-2 text-xs font-medium' 
+                  : 'top-1/2 -translate-y-1/2 text-gray-500'}
+                ${formData.password && isValidPassword(formData.password) 
+                  ? 'text-green-600' 
+                  : focusedField === 'formPassword' || formData.password 
+                  ? 'text-blue-600' 
+                  : 'text-gray-500'}`}
+            >
+              Password *
+            </label>
+            
+            {/* Password visibility toggle */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-12 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+            
+            {/* Success checkmark */}
+            {formData.password && isValidPassword(formData.password) && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 animate-bounceIn">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            )}
+            
+            {/* Enhanced Password Requirements */}
+            {formData.password && formData.password.length > 0 && (
+              <PasswordRequirements password={formData.password} />
+            )}
+            
+            {(!formData.password || formData.password.length === 0) && (
+              <p className="text-xs text-gray-500 mt-2">
+                Must contain at least 8 characters, uppercase letter, number, and special character
+              </p>
+            )}
+            
+            {errors.password && (
+              <p className="text-red-600 text-xs mt-1 animate-slideIn">{errors.password}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Rest of your existing functions with some enhancements...
+  const isValidPassword = (password) => {
+    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordPolicy.test(password);
+  };
+
+  // Enhanced Password Requirements Component
+  function PasswordRequirements({ password }) {
+    const requirements = [
+      { id: 'length', label: 'At least 8 characters', test: (pwd) => pwd.length >= 8 },
+      { id: 'lowercase', label: 'One lowercase letter (a-z)', test: (pwd) => /[a-z]/.test(pwd) },
+      { id: 'uppercase', label: 'One uppercase letter (A-Z)', test: (pwd) => /[A-Z]/.test(pwd) },
+      { id: 'number', label: 'One number (0-9)', test: (pwd) => /\d/.test(pwd) },
+      { id: 'special', label: 'One special character (@$!%*?&)', test: (pwd) => /[@$!%*?&]/.test(pwd) }
+    ];
+
+    const isPasswordValid = password ? isValidPassword(password) : false;
+    const validCount = requirements.filter(req => req.test(password || '')).length;
+
+    return (
+      <div className="mt-3 p-4 bg-gray-50 rounded-lg border animate-slideIn">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-gray-700">Password Requirements:</p>
+          {isPasswordValid && (
+            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium animate-bounceIn">
+              ✓ Valid
+            </span>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          {requirements.map((req, index) => {
+            const isValid = password ? req.test(password) : false;
+            return (
+              <div
+                key={req.id}
+                className={`flex items-center text-sm transition-all duration-300 animate-slideIn`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className={`mr-3 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  isValid 
+                    ? 'bg-green-100 text-green-600 scale-110' 
+                    : 'bg-gray-200 text-gray-400'
+                }`}>
+                  {isValid ? (
+                    <Check className="w-3 h-3" />
+                  ) : (
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  )}
+                </div>
+                <span className={`transition-all duration-300 ${
+                  isValid ? 'text-green-600 line-through' : 'text-gray-600'
+                }`}>
+                  {req.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">Status:</span>
+            <span className={`text-xs font-medium transition-colors duration-300 ${
+              isPasswordValid 
+                ? 'text-green-600' 
+                : validCount === 0 
+                ? 'text-gray-400' 
+                : 'text-orange-600'
+            }`}>
+              {isPasswordValid 
+                ? '✓ Meets all requirements' 
+                : validCount === 0 
+                ? 'Enter password' 
+                : `${validCount}/5 requirements met`
+              }
+            </span>
+          </div>
+          
+          {/* Progress bar */}
+          <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+            <div 
+              className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
+                isPasswordValid ? 'bg-green-500' : validCount > 0 ? 'bg-orange-400' : 'bg-gray-300'
+              }`}
+              style={{ width: `${(validCount / 5) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Navigation Options with enhanced styling
   const navigationOptions = {
     pathTypes: [
       {
         id: 'explorer',
         label: 'Career Explorer', 
         description: 'Discover new paths and opportunities in different fields',
-        icon: Compass
+        icon: Compass,
+        gradient: 'from-blue-500 to-cyan-500'
       },
       {
         id: 'accelerator',
         label: 'Career Accelerator',
         description: 'Advance faster in your current career path',
-        icon: Rocket
+        icon: Rocket,
+        gradient: 'from-purple-500 to-pink-500'
       },
       {
         id: 'transformer',
         label: 'Career Transformer',
         description: 'Make a strategic shift to a new industry or role',
-        icon: Target
+        icon: Target,
+        gradient: 'from-green-500 to-emerald-500'
       }
     ],
     careerStages: [
@@ -113,19 +623,22 @@ function OnboardingFlow({ onNext }) {
         id: 'student',
         label: 'Student/Recent Graduate',
         description: 'Building foundation for career launch',
-        icon: BookOpen
+        icon: BookOpen,
+        gradient: 'from-indigo-500 to-blue-500'
       },
       {
         id: 'earlyCareer',
         label: 'Early Career Professional',
         description: '1-5 years of work experience',
-        icon: Briefcase
+        icon: Briefcase,
+        gradient: 'from-orange-500 to-red-500'
       },
       {
         id: 'midCareer',
         label: 'Mid-Career Professional',
         description: '5+ years of experience',
-        icon: Shield
+        icon: Shield,
+        gradient: 'from-gray-600 to-gray-800'
       }
     ],
     primaryGoals: [
@@ -133,47 +646,426 @@ function OnboardingFlow({ onNext }) {
         id: 'mentorship',
         label: 'Get Mentored',
         description: 'Connect with experienced professionals who can guide your growth',
-        icon: Users
+        icon: Users,
+        gradient: 'from-teal-500 to-cyan-500'
       },
       {
         id: 'learning',
         label: 'Skill Development',
         description: 'Access curated learning paths and creator content',
-        icon: BookOpen
+        icon: BookOpen,
+        gradient: 'from-violet-500 to-purple-500'
       },
       {
         id: 'opportunities',
         label: 'Find Opportunities',
         description: 'Discover jobs and projects aligned with your goals',
-        icon: Target
+        icon: Target,
+        gradient: 'from-rose-500 to-pink-500'
       }
     ]
   };
 
- // Updated handleLogin function using Cognito
- const handleLoginSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    await handleLogin(
-      loginData, 
-      setUser, 
-      onNext, 
-      setErrors, 
-      setIsLoggingIn,
-      setView,              // Pass setView for navigation
-      setCurrentSection,    // Pass setCurrentSection for navigation
-      setUnverifiedUser     // Pass setUnverifiedUser for verification flow
+  // Enhanced Selection Card Component
+  function SelectionCard({ option, field, selected }) {
+    const Icon = option.icon;
+    const isSelected = selected === option.id;
+    
+    return (
+      <button
+        onClick={() => handleSelectionCard(field, option.id)}
+        className={`group w-full p-6 border-2 rounded-xl text-left transition-all duration-300 relative overflow-hidden
+          transform hover:scale-[1.02] active:scale-[0.98] ${
+          isSelected 
+            ? 'border-blue-500 bg-blue-50 shadow-lg' 
+            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+        }`}
+      >
+        {/* Background gradient for selected state */}
+        {isSelected && (
+          <div className={`absolute inset-0 bg-gradient-to-br ${option.gradient} opacity-5`}></div>
+        )}
+        
+        <div className="relative z-10">
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg mb-4 transition-all duration-300 ${
+            isSelected 
+              ? `bg-gradient-to-br ${option.gradient} text-white shadow-lg` 
+              : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
+          }`}>
+            <Icon className="w-6 h-6" />
+          </div>
+          
+          <h3 className={`font-semibold text-lg mb-2 transition-colors duration-300 ${
+            isSelected ? 'text-blue-900' : 'text-gray-900'
+          }`}>
+            {option.label}
+          </h3>
+          
+          <p className={`text-sm transition-colors duration-300 ${
+            isSelected ? 'text-blue-700' : 'text-gray-600'
+          }`}>
+            {option.description}
+          </p>
+          
+          {/* Selection indicator */}
+          {isSelected && (
+            <div className="absolute top-4 right-4 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-bounceIn">
+              <Check className="w-4 h-4 text-white" />
+            </div>
+          )}
+        </div>
+      </button>
     );
-     analytics.trackEvent('user_login', { 
-      method: 'email',
-      username: loginData.username 
-    });
-  } catch (error) {
-    console.error('Login submission error:', error);
-    // Error is already handled in handleLogin
   }
-};
+
+  // Enhanced Compass Section
+  const renderCompassSection = () => (
+    <div className={`transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+      <div className="space-y-8 animate-fadeIn">
+        <div className="text-center mb-8 animate-slideDown">
+          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full mb-4">
+            <Compass className="w-8 h-8 text-blue-500" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Start Your Journey</h2>
+          <p className="text-gray-600">Tell us about your goals to power your AI Career Compass™</p>
+        </div>
+
+        {errors.compassStep && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-6 animate-shake">
+            <p className="text-red-600 text-sm flex items-center">
+              <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white text-xs">!</span>
+              </span>
+              {errors.compassStep}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {/* Path Type Selection */}
+          <div className="space-y-6 animate-slideUp delay-100">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose your path type</h3>
+              <p className="text-gray-600 text-sm">What kind of career journey are you on?</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {navigationOptions.pathTypes.map((option, index) => (
+                <div 
+                  key={option.id} 
+                  className="animate-slideUp"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <SelectionCard
+                    option={option}
+                    field="pathType"
+                    selected={formData.pathType}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Career Stage Selection */}
+          <div className="space-y-6 animate-slideUp delay-200">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Where are you in your journey?</h3>
+              <p className="text-gray-600 text-sm">Help us understand your current experience level</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {navigationOptions.careerStages.map((option, index) => (
+                <div 
+                  key={option.id} 
+                  className="animate-slideUp"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <SelectionCard
+                    option={option}
+                    field="careerStage"
+                    selected={formData.careerStage}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Primary Goal Selection */}
+          <div className="space-y-6 animate-slideUp delay-300">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">What's your primary goal?</h3>
+              <p className="text-gray-600 text-sm">What do you want to achieve first?</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {navigationOptions.primaryGoals.map((option, index) => (
+                <div 
+                  key={option.id} 
+                  className="animate-slideUp"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <SelectionCard
+                    option={option}
+                    field="primaryGoal"
+                    selected={formData.primaryGoal}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Enhanced Verification Section
+  const renderVerificationSection = () => (
+    <div className={`transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}`}>
+      <div className="space-y-6 animate-fadeIn">
+        <div className="text-center mb-8 animate-slideDown">
+          <div className="inline-flex items-center justify-center p-3 bg-green-50 rounded-full mb-4">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-lg">✉</span>
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+          <p className="text-gray-600 mb-2">
+            We've sent a verification code to <strong className="text-blue-600">{unverifiedUser?.username}</strong>
+          </p>
+          <p className="text-sm text-gray-500">
+            Check your email inbox and spam folder for the verification code
+          </p>
+        </div>
+
+        <form onSubmit={handleVerification} className="space-y-6 animate-slideUp delay-100">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Verification Code (6 digits)
+            </label>
+            <input
+              type="text"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              className="w-full h-16 text-center text-2xl tracking-[0.5em] font-mono bg-gray-50 border-2 border-gray-200 
+                       rounded-lg focus:border-blue-500 focus:bg-white transition-all duration-200
+                       placeholder-gray-300"
+              maxLength={6}
+              autoComplete="one-time-code"
+            />
+            <div className="flex justify-center mt-2">
+              <div className="flex space-x-1">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-3 h-1 rounded-full transition-all duration-200 ${
+                      i < verificationCode.length 
+                        ? 'bg-blue-500' 
+                        : 'bg-gray-200'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {errors.verification && (
+            <div className={`p-4 border rounded-lg animate-slideIn ${
+              errors.verification.includes('✅') 
+                ? 'bg-green-50 border-green-200 text-green-600' 
+                : 'bg-red-50 border-red-200 text-red-600'
+            }`}>
+              <p className="text-sm flex items-center">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
+                  errors.verification.includes('✅') 
+                    ? 'bg-green-500' 
+                    : 'bg-red-500'
+                }`}>
+                  <span className="text-white text-xs">
+                    {errors.verification.includes('✅') ? '✓' : '!'}
+                  </span>
+                </span>
+                {errors.verification}
+              </p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={verificationCode.length !== 6}
+            className={`group w-full h-12 rounded-lg focus:outline-none focus:ring-2 
+                       focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold ${
+              verificationCode.length === 6
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transform hover:scale-[1.02]'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            <span className="flex items-center justify-center">
+              Verify Email
+              {verificationCode.length === 6 && (
+                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+              )}
+            </span>
+          </button>
+
+          <div className="text-center space-y-4 animate-slideUp delay-200">
+            <button
+              type="button"
+              onClick={handleResendCode}
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium 
+                       transition-colors duration-200 hover:underline"
+            >
+              <span className="mr-1">↻</span>
+              Resend verification code
+            </button>
+            <p className="text-xs text-gray-500">
+              Didn't receive the code? Check your spam folder or try resending
+            </p>
+          </div>
+        </form>
+
+        <div className="flex justify-center items-center space-x-6 pt-4 border-t animate-slideUp delay-300">
+          <button 
+            onClick={() => handleViewTransition('login', 'account')}
+            className="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Login
+          </button>
+          <div className="h-4 w-px bg-gray-300"></div>
+          <button
+            onClick={() => handleViewTransition('signup', 'account')}
+            className="text-sm text-blue-600 hover:text-blue-700 transition-colors font-medium"
+          >
+            Back to Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Enhanced Bottom Navigation
+  const renderBottomNavigation = () => {
+    if (view !== 'signup') return null;
+    
+    return (
+      <div className="flex justify-between items-center mt-8 pt-6 border-t animate-slideUp delay-400">
+        {/* Back Button Logic */}
+        <div>
+          {currentSection === 'verify' && (
+            <button
+              onClick={() => handleViewTransition('signup', 'account')}
+              className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200 
+                       hover:bg-gray-50 rounded-lg"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Account
+            </button>
+          )}
+          {currentSection === 'compass' && (
+            <button
+              onClick={() => handleViewTransition('signup', 'verify')}
+              className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200 
+                       hover:bg-gray-50 rounded-lg"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back
+            </button>
+          )}
+          {currentSection === 'account' && (
+            <button
+              onClick={() => handleViewTransition('landing')}
+              className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200 
+                       hover:bg-gray-50 rounded-lg"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Home
+            </button>
+          )}
+        </div>
+
+        {/* Next/Submit Button Logic */}
+        <div>
+          {currentSection === 'account' && (
+            <div className="flex flex-col items-end">
+              <button
+                onClick={handleNext}
+                disabled={
+                  !formData.firstName || 
+                  !formData.lastName || 
+                  !formData.email || 
+                  !formData.username || 
+                  !formData.password ||
+                  !isValidPassword(formData.password)
+                }
+                className={`group flex items-center px-6 py-3 rounded-lg transition-all duration-200 font-semibold ${
+                  (!formData.firstName || 
+                   !formData.lastName || 
+                   !formData.email || 
+                   !formData.username || 
+                   !formData.password ||
+                   !isValidPassword(formData.password))
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transform hover:scale-[1.02] shadow-lg'
+                }`}
+              >
+                Create Account
+                {(formData.firstName && formData.lastName && formData.email && formData.username && formData.password && isValidPassword(formData.password)) && (
+                  <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                )}
+              </button>
+              
+              {formData.password && 
+               formData.password.length > 0 && 
+               !isValidPassword(formData.password) && (
+                <p className="text-xs text-orange-600 mt-2 text-right animate-slideIn">
+                  Complete password requirements to continue
+                </p>
+              )}
+            </div>
+          )}
+          {currentSection === 'compass' && (
+            <button
+              onClick={handleNext}
+              disabled={!formData.pathType || !formData.careerStage || !formData.primaryGoal}
+              className={`group flex items-center px-6 py-3 rounded-lg transition-all duration-200 font-semibold ${
+                (!formData.pathType || !formData.careerStage || !formData.primaryGoal)
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 transform hover:scale-[1.02] shadow-lg'
+              }`}
+            >
+              Complete Setup
+              {(formData.pathType && formData.careerStage && formData.primaryGoal) && (
+                <Check className="ml-2 w-5 h-5 transition-transform group-hover:scale-110" />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Your existing handler functions with minor enhancements...
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      await handleLogin(
+        loginData, 
+        setUser, 
+        onNext, 
+        setErrors, 
+        setIsLoggingIn,
+        setView,
+        setCurrentSection,
+        setUnverifiedUser
+      );
+       analytics.trackEvent('user_login', { 
+        method: 'email',
+        username: loginData.username 
+      });
+    } catch (error) {
+      console.error('Login submission error:', error);
+    }
+  };
+
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -196,686 +1088,102 @@ function OnboardingFlow({ onNext }) {
     setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
-  function SelectionCard({ option, field, selected }) {
-    const Icon = option.icon;
-    return (
-      <button
-        onClick={() => handleSelectionCard(field, option.id)}
-        className={`w-full p-6 border-2 rounded-xl text-left transition-all ${
-          selected === option.id 
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-200 hover:border-gray-300'
-        }`}
-      >
-        <Icon 
-          className={`w-8 h-8 mb-3 ${
-            selected === option.id ? 'text-blue-500' : 'text-gray-400'
-          }`} 
-        />
-        <h3 className="font-semibold text-lg mb-2">{option.label}</h3>
-        <p className="text-gray-600 text-sm">{option.description}</p>
-      </button>
-    );
-  
+  const handleVerification = async (e) => {
+    e.preventDefault();
     
-  }
-  function PasswordRequirements({ password }) {
-  const requirements = [
-    {
-      id: 'length',
-      label: 'At least 8 characters',
-      test: (pwd) => pwd.length >= 8
-    },
-    {
-      id: 'lowercase',
-      label: 'One lowercase letter (a-z)',
-      test: (pwd) => /[a-z]/.test(pwd)
-    },
-    {
-      id: 'uppercase',
-      label: 'One uppercase letter (A-Z)',
-      test: (pwd) => /[A-Z]/.test(pwd)
-    },
-    {
-      id: 'number',
-      label: 'One number (0-9)',
-      test: (pwd) => /\d/.test(pwd)
-    },
-    {
-      id: 'special',
-      label: 'One special character (@$!%*?&)',
-      test: (pwd) => /[@$!%*?&]/.test(pwd)
+    if (!verificationCode || verificationCode.length !== 6) {
+      setErrors(prev => ({
+        ...prev,
+        verification: 'Please enter a valid 6-digit verification code'
+      }));
+      return;
     }
-  ];
 
-  const isPasswordValid = password ? (/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) : false;
-  const validCount = requirements.filter(req => req.test(password || '')).length;
-
-  return (
-    <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-gray-700">Password Requirements:</p>
-        {isPasswordValid && (
-          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-            ✓ Valid
-          </span>
-        )}
-      </div>
+    try {
+      console.log('🔧 Verifying email for:', unverifiedUser.username);
       
-      <div className="space-y-1">
-        {requirements.map((req) => {
-          const isValid = password ? req.test(password) : false;
-          return (
-            <div
-              key={req.id}
-              className={`flex items-center text-xs transition-colors ${
-                isValid ? 'text-green-600' : 'text-gray-500'
-              }`}
-            >
-              <div className={`mr-2 w-4 h-4 rounded-full flex items-center justify-center ${
-                isValid 
-                  ? 'bg-green-100 text-green-600' 
-                  : 'bg-gray-200 text-gray-400'
-              }`}>
-                {isValid ? '✓' : '○'}
-              </div>
-              <span className={isValid ? 'line-through' : ''}>{req.label}</span>
-            </div>
-          );
-        })}
-      </div>
+      await confirmSignUp({
+        username: unverifiedUser.username,
+        confirmationCode: verificationCode
+      });
       
-      <div className="mt-2 pt-2 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-600">Status:</span>
-          <span className={`text-xs font-medium ${
-            isPasswordValid 
-              ? 'text-green-600' 
-              : validCount === 0 
-              ? 'text-gray-400' 
-              : 'text-orange-600'
-          }`}>
-            {isPasswordValid 
-              ? '✓ Meets all requirements' 
-              : validCount === 0 
-              ? 'Enter password' 
-              : `${validCount}/5 requirements met`
-            }
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-  
-  const isValidPassword = (password) => {
-    const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return passwordPolicy.test(password);
+      console.log('✅ Email verification successful');
+      
+      setErrors(prev => ({ ...prev, verification: '' }));
+      
+      setErrors(prev => ({
+        ...prev,
+        verification: '✅ Email verified successfully! You can now log in.'
+      }));
+      
+      setLoginData({
+        username: unverifiedUser.username,
+        password: unverifiedUser.password || ''
+      });
+      
+      setTimeout(() => {
+        handleViewTransition('login', 'account');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Verification error:', error);
+      
+      let errorMessage = 'Verification failed. Please try again.';
+      
+      if (error.code === 'CodeMismatchException') {
+        errorMessage = 'Invalid verification code. Please check the code and try again.';
+      } else if (error.code === 'ExpiredCodeException') {
+        errorMessage = 'Verification code has expired. Please request a new code.';
+      } else if (error.code === 'LimitExceededException') {
+        errorMessage = 'Too many attempts. Please wait before trying again.';
+      }
+      
+      setErrors(prev => ({
+        ...prev,
+        verification: errorMessage
+      }));
+    }
   };
 
-  // Replace these handlers:
-  const handleVerification = async (e) => {
-  e.preventDefault();
-  
-  if (!verificationCode || verificationCode.length !== 6) {
-    setErrors(prev => ({
-      ...prev,
-      verification: 'Please enter a valid 6-digit verification code'
-    }));
-    return;
-  }
-
-  try {
-    console.log('📧 Verifying email for:', unverifiedUser.username);
-    
-    await confirmSignUp({
-      username: unverifiedUser.username,
-      confirmationCode: verificationCode
-    });
-    
-    console.log('✅ Email verification successful');
-
-    
-    // Clear verification errors
-    setErrors(prev => ({ ...prev, verification: '' }));
-    
-    // Show success message briefly
-    setErrors(prev => ({
-      ...prev,
-      verification: '✅ Email verified successfully! You can now log in.'
-    }));
-    
-    // Auto-populate login form with verified credentials
-    setLoginData({
-      username: unverifiedUser.username,
-      password: unverifiedUser.password || ''
-    });
-    
-    // Navigate to login after a brief delay
-    setTimeout(() => {
-      setView('login');
-      setCurrentSection('account');
-      setErrors({});
-    }, 2000);
-    
-  } catch (error) {
-    console.error('❌ Verification error:', error);
-    
-    let errorMessage = 'Verification failed. Please try again.';
-    
-    if (error.code === 'CodeMismatchException') {
-      errorMessage = 'Invalid verification code. Please check the code and try again.';
-    } else if (error.code === 'ExpiredCodeException') {
-      errorMessage = 'Verification code has expired. Please request a new code.';
-    } else if (error.code === 'LimitExceededException') {
-      errorMessage = 'Too many attempts. Please wait before trying again.';
+  const handleResendCode = async () => {
+    try {
+      await resendSignUpCode({
+        username: unverifiedUser.username
+      });
+      setErrors(prev => ({
+        ...prev,
+        verification: '✅ Verification code has been resent to your email'
+      }));
+    } catch (error) {
+      console.error('Error resending code:', error);
+      setErrors(prev => ({
+        ...prev,
+        verification: 'Error resending verification code'
+      }));
     }
-    
-    setErrors(prev => ({
-      ...prev,
-      verification: errorMessage
-    }));
-  }
-};
+  };
 
-const handleResendCode = async () => {
-  try {
-    await resendSignUpCode({
-      username: unverifiedUser.username
+  const validateAccountStep = () => {
+    const newErrors = {};
+    let valid = true;
+  
+    const requiredFields = ['firstName', 'lastName', 'email', 'username', 'password'];
+  
+    requiredFields.forEach((field) => {
+      if (!formData[field]) {
+        newErrors[field] = 'This field is required';
+        valid = false;
+      }
     });
-    alert('Verification code has been resent to your email');
-  } catch (error) {
-    console.error('Error resending code:', error);
-    setErrors(prev => ({
-      ...prev,
-      verification: 'Error resending verification code'
-    }));
-  }
-};
-
-  // Modified Login Section with Back Button
-  const renderLoginSection = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-        <p className="text-gray-600">Sign in to continue your career journey</p>
-      </div>
-
-      <form onSubmit={handleLoginSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            value={loginData.username}
-            onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                     focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            placeholder="Enter your email"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Password</label>
-          <input
-            type="password"
-            value={loginData.password}
-            onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                     focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-
-        {errors.login && (
-          <p className="text-red-600 text-sm text-center">{errors.login}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isLoggingIn}
-          className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg 
-                   hover:bg-blue-700 focus:outline-none focus:ring-2 
-                   focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {isLoggingIn ? 'Signing In...' : 'Sign In'}
-        </button>
-      </form>
-
-      <div className="flex justify-center space-x-4">
-        <button 
-          onClick={() => setView('landing')}
-          className="text-sm text-gray-600 hover:text-gray-900"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => setView('signup')}
-          className="text-sm text-blue-600 hover:text-blue-700"
-        >
-          Create an account
-        </button>
-      </div>
-      {/* Debug button (development only)
-      {process.env.NODE_ENV === 'development' && (
-        <button 
-          type="button"
-          onClick={() => {
-            console.group('🔍 Login Debug');
-            console.log('Form data:', loginData);
-            console.log('Session items:', {
-              preferences: storageUtils.getItem('userPathPreferences'),
-              careerPath: storageUtils.getItem('selectedCareerPath'),
-              resume: storageUtils.getItem('userResume'),
-              dashboard: storageUtils.getItem(`userDashboard_${loginData.username}`)
-            });
-            console.groupEnd();
-          }}
-          className="w-full text-xs text-gray-500 underline mt-2"
-        >
-          Debug Session Data
-        </button>
-      )} */}
-    </div>
-  );
   
-  const renderVerificationSection = () => (
-  <div className="space-y-6">
-    <div className="text-center mb-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
-      <p className="text-gray-600 mb-2">
-        We've sent a verification code to <strong>{unverifiedUser?.username}</strong>
-      </p>
-      <p className="text-sm text-gray-500">
-        Check your email inbox and spam folder for the verification code
-      </p>
-    </div>
-
-    <form onSubmit={handleVerification} className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Verification Code (6 digits)
-        </label>
-        <input
-          type="text"
-          value={verificationCode}
-          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          placeholder="Enter 6-digit code"
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-center text-lg tracking-widest"
-          maxLength={6}
-          autoComplete="one-time-code"
-        />
-      </div>
-
-      {errors.verification && (
-        <div className={`p-3 border rounded-lg ${
-          errors.verification.includes('✅') 
-            ? 'bg-green-50 border-green-200 text-green-600' 
-            : 'bg-red-50 border-red-200 text-red-600'
-        }`}>
-          <p className="text-sm">{errors.verification}</p>
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={verificationCode.length !== 6}
-        className={`w-full py-3 px-4 rounded-lg focus:outline-none focus:ring-2 
-                   focus:ring-blue-500 focus:ring-offset-2 transition-colors ${
-          verificationCode.length === 6
-            ? 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        }`}
-      >
-        Verify Email
-      </button>
-
-      <div className="text-center space-y-3">
-        <button
-          type="button"
-          onClick={handleResendCode}
-          className="text-blue-600 hover:text-blue-700 text-sm underline"
-        >
-          Resend verification code
-        </button>
-        <p className="text-xs text-gray-500">
-          Didn't receive the code? Check your spam folder or try resending
-        </p>
-      </div>
-    </form>
-
-    {/* FIXED: Proper back navigation */}
-    <div className="flex justify-center space-x-4 pt-4 border-t">
-      <button 
-        onClick={() => {
-          setView('login');
-          setCurrentSection('account');
-          setErrors({});
-        }}
-        className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-      >
-        Back to Login
-      </button>
-      <button
-        onClick={() => {
-          setView('signup');
-          setCurrentSection('account');
-          setErrors({});
-        }}
-        className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-      >
-        Back to Sign Up
-      </button>
-    </div>
-  </div>
-);
-  const renderCompassSection = () => (
-    <div className="space-y-8">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center p-2 bg-blue-50 rounded-full mb-4">
-          <Compass className="w-8 h-8 text-blue-500" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Start Your Journey</h2>
-        <p className="text-gray-600">Tell us about your goals to power your AI Career Compass™</p>
-      </div>
-
-      {errors.compassStep && (
-        <div className="text-red-600 text-sm mb-2">{errors.compassStep}</div>
-      )}
-
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Choose your path type</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {navigationOptions.pathTypes.map(option => (
-              <SelectionCard
-                key={option.id}
-                option={option}
-                field="pathType"
-                selected={formData.pathType}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Where are you in your journey?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {navigationOptions.careerStages.map(option => (
-              <SelectionCard
-                key={option.id}
-                option={option}
-                field="careerStage"
-                selected={formData.careerStage}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">What's your primary goal?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {navigationOptions.primaryGoals.map(option => (
-              <SelectionCard
-                key={option.id}
-                option={option}
-                field="primaryGoal"
-                selected={formData.primaryGoal}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAccountSection = () => (
-  <div className="space-y-6">
-    <div className="text-center mb-6">
-      <div className="inline-flex items-center justify-center p-2 bg-blue-50 rounded-full mb-4">
-        <User className="w-8 h-8 text-blue-500" />
-      </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Your Account</h2>
-      <p className="text-gray-600">Set up your NxtGrnd AI profile to get started</p>
-    </div>
-
-    {errors.accountStep && (
-      <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
-        <p className="text-red-600 text-sm">{errors.accountStep}</p>
-      </div>
-    )}
-
-    <div className="flex justify-center">
-      <div className="relative">
-        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
-          {avatarPreview ? (
-            <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <User className="w-12 h-12 text-gray-400" />
-            </div>
-          )}
-        </div>
-        <label className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 cursor-pointer hover:bg-blue-600 transition">
-          <Upload className="w-4 h-4 text-white" />
-          <input
-            type="file"
-            className="hidden"
-            accept="image/*"
-            onChange={handleAvatarChange}
-          />
-        </label>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">First Name *</label>
-        <input
-          type="text"
-          value={formData.firstName}
-          onChange={(e) => handleSelectionCard('firstName', e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="Enter your first name"
-          required
-        />
-        {errors.firstName && (
-          <p className="text-red-600 text-sm mt-1">{errors.firstName}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Last Name *</label>
-        <input
-          type="text"
-          value={formData.lastName}
-          onChange={(e) => handleSelectionCard('lastName', e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="Enter your last name"
-          required
-        />
-        {errors.lastName && (
-          <p className="text-red-600 text-sm mt-1">{errors.lastName}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Email *</label>
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleSelectionCard('email', e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="your.email@example.com"
-          required
-        />
-        {errors.email && (
-          <p className="text-red-600 text-sm mt-1">{errors.email}</p>
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Username *</label>
-        <input
-          type="text"
-          value={formData.username}
-          onChange={(e) => handleSelectionCard('username', e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          placeholder="Choose a username"
-          required
-        />
-        {errors.username && (
-          <p className="text-red-600 text-sm mt-1">{errors.username}</p>
-        )}
-      </div>
-
-     <div className="md:col-span-2">
-  <label className="block text-sm font-medium text-gray-700">Password *</label>
-  <div className="relative">
-    <input
-      type="password"
-      value={formData.password}
-      onChange={(e) => handleSelectionCard('password', e.target.value)}
-      className={`mt-1 block w-full rounded-lg border px-3 py-2 pr-10
-                focus:ring-1 transition-colors ${
-                  formData.password && isValidPassword(formData.password)
-                    ? 'border-green-300 focus:border-green-500 focus:ring-green-500 bg-green-50'
-                    : formData.password && formData.password.length > 0
-                    ? 'border-orange-300 focus:border-orange-500 focus:ring-orange-500'
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                }`}
-      placeholder="Create a strong password"
-      required
-    />
-    
-    {/* Success checkmark when password is valid */}
-    {formData.password && isValidPassword(formData.password) && (
-      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-          <span className="text-white text-xs font-bold">✓</span>
-        </div>
-      </div>
-    )}
-  </div>
+    if (formData.password && formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
+      valid = false;
+    }
   
-  {/* Show password requirements when user starts typing */}
-  {formData.password && formData.password.length > 0 && (
-    <PasswordRequirements password={formData.password} />
-  )}
-  
-  {/* Show static hint when password field is empty */}
-  {(!formData.password || formData.password.length === 0) && (
-    <p className="text-xs text-gray-500 mt-1">
-      Must contain at least 8 characters, uppercase letter, number, and special character
-    </p>
-  )}
-  
-  {/* Show validation errors */}
-  {errors.password && (
-    <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-  )}
-</div>
-    </div>
-    
-    {/* REMOVED: Problematic back button that was causing issues */}
-  </div>
-);
-
-const renderBottomNavigation = () => {
-  if (view !== 'signup') return null;
-  
-  return (
-    <div className="flex justify-between items-center mt-8 pt-6 border-t">
-      {/* Back Button Logic */}
-      <div>
-        {currentSection === 'verify' && (
-          <button
-            onClick={() => {
-              setCurrentSection('account');
-              setErrors({});
-            }}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors flex items-center"
-          >
-            <span className="mr-1">←</span> Back to Account
-          </button>
-        )}
-        {currentSection === 'compass' && (
-          <button
-            onClick={() => {
-              setCurrentSection('verify');
-              setErrors({});
-            }}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors flex items-center"
-          >
-            <span className="mr-1">←</span> Back
-          </button>
-        )}
-        {currentSection === 'account' && (
-          <button
-            onClick={() => setView('landing')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors flex items-center"
-          >
-            <span className="mr-1">←</span> Back to Home
-          </button>
-        )}
-      </div>
-
-      {/* Next/Submit Button Logic */}
-      <div>
-        {currentSection === 'account' && (
-          <div className="flex flex-col items-end">
-            <button
-              onClick={handleNext}
-              disabled={
-                !formData.firstName || 
-                !formData.lastName || 
-                !formData.email || 
-                !formData.username || 
-                !formData.password ||
-                !isValidPassword(formData.password)
-              }
-              className={`px-6 py-2 rounded-lg transition-colors font-medium ${
-                (!formData.firstName || 
-                 !formData.lastName || 
-                 !formData.email || 
-                 !formData.username || 
-                 !formData.password ||
-                 !isValidPassword(formData.password))
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              Create Account
-            </button>
-            
-            {formData.password && 
-             formData.password.length > 0 && 
-             !isValidPassword(formData.password) && (
-              <p className="text-xs text-orange-600 mt-1 text-right">
-                Complete password requirements to continue
-              </p>
-            )}
-          </div>
-        )}
-        {currentSection === 'compass' && (
-          <button
-            onClick={handleNext}
-            disabled={!formData.pathType || !formData.careerStage || !formData.primaryGoal}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
-                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Complete Setup
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
-  
-  
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    return valid;
+  };
 
   const validateCompassStep = async () => {
     const newErrors = {};
@@ -929,31 +1237,7 @@ const renderBottomNavigation = () => {
   
     return valid;
   };
-  
-  const validateAccountStep = () => {
-    const newErrors = {};
-    let valid = true;
-  
-    const requiredFields = ['firstName', 'lastName', 'email', 'username', 'password'];
-  
-    requiredFields.forEach((field) => {
-      if (!formData[field]) {
-        newErrors[field] = 'This field is required';
-        valid = false;
-      }
-    });
-  
-    if (formData.password && formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
-      valid = false;
-    }
-  
-    setErrors((prev) => ({ ...prev, ...newErrors }));
-    return valid;
-  };
-  
-  
-  // Updated handleNext function for signup using Cognito
+
   const handleNext = async () => {
     if (currentSection === 'account') {
       if (validateAccountStep()) {
@@ -965,7 +1249,6 @@ const renderBottomNavigation = () => {
           return;
         }
         try {
-          // Prepare user attributes 
           const userAttributes = {
             email: formData.email,
             given_name: formData.firstName,
@@ -973,7 +1256,6 @@ const renderBottomNavigation = () => {
             preferred_username: formData.username
           };
   
-          // Sign up using email as username
           const { isSignUpComplete, userId, nextStep } = await signUp({
             username: formData.email, 
             password: formData.password,
@@ -986,14 +1268,12 @@ const renderBottomNavigation = () => {
           console.log('Cognito signup successful');
           analytics.trackUserSignup('email');
   
-          // Store user credentials for verification
           setUnverifiedUser({
             username: formData.email,
             password: formData.password
           });
   
-          // Move to verification section
-          setCurrentSection('verify');
+          handleViewTransition('signup', 'verify');
   
         } catch (error) {
           console.error('Error creating user:', error);
@@ -1013,16 +1293,15 @@ const renderBottomNavigation = () => {
     } else if (currentSection === 'compass') {
       if (await validateCompassStep()) {
         try {
-          // Store path preferences in session storage
           const pathPreferences = {
             pathType: formData.pathType,
             careerStage: formData.careerStage,
             primaryGoal: formData.primaryGoal
           };
           
-          storageUtils.setItem('userPathPreferences', JSON.stringify(pathPreferences));
+          // Save to localStorage AND sync to DynamoDB
+          storageService.setItem(STORAGE_KEYS.USER_PREFERENCES, pathPreferences);
 
-          // Update local user state
           setUser(prevUser => ({
             ...prevUser,
             ...pathPreferences
@@ -1039,42 +1318,63 @@ const renderBottomNavigation = () => {
       }
     }
   };
-  
-         
-return (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          {/* <h1 className="text-3xl font-bold text-gray-900">NxtGrnd AI</h1> */}
-        </div>
 
-        {view === 'landing' && renderLandingPage()}
-        {view === 'login' && renderLoginSection()}
-        {view === 'signup' && (
-          <>
-            {currentSection === 'verify' ? renderVerificationSection() :
-             currentSection === 'compass' ? renderCompassSection() :
-             renderAccountSection()}
-            
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+          <div className="p-8">
+            {/* Progress indicator for signup flow */}
+            {view === 'signup' && (
+              <div className="mb-8 animate-slideDown">
+                <div className="flex items-center justify-center space-x-4">
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-300 ${
+                    currentSection === 'account' ? 'bg-blue-500 text-white' : 
+                    currentSection === 'verify' || currentSection === 'compass' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {currentSection === 'verify' || currentSection === 'compass' ? <Check className="w-4 h-4" /> : '1'}
+                  </div>
+                  <div className={`h-1 w-16 rounded transition-all duration-300 ${
+                    currentSection === 'verify' || currentSection === 'compass' ? 'bg-green-500' : 'bg-gray-200'
+                  }`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-300 ${
+                    currentSection === 'verify' ? 'bg-blue-500 text-white' : 
+                    currentSection === 'compass' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {currentSection === 'compass' ? <Check className="w-4 h-4" /> : '2'}
+                  </div>
+                  <div className={`h-1 w-16 rounded transition-all duration-300 ${
+                    currentSection === 'compass' ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-300 ${
+                    currentSection === 'compass' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    3
+                  </div>
+                </div>
+                <div className="flex justify-center space-x-8 mt-4">
+                  <span className="text-xs text-gray-600">Account</span>
+                  <span className="text-xs text-gray-600">Verify</span>
+                  <span className="text-xs text-gray-600">Goals</span>
+                </div>
+              </div>
+            )}
+
+            {/* Main Content Area */}
+            <div className="relative">
+              {view === 'landing' && renderLandingPage()}
+              {view === 'login' && renderLoginSection()}
+              {view === 'signup' && currentSection === 'account' && renderAccountSection()}
+              {view === 'signup' && currentSection === 'verify' && renderVerificationSection()}
+              {view === 'signup' && currentSection === 'compass' && renderCompassSection()}
+            </div>
+
+            {/* Bottom Navigation */}
             {renderBottomNavigation()}
-          </>
-        )}
-
-        {view === 'login' && (
-          <div className="mt-4 text-center text-sm">
-            <button
-              onClick={() => setView('signup')}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              Don't have an account? Sign up
-            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default OnboardingFlow;

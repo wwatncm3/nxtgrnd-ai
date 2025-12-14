@@ -1,18 +1,21 @@
-// ENHANCED LoginHandler.js with better verification error handling
+// ENHANCED LoginHandler.js with DynamoDB persistence
 
-import { 
-  signIn, 
-  getCurrentUser, 
+import {
+  signIn,
+  getCurrentUser,
   fetchUserAttributes,
-  signOut 
+  signOut
 } from '@aws-amplify/auth';
-import { 
-  sessionUtils, 
-  userStateUtils, 
+import {
   determineUserNavigationWithDebug,
   handleAuthError,
-  debugUtils 
+  debugUtils,
+  setCurrentStorageUserId,
+  migrateOldStorageKeys,
+  cleanupNonScopedKeys,
+  storageUtils
 } from '../utils/authUtils';
+import { userStateService, storageService } from '../services/storageService';
 
 export const useLoginHandler = () => {
   
@@ -40,47 +43,56 @@ export const useLoginHandler = () => {
       // Step 2: Check if user is already authenticated
       let currentUser;
       let userAttributes;
-      
+      let needsSignIn = true;
+
       try {
         currentUser = await getCurrentUser();
         userAttributes = await fetchUserAttributes();
-        
+
         // If we get here, user is already authenticated
-        console.log('✅ User already authenticated, using existing session');
-        
+        console.log('✅ User already authenticated, checking if same user...');
+
         // Check if this is the same user trying to log in
-        if (userAttributes.email !== loginData.username) {
-          console.log('🔄 Different user detected, signing out current user');
-          await signOut();
-          // Proceed with new login below
-          throw new Error('NEED_NEW_SIGNIN');
-        }
-        
-      } catch (error) {
-        if (error.message === 'NEED_NEW_SIGNIN') {
-          // Sign in the new user
-          console.log('🔐 Signing in new user...');
-          await signIn({
-            username: loginData.username,
-            password: loginData.password
-          });
-          
-          // Get user data after sign in
-          currentUser = await getCurrentUser();
-          userAttributes = await fetchUserAttributes();
+        if (userAttributes.email === loginData.username) {
+          console.log('✅ Same user, using existing session');
+          needsSignIn = false;
         } else {
-          // User not authenticated, proceed with normal sign in
-          console.log('🔐 No existing session, signing in...');
-          await signIn({
-            username: loginData.username,
-            password: loginData.password
-          });
-          
-          // Get user data after sign in
-          currentUser = await getCurrentUser();
-          userAttributes = await fetchUserAttributes();
+          console.log('🔄 Different user detected, signing out current user');
+          // Clear the previous user's session marker
+          storageUtils.clearAllUserData();
+          await signOut();
+          needsSignIn = true;
         }
+
+      } catch (error) {
+        // User not authenticated
+        console.log('🔐 No existing session found');
+        needsSignIn = true;
       }
+
+      // Sign in if needed
+      if (needsSignIn) {
+        console.log('🔐 Signing in user...');
+        await signIn({
+          username: loginData.username,
+          password: loginData.password
+        });
+
+        // Get user data after sign in
+        currentUser = await getCurrentUser();
+        userAttributes = await fetchUserAttributes();
+      }
+
+      // Step 2.5: Set up user-scoped storage and migrate old keys
+      const userId = loginData.username;
+      console.log('🔑 Setting current storage user ID:', userId);
+      setCurrentStorageUserId(userId);
+
+      // Clean up any non-scoped keys from previous sessions
+      cleanupNonScopedKeys();
+
+      // Migrate any old storage keys for this user
+      migrateOldStorageKeys(userId);
       
       console.log('✅ Authentication successful');
       
@@ -95,8 +107,8 @@ export const useLoginHandler = () => {
 
       console.log('👤 Base user data created:', baseUserData);
 
-      // Step 4: Get stored user state
-      const storedState = userStateUtils.getUserState(loginData.username);
+      // Step 4: Get stored user state (now async to check DynamoDB)
+      const storedState = await userStateService.getUserState(loginData.username);
       console.log('📊 Stored state:', storedState);
 
       // Step 5: Debug log (development only)
@@ -108,28 +120,18 @@ export const useLoginHandler = () => {
   ...storedState.preferences
 };
 
-// ✅ Parse and add selectedCareerPath if it exists
+// ✅ Add selectedCareerPath if it exists
+// storageUtils.getItem already returns parsed data, no need to JSON.parse
 if (storedState.careerPath) {
-  try {
-    completeUserData.selectedCareerPath = typeof storedState.careerPath === 'string' 
-      ? JSON.parse(storedState.careerPath) 
-      : storedState.careerPath;
-    console.log('✅ Added selectedCareerPath to user data:', completeUserData.selectedCareerPath?.title);
-  } catch (error) {
-    console.error('❌ Error parsing stored career path:', error);
-  }
+  completeUserData.selectedCareerPath = storedState.careerPath;
+  console.log('✅ Added selectedCareerPath to user data:', completeUserData.selectedCareerPath?.title);
 }
 
-// ✅ Parse and add resume if it exists
+// ✅ Add resume if it exists
+// storageUtils.getItem already returns parsed data, no need to JSON.parse
 if (storedState.resume) {
-  try {
-    completeUserData.resume = typeof storedState.resume === 'string' 
-      ? JSON.parse(storedState.resume) 
-      : storedState.resume;
-    console.log('✅ Added resume to user data');
-  } catch (error) {
-    console.error('❌ Error parsing stored resume:', error);
-  }
+  completeUserData.resume = storedState.resume;
+  console.log('✅ Added resume to user data');
 }
 
       // Step 7: Update user context FIRST

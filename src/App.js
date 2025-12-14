@@ -7,6 +7,10 @@ import AICareerCompass from './pages/AiCareerCompass';
 import ResumeAnalysis from './components/ResumeAnalysis';
 import CreatorProfile from './components/CreatorProfile';
 import SettingsPage from './pages/SettingsPage';
+import LearningPathsPage from './pages/LearningPathsPage';
+import JobsProjectsPage from './pages/JobsProjectsPage';
+import CertificationsPage from './pages/CertificationsPage';
+import MentorMatchingQuiz from './components/MentorMatchingQuiz';
 import { AchievementProvider } from './components/AchievementSystem';
 import analytics  from './utils/analytics';
 
@@ -33,6 +37,23 @@ function App() {
     return () => analytics.cleanup();
 
   }, []);
+  useEffect(() => {
+  const handleKeyPress = (e) => {
+    // Press Ctrl+Shift+C to clear cache
+    if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+      localStorage.clear();
+      sessionStorage.clear();
+      console.log('🧹 CLEARED ALL CACHE - Ctrl+Shift+C pressed');
+      window.location.reload(); // Fresh start
+    }
+  };
+
+  // Only add this in development to avoid accidental clearing in production
+  if (process.env.NODE_ENV === 'development') {
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }
+}, []);
 
   const checkAuthState = async () => {
     try {
@@ -176,6 +197,22 @@ function App() {
       // ✅ NEW: Settings Page is stage 8
       case 8:
         return <SettingsPage setStage={setStage} />;
+
+      // ✅ NEW: Learning Paths Page is stage 9
+      case 9:
+        return <LearningPathsPage setStage={setStage} />;
+
+      // ✅ NEW: Jobs & Projects Page is stage 10
+      case 10:
+        return <JobsProjectsPage setStage={setStage} />;
+
+      // ✅ NEW: Certifications Page is stage 11
+      case 11:
+        return <CertificationsPage setStage={setStage} />;
+
+      // ✅ NEW: Mentor Matching Quiz is stage 12
+      case 12:
+        return <MentorMatchingQuiz setStage={setStage} onBack={() => setStage(5)} />;
 
       default:
         return (

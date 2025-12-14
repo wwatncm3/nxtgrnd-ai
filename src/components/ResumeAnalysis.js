@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../App';
-import { 
-  File, ArrowLeft, ChevronLeft, CheckCircle, AlertCircle, 
-  RefreshCw, Download, ChevronDown, ChevronUp, TrendingUp, Target, 
-  Zap, Book, Star, Award, Briefcase, Clock 
+import {
+  File, ArrowLeft, ChevronLeft, CheckCircle, AlertCircle,
+  RefreshCw, Download, ChevronDown, ChevronUp, TrendingUp, Target,
+  Zap, Book, Star, Award, Briefcase, Clock
 } from 'lucide-react';
 import { useAchievements } from './AchievementSystem';
 import * as lucide from 'lucide-react';
-import { storageUtils } from '../utils/authUtils';
+import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import analytics from '../utils/analytics';
+import API_CONFIG from '../config/api';
+import { FullPageLoader } from './ui/AnimatedComponents';
 
 const ANALYSIS_CACHE_KEY = 'resumeAnalysisCache';
 
@@ -31,11 +33,12 @@ const getSafeIcon = (iconName) => {
 };
 const getStoredAnalysis = (userId, resumePath) => {
   try {
+    // storageUtils.getItem already returns parsed data
     const stored = storageUtils.getItem(
       `${ANALYSIS_CACHE_KEY}_${userId}_${resumePath}`
     );
     if (stored) {
-      return JSON.parse(stored);
+      return stored;
     }
   } catch (err) {
     console.error('Error reading analysis from session:', err);
@@ -46,7 +49,7 @@ const getStoredAnalysis = (userId, resumePath) => {
 const downloadResumeFromS3 = async (path) => {
   try {
     console.log('Downloading and analyzing resume:', path);
-    const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/download', {
+    const response = await fetch(API_CONFIG.files.download(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -88,24 +91,20 @@ const ResumeAnalysis = ({ setStage }) => {
 
   const getResumeData = async () => {
     console.log('Getting resume data...');
-    
-    // First try session storage
-    const storedResume = storageUtils.getItem('userResume');
+
+    // First try session storage using the correct key
+    // storageUtils.getItem already returns parsed data
+    const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME);
     console.log('Session storage resume check:', storedResume ? 'Found' : 'Not found');
-  
+
     if (storedResume) {
-      try {
-        const parsedResume = JSON.parse(storedResume);
-        if (isValidResumeData(parsedResume)) {
-          analytics.trackEvent('resume_loaded_from_storage', {
-          fileType: parsedResume.type,
-          hasContent: !!parsedResume.content
+      if (isValidResumeData(storedResume)) {
+        analytics.trackEvent('resume_loaded_from_storage', {
+          fileType: storedResume.type,
+          hasContent: !!storedResume.content
         });
-          console.log('Valid resume data found in session storage');
-          return parsedResume;
-        }
-      } catch (err) {
-        console.error('Error parsing stored resume:', err);
+        console.log('Valid resume data found in session storage');
+        return storedResume;
       }
     }
   
@@ -130,7 +129,8 @@ const ResumeAnalysis = ({ setStage }) => {
         };
   
         console.log('Successfully downloaded and analyzed resume from S3');
-        storageUtils.setItem('userResume', JSON.stringify(newResumeData));
+        // storageUtils.setItem handles JSON stringification internally
+        storageUtils.setItem(STORAGE_KEYS.USER_RESUME, newResumeData);
         return newResumeData;
       } catch (err) {
         console.error('Error downloading resume from S3:', err);
@@ -233,7 +233,7 @@ console.log('Starting resume analysis...', {
     let response;
     try {
       response = await fetch(
-        'https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations/generate',
+        API_CONFIG.recommendations.generate(),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -416,15 +416,10 @@ console.log('Starting resume analysis...', {
 
   // Rendering functions...
   const renderLoadingState = () => (
-    <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-      <div className="text-center">
-        <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto" />
-        <p className="mt-4 text-xl font-medium">Analyzing Your Resume...</p>
-        <p className="mt-2 text-gray-600">
-          We're conducting an in-depth review against industry standards and your chosen career path
-        </p>
-      </div>
-    </div>
+    <FullPageLoader
+      message="Analyzing Your Resume..."
+      subMessage="We're conducting an in-depth review against industry standards and your chosen career path"
+    />
   );
 
   const renderErrorState = () => (

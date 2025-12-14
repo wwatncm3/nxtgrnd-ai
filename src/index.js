@@ -3,10 +3,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
 import { UserProvider } from './UserContext';
 import { Amplify } from 'aws-amplify';
 import awsConfig from './aws-config';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 Amplify.configure({
   Auth: {
@@ -24,3 +24,17 @@ root.render(
     <App />
   </UserProvider>
 );
+
+// Register service worker for offline capability
+serviceWorkerRegistration.register({
+  onSuccess: (registration) => {
+    console.log('NxtGrnd AI is now available offline!');
+  },
+  onUpdate: (registration) => {
+    console.log('New version available! Refresh to update.');
+    // Optionally show a notification to the user
+    if (window.confirm('A new version of NxtGrnd AI is available. Refresh to update?')) {
+      window.location.reload();
+    }
+  }
+});

@@ -1,12 +1,19 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { 
-  ArrowLeft, Upload, Bell, Lock, CreditCard, User, Save, 
-  Eye, EyeOff, Check, AlertCircle, RefreshCw, X 
+import {
+  ArrowLeft, Upload, Bell, Lock, CreditCard, User, Save,
+  Eye, EyeOff, Check, AlertCircle, RefreshCw, X
 } from 'lucide-react';
 import { updateUserAttributes, getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
 import { UserContext } from '../App';
 import { storageUtils } from '../utils/authUtils';
 import analytics from '../utils/analytics';
+import API_CONFIG from '../config/api';
+import {
+  isPushSupported,
+  getPermissionStatus,
+  requestPermission,
+  sendCareerUpdate
+} from '../utils/pushNotifications';
 
 const SettingsPage = ({ setStage }) => {
   const { user, setUser } = useContext(UserContext);
@@ -260,7 +267,7 @@ const SettingsPage = ({ setStage }) => {
             reader.readAsDataURL(avatar);
           });
           
-          const response = await fetch('https://7dgswradw7.execute-api.us-east-1.amazonaws.com/files/upload', {
+          const response = await fetch(API_CONFIG.files.upload(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -350,12 +357,36 @@ const SettingsPage = ({ setStage }) => {
   };
   
   // Save notification preferences
-  const handleSaveNotifications = () => {
+  const handleSaveNotifications = async () => {
     try {
+      // Handle push notification permission if user enabled it
+      if (notifications.pushNotifications) {
+        if (isPushSupported()) {
+          const currentStatus = getPermissionStatus();
+          if (currentStatus !== 'granted') {
+            const result = await requestPermission();
+            if (!result.success) {
+              // Permission denied - update state to reflect this
+              setNotifications(prev => ({ ...prev, pushNotifications: false }));
+              setError('Push notification permission was denied. Please enable in browser settings.');
+              return;
+            }
+            // Permission granted - send a test notification
+            sendCareerUpdate('Push notifications are now enabled!');
+          }
+        } else {
+          setNotifications(prev => ({ ...prev, pushNotifications: false }));
+          setError('Push notifications are not supported in this browser.');
+          return;
+        }
+      }
+
       storageUtils.setItem(`notifications_${user.userID}`, notifications);
+      analytics.trackEvent('notification_preferences_saved', { preferences: notifications });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
+      console.error('Error saving notifications:', error);
       setError('Failed to save notification preferences');
     }
   };
