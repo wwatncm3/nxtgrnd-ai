@@ -118,12 +118,18 @@ const generateRecommendation = async (userData) => {
 
     // OPTIMIZED: Single comprehensive OpenAI call that includes match scores
     // This replaces: 1) Resume analysis, 2) Career recommendations, 3) Individual match scoring
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert AI career counselor. Generate comprehensive career recommendations with REALISTIC match scores.
+    // AbortController gives us a graceful 25s timeout before API Gateway cuts us off at 29s
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert AI career counselor. Generate comprehensive career recommendations with REALISTIC match scores.
 
 MATCH SCORING CRITERIA (be honest and realistic):
 - 85-100%: Excellent fit - Strong relevant experience, matching skills, clear career progression
@@ -138,10 +144,10 @@ Someone with 0 relevant experience should score 25-45%.
 Only candidates with strong relevant experience should score 85+.
 
 Return ONLY valid JSON.`
-        },
-        {
-          role: "user",
-          content: `Generate career recommendations for this candidate:
+          },
+          {
+            role: "user",
+            content: `Generate career recommendations for this candidate:
 
 CANDIDATE PROFILE:
 - Interests: ${interests?.join(', ') || 'Not specified'}
@@ -210,12 +216,15 @@ Return JSON with this EXACT structure:
     {"trend": "AI Integration", "impact": "High", "description": "Brief description"}
   ]
 }`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 2500, // Reduced from 3000
-      response_format: { type: "json_object" }
-    });
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1800, // Reduced for faster response (3 career paths fit comfortably)
+        response_format: { type: "json_object" }
+      }, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     console.log(`OpenAI call completed in ${Date.now() - startTime}ms`);
 
@@ -263,9 +272,22 @@ Return JSON with this EXACT structure:
       })
     };
   } catch (error) {
+    // AbortError means we hit our 25s self-imposed timeout before API Gateway's 29s hard cut
+    if (error.name === 'AbortError') {
+      console.error('OpenAI call timed out after 25s');
+      return {
+        statusCode: 504,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          message: 'Request timed out. Please try again — AI generation can take up to 30 seconds.',
+          error: 'timeout'
+        })
+      };
+    }
     console.error('Error generating recommendations:', error);
     return {
       statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({
         message: 'Error generating recommendations',
         error: error.message
