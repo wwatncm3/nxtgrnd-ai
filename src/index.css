@@ -86,6 +86,22 @@ code {
   100% { background-position: 200% 0; }
 }
 
+/* Slow bounce animation for floating elements */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
 /* ===== Button Enhancements ===== */
 .btn-primary {
   @apply relative overflow-hidden transition-all duration-300 ease-out;

@@ -1,8 +1,6 @@
 // Job Search Service
 // Fetches real job listings from multiple job board APIs and aggregates results
 
-import API_CONFIG from '../config/api';
-
 // Job board configurations
 const JOB_BOARDS = {
   // Note: Most job board APIs require API keys. These are structured to be easily configured
@@ -303,9 +301,11 @@ export const getJobRecommendations = async (user, careerPath) => {
 };
 
 // Export all functions
-export default {
+const jobSearchService = {
   searchJobs,
   getJobRecommendations,
   getJobBoardSearchUrls,
   calculateJobMatchScore
 };
+
+export default jobSearchService;

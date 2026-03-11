@@ -33,7 +33,7 @@ export const useLoginHandler = () => {
     }
 
     try {
-      console.log('🔐 Login attempt for:', loginData.username);
+      console.log('AUTH: Login attempt for:', loginData.username);
 
       // Step 1: Test session storage
       if (!debugUtils.testSessionStorage()) {
@@ -50,14 +50,14 @@ export const useLoginHandler = () => {
         userAttributes = await fetchUserAttributes();
 
         // If we get here, user is already authenticated
-        console.log('✅ User already authenticated, checking if same user...');
+        console.log('SUCCESS: User already authenticated, checking if same user...');
 
         // Check if this is the same user trying to log in
         if (userAttributes.email === loginData.username) {
-          console.log('✅ Same user, using existing session');
+          console.log('SUCCESS: Same user, using existing session');
           needsSignIn = false;
         } else {
-          console.log('🔄 Different user detected, signing out current user');
+          console.log('RELOADING: Different user detected, signing out current user');
           // Clear the previous user's session marker
           storageUtils.clearAllUserData();
           await signOut();
@@ -66,13 +66,13 @@ export const useLoginHandler = () => {
 
       } catch (error) {
         // User not authenticated
-        console.log('🔐 No existing session found');
+        console.log('AUTH: No existing session found');
         needsSignIn = true;
       }
 
       // Sign in if needed
       if (needsSignIn) {
-        console.log('🔐 Signing in user...');
+        console.log('AUTH: Signing in user...');
         await signIn({
           username: loginData.username,
           password: loginData.password
@@ -85,7 +85,7 @@ export const useLoginHandler = () => {
 
       // Step 2.5: Set up user-scoped storage and migrate old keys
       const userId = loginData.username;
-      console.log('🔑 Setting current storage user ID:', userId);
+      console.log('AUTH: Setting current storage user ID:', userId);
       setCurrentStorageUserId(userId);
 
       // Clean up any non-scoped keys from previous sessions
@@ -94,7 +94,7 @@ export const useLoginHandler = () => {
       // Migrate any old storage keys for this user
       migrateOldStorageKeys(userId);
       
-      console.log('✅ Authentication successful');
+      console.log('SUCCESS: Authentication successful');
       
       // Step 3: Create base user data
       const baseUserData = {
@@ -105,11 +105,11 @@ export const useLoginHandler = () => {
         lastName: userAttributes.family_name,
       };
 
-      console.log('👤 Base user data created:', baseUserData);
+      console.log('USER: Base user data created:', baseUserData);
 
       // Step 4: Get stored user state (now async to check DynamoDB)
       const storedState = await userStateService.getUserState(loginData.username);
-      console.log('📊 Stored state:', storedState);
+      console.log('STATS: Stored state:', storedState);
 
       // Step 5: Debug log (development only)
       debugUtils.logAllStoredData(loginData.username);
@@ -120,18 +120,18 @@ export const useLoginHandler = () => {
   ...storedState.preferences
 };
 
-// ✅ Add selectedCareerPath if it exists
+// SUCCESS: Add selectedCareerPath if it exists
 // storageUtils.getItem already returns parsed data, no need to JSON.parse
 if (storedState.careerPath) {
   completeUserData.selectedCareerPath = storedState.careerPath;
-  console.log('✅ Added selectedCareerPath to user data:', completeUserData.selectedCareerPath?.title);
+  console.log('SUCCESS: Added selectedCareerPath to user data:', completeUserData.selectedCareerPath?.title);
 }
 
-// ✅ Add resume if it exists
+// SUCCESS: Add resume if it exists
 // storageUtils.getItem already returns parsed data, no need to JSON.parse
 if (storedState.resume) {
   completeUserData.resume = storedState.resume;
-  console.log('✅ Added resume to user data');
+  console.log('SUCCESS: Added resume to user data');
 }
 
       // Step 7: Update user context FIRST
@@ -142,10 +142,10 @@ if (storedState.resume) {
 
       // Step 8: Determine navigation with enhanced debugging
       const navigation = determineUserNavigationWithDebug(storedState);
-      console.log('🧭 Final Navigation decision:', navigation);
+      console.log('NAV: Final Navigation decision:', navigation);
       
       // Step 9: Navigate user with explicit logging
-      console.log('📍 About to call onNext with:', {
+      console.log('TARGET: About to call onNext with:', {
         userData: completeUserData,
         skipToEnd: navigation.skipToEnd,
         expectedStage: navigation.stage
@@ -154,47 +154,50 @@ if (storedState.resume) {
       onNext(completeUserData, navigation);
 
     } catch (error) {
-      console.error('❌ Login failed:', error);
-      
+      console.error('ERROR: Login failed:', error);
+
+      // Get error identifier (Amplify v6 uses 'name', older versions use 'code')
+      const errorType = error.name || error.code;
+
       // Enhanced error handling for specific Cognito errors
-      if (error.code === 'UserNotConfirmedException') {
-        console.log('📧 User needs email verification');
-        
+      if (errorType === 'UserNotConfirmedException') {
+        console.log('EMAIL: User needs email verification');
+
         // Store user data for verification process
         if (setUnverifiedUser) {
           setUnverifiedUser({ username: loginData.username, password: loginData.password });
         }
-        
+
         // Navigate to verification step if functions are provided
         if (setView && setCurrentSection) {
           setView('signup');
           setCurrentSection('verify');
         }
-        
+
         setErrors(prev => ({
           ...prev,
           verification: 'Please verify your email before logging in. Check your inbox for the verification code.',
           login: ''
         }));
-        
-      } else if (error.code === 'UserNotFoundException') {
+
+      } else if (errorType === 'UserNotFoundException') {
         setErrors(prev => ({
           ...prev,
           login: 'No account found with this email address. Please check your email or create a new account.'
         }));
-        
-      } else if (error.code === 'NotAuthorizedException') {
+
+      } else if (errorType === 'NotAuthorizedException') {
         setErrors(prev => ({
           ...prev,
-          login: 'Incorrect email or password. Please check your credentials and try again.'
+          login: 'Incorrect password. Please try again.'
         }));
-        
-      } else if (error.code === 'TooManyRequestsException') {
+
+      } else if (errorType === 'TooManyRequestsException') {
         setErrors(prev => ({
           ...prev,
           login: 'Too many login attempts. Please wait a few minutes before trying again.'
         }));
-        
+
       } else {
         // Fallback to existing error handler
         const errorMessage = handleAuthError(error);

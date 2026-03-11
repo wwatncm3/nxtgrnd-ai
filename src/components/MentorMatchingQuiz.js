@@ -5,16 +5,19 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
   Users, Building2, MapPin, Briefcase, GraduationCap,
   ChevronRight, ChevronLeft, Linkedin, Search, Sparkles,
-  CheckCircle, ExternalLink, MessageCircle, Target
+  CheckCircle, ExternalLink, MessageCircle, Target,
+  Sprout, TreePine, Mountain, Globe, Handshake, Dumbbell, Rocket
 } from 'lucide-react';
 import { UserContext } from '../App';
 import { storageService, STORAGE_KEYS } from '../services/storageService';
+import API_CONFIG from '../config/api';
 
 const MentorMatchingQuiz = ({ setStage, onBack }) => {
   const { user } = useContext(UserContext);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [mentorResults, setMentorResults] = useState(null);
+  const [userGeolocation, setUserGeolocation] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({
     linkedinUrl: '',
     preferredCompanies: [],
@@ -25,6 +28,7 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
     mentorStyle: '',
     focusAreas: []
   });
+
 
   // Load any saved quiz progress
   useEffect(() => {
@@ -116,32 +120,56 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
         careerLevel: quizAnswers.careerLevel,
         location: quizAnswers.location,
         meetingPreference: quizAnswers.meetingPreference,
+        mentorStyle: quizAnswers.mentorStyle,
+        focusAreas: quizAnswers.focusAreas,
         userCareerPath: user?.selectedCareerPath?.title,
-        userSkills: user?.resume?.skills || [],
+        userSkills: user?.resume?.skills || user?.selectedCareerPath?.requiredSkills || [],
         userEducation: user?.resume?.education || []
       };
 
-      // Call mentor search API (will be implemented in Lambda)
-      const response = await fetch(
-        process.env.REACT_APP_MENTOR_API || 'https://your-api-gateway.execute-api.us-east-1.amazonaws.com/dev/mentors/search',
-        {
+      // Use AI recommendations API for intelligent mentor matching
+      try {
+        const response = await fetch(API_CONFIG.recommendations.generate(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(searchCriteria)
-        }
-      );
+          body: JSON.stringify({
+            httpMethod: 'POST',
+            path: '/recommendations/generate',
+            body: JSON.stringify({
+              requestType: 'mentor_matching',
+              userId: user?.userID,
+              careerPath: user?.selectedCareerPath?.title,
+              experienceLevel: user?.experienceLevel || 'entry',
+              ...searchCriteria
+            })
+          })
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setMentorResults(data.mentors || generateMockMentors(searchCriteria));
-      } else {
-        // Use mock data for now
-        setMentorResults(generateMockMentors(searchCriteria));
+        if (response.ok) {
+          const data = await response.json();
+          const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+
+          if (parsedBody?.recommendations?.mentors) {
+            // Process AI-generated mentor recommendations
+            const aiMentors = parsedBody.recommendations.mentors.map((mentor, index) => ({
+              ...mentor,
+              id: index + 1,
+              linkedinUrl: generateLinkedInSearchUrl(searchCriteria, mentor.title, mentor.company),
+              isSearchProfile: true
+            }));
+            setMentorResults(aiMentors);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.log('AI API not available, using intelligent fallback');
       }
+
+      // Fallback to intelligent local generation
+      setMentorResults(generateAIMentors(searchCriteria));
     } catch (error) {
       console.error('Error searching mentors:', error);
-      // Use mock data as fallback
-      setMentorResults(generateMockMentors(quizAnswers));
+      setMentorResults(generateAIMentors(quizAnswers));
     } finally {
       setIsSearching(false);
     }
@@ -163,22 +191,131 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
     return `https://www.linkedin.com/search/results/people/?${params.toString()}`;
   };
 
-  // Generate mentor suggestions based on criteria
-  // These represent search profiles - clicking will search LinkedIn for real people
-  const generateMockMentors = (criteria) => {
-    const companyPool = criteria.companies?.length > 0
-      ? criteria.companies
-      : ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix', 'Stripe'];
+  // Generate AI-powered mentor suggestions based on career path and user preferences
+  // These represent search profiles - clicking will search LinkedIn for real professionals
+  const generateAIMentors = (criteria) => {
+    const careerTitle = user?.selectedCareerPath?.title || '';
+    const careerLower = careerTitle.toLowerCase();
 
-    const rolePool = {
-      'entry': ['Software Engineer', 'Product Designer', 'Data Analyst', 'Marketing Specialist'],
-      'mid': ['Senior Engineer', 'Product Manager', 'Lead Designer', 'Marketing Manager'],
-      'senior': ['Staff Engineer', 'Senior PM', 'Design Director', 'VP Marketing'],
-      'executive': ['Engineering Director', 'VP Product', 'Chief Design Officer', 'CMO']
+    // Career-specific company pools
+    const careerCompanyPools = {
+      culinary: ['Marriott Hotels', 'Hilton', 'The French Laundry', 'Blue Apron', 'Sweetgreen', 'Chipotle', 'Williams-Sonoma'],
+      chef: ['Nobu', 'Gordon Ramsay Restaurants', 'Thomas Keller Restaurant Group', 'Eleven Madison Park', 'Momofuku', 'Per Se', 'Alinea'],
+      cook: ['Marriott Hotels', 'Hyatt', 'Compass Group', 'Aramark', 'Sysco', 'US Foods', 'Restaurant Brands International'],
+      healthcare: ['Mayo Clinic', 'Cleveland Clinic', 'Kaiser Permanente', 'Johns Hopkins', 'HCA Healthcare', 'UnitedHealth', 'CVS Health'],
+      nurse: ['Mayo Clinic', 'Cleveland Clinic', 'Mass General', 'Johns Hopkins Hospital', 'Stanford Health Care', 'UCSF Medical Center'],
+      teacher: ['Khan Academy', 'Coursera', 'Teach for America', 'KIPP Schools', 'Success Academy', 'Achievement First'],
+      education: ['Pearson', 'McGraw Hill', '2U', 'Chegg', 'Duolingo', 'Udemy', 'Skillshare'],
+      marketing: ['HubSpot', 'Salesforce', 'Adobe', 'Hootsuite', 'Mailchimp', 'Sprout Social', 'Buffer'],
+      finance: ['Goldman Sachs', 'Morgan Stanley', 'JP Morgan', 'BlackRock', 'Fidelity', 'Vanguard', 'Charles Schwab'],
+      creative: ['IDEO', 'Pentagram', 'Frog Design', 'R/GA', 'Huge', 'Publicis', 'WPP'],
+      design: ['IDEO', 'Figma', 'InVision', 'Canva', 'Adobe', 'Sketch', 'Framer'],
+      default: ['Google', 'Microsoft', 'Amazon', 'Meta', 'Apple', 'Netflix', 'Stripe']
     };
 
+    // Career-specific role pools
+    const careerRolePools = {
+      culinary: {
+        'entry': ['Line Cook', 'Prep Cook', 'Pastry Assistant', 'Kitchen Assistant'],
+        'mid': ['Sous Chef', 'Pastry Chef', 'Kitchen Manager', 'Culinary Instructor'],
+        'senior': ['Executive Chef', 'Head Chef', 'Director of Culinary', 'Corporate Chef'],
+        'executive': ['VP of Culinary', 'Chief Culinary Officer', 'Restaurant Group Director', 'F&B Director']
+      },
+      healthcare: {
+        'entry': ['Registered Nurse', 'Medical Assistant', 'Health Coach', 'Clinical Coordinator'],
+        'mid': ['Nurse Manager', 'Clinical Specialist', 'Healthcare Administrator', 'Senior Nurse'],
+        'senior': ['Director of Nursing', 'Chief Nursing Officer', 'VP Clinical Operations', 'Medical Director'],
+        'executive': ['Hospital CEO', 'Chief Medical Officer', 'VP Healthcare', 'Chief Operating Officer']
+      },
+      teacher: {
+        'entry': ['Teacher', 'Instructor', 'Teaching Assistant', 'Curriculum Developer'],
+        'mid': ['Senior Teacher', 'Department Head', 'Academic Coordinator', 'Lead Instructor'],
+        'senior': ['Principal', 'Dean', 'Director of Curriculum', 'VP of Education'],
+        'executive': ['Superintendent', 'Chief Academic Officer', 'Head of School', 'Education Director']
+      },
+      marketing: {
+        'entry': ['Marketing Coordinator', 'Social Media Specialist', 'Content Creator', 'Brand Ambassador'],
+        'mid': ['Marketing Manager', 'Brand Manager', 'Digital Marketing Lead', 'Content Strategist'],
+        'senior': ['Director of Marketing', 'VP Marketing', 'Head of Brand', 'Chief Marketing Officer'],
+        'executive': ['CMO', 'Chief Brand Officer', 'EVP Marketing', 'Global Marketing Director']
+      },
+      finance: {
+        'entry': ['Financial Analyst', 'Investment Analyst', 'Accountant', 'Financial Advisor'],
+        'mid': ['Senior Analyst', 'Portfolio Manager', 'Finance Manager', 'Investment Associate'],
+        'senior': ['Director of Finance', 'VP Finance', 'Managing Director', 'Partner'],
+        'executive': ['CFO', 'Chief Investment Officer', 'Head of Investment Banking', 'Managing Partner']
+      },
+      default: {
+        'entry': ['Software Engineer', 'Product Designer', 'Data Analyst', 'Marketing Specialist'],
+        'mid': ['Senior Engineer', 'Product Manager', 'Lead Designer', 'Marketing Manager'],
+        'senior': ['Staff Engineer', 'Senior PM', 'Design Director', 'VP Marketing'],
+        'executive': ['Engineering Director', 'VP Product', 'Chief Design Officer', 'CMO']
+      }
+    };
+
+    // Find matching career category
+    const findCareerCategory = (title) => {
+      const titleLower = title.toLowerCase();
+      if (['culinary', 'chef', 'cook', 'food', 'kitchen', 'pastry', 'baker', 'restaurant'].some(k => titleLower.includes(k))) return 'culinary';
+      if (['nurse', 'doctor', 'medical', 'health', 'hospital', 'clinical', 'therapy'].some(k => titleLower.includes(k))) return 'healthcare';
+      if (['teacher', 'instructor', 'professor', 'tutor', 'education', 'academic'].some(k => titleLower.includes(k))) return 'teacher';
+      if (['marketing', 'brand', 'advertising', 'social media', 'content', 'communications'].some(k => titleLower.includes(k))) return 'marketing';
+      if (['finance', 'financial', 'investment', 'banking', 'accounting'].some(k => titleLower.includes(k))) return 'finance';
+      if (['design', 'creative', 'artist', 'graphic', 'ux', 'ui'].some(k => titleLower.includes(k))) return 'creative';
+      return 'default';
+    };
+
+    const careerCategory = findCareerCategory(careerTitle);
+
+    // Use user-selected companies if provided, otherwise use career-specific companies
+    const companyPool = criteria.companies?.length > 0
+      ? criteria.companies
+      : careerCompanyPools[careerCategory] || careerCompanyPools.default;
+
+    const rolePool = careerRolePools[careerCategory] || careerRolePools.default;
     const roles = rolePool[criteria.careerLevel] || rolePool['mid'];
-    const careerTitle = user?.selectedCareerPath?.title || 'tech';
+
+    // Generate location-based mentor distribution
+    const generateMentorLocations = (userLocation) => {
+      if (!userLocation) {
+        return ['San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX', 'Remote'];
+      }
+
+      // Extract state from user location
+      const statePart = userLocation.split(',')[1]?.trim();
+
+      // Major cities by state for nearby mentor matching
+      const nearbyCities = {
+        'CA': ['San Francisco, CA', 'Los Angeles, CA', 'San Diego, CA', 'Sacramento, CA', 'Remote'],
+        'NY': ['New York, NY', 'Buffalo, NY', 'Rochester, NY', 'Albany, NY', 'Remote'],
+        'TX': ['Austin, TX', 'Houston, TX', 'Dallas, TX', 'San Antonio, TX', 'Remote'],
+        'FL': ['Miami, FL', 'Orlando, FL', 'Tampa, FL', 'Jacksonville, FL', 'Remote'],
+        'IL': ['Chicago, IL', 'Aurora, IL', 'Naperville, IL', 'Rockford, IL', 'Remote'],
+        'WA': ['Seattle, WA', 'Spokane, WA', 'Tacoma, WA', 'Vancouver, WA', 'Remote'],
+        'MA': ['Boston, MA', 'Cambridge, MA', 'Worcester, MA', 'Springfield, MA', 'Remote'],
+        'CO': ['Denver, CO', 'Colorado Springs, CO', 'Aurora, CO', 'Boulder, CO', 'Remote'],
+        'GA': ['Atlanta, GA', 'Augusta, GA', 'Columbus, GA', 'Savannah, GA', 'Remote'],
+        'NC': ['Charlotte, NC', 'Raleigh, NC', 'Durham, NC', 'Greensboro, NC', 'Remote']
+      };
+
+      // Return nearby cities if state matches, otherwise national distribution with user's city first
+      const stateCities = nearbyCities[statePart];
+      if (stateCities) {
+        // Put user's exact location first, then nearby cities
+        return [userLocation, ...stateCities.filter(city => city !== userLocation).slice(0, 4)];
+      }
+
+      // Fallback: user's location + major cities + remote
+      return [
+        userLocation,
+        'New York, NY',
+        'San Francisco, CA',
+        'Austin, TX',
+        'Remote'
+      ];
+    };
+
+    const mentorLocations = generateMentorLocations(criteria.location);
 
     // Generate mentor profiles that link to real LinkedIn searches
     return Array.from({ length: 5 }, (_, i) => {
@@ -190,7 +327,7 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
         name: `${role} at ${company}`,
         title: role,
         company: company,
-        location: criteria.location || ['San Francisco, CA', 'New York, NY', 'Seattle, WA', 'Austin, TX', 'Remote'][i],
+        location: mentorLocations[i],
         linkedinUrl: generateLinkedInSearchUrl(criteria, role, company),
         matchScore: 95 - (i * 5),
         yearsExperience: [8, 12, 6, 15, 10][i],
@@ -251,28 +388,36 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
   const progress = ((currentStep + 1) / quizSteps.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
+            <Users className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Find Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Perfect Mentor</span></h1>
+        </div>
+
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">Step {currentStep + 1} of {quizSteps.length}</span>
-            <span className="text-sm font-medium text-blue-600">{Math.round(progress)}% Complete</span>
+            <span className="text-sm font-medium text-purple-600">{Math.round(progress)}% Complete</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         {/* Quiz Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 animate-fade-in">
           {/* Step Header */}
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <StepIcon className="h-8 w-8 text-blue-600" />
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-md">
+              <StepIcon className="h-8 w-8 text-white" />
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -300,7 +445,7 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
             </button>
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 hover:shadow-lg active:scale-95"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 hover:shadow-lg active:scale-95"
             >
               {currentStep === quizSteps.length - 1 ? (
                 <>
@@ -447,10 +592,10 @@ const IndustriesStep = ({ answers, updateAnswer }) => {
 
 const CareerLevelStep = ({ answers, updateAnswer }) => {
   const levels = [
-    { id: 'entry', title: 'Entry Level', description: '1-3 years experience', icon: '🌱' },
-    { id: 'mid', title: 'Mid Level', description: '4-7 years experience', icon: '🌿' },
-    { id: 'senior', title: 'Senior Level', description: '8-12 years experience', icon: '🌳' },
-    { id: 'executive', title: 'Executive', description: '12+ years, leadership roles', icon: '🏔️' }
+    { id: 'entry', title: 'Entry Level', description: '1-3 years experience', Icon: Sprout },
+    { id: 'mid', title: 'Mid Level', description: '4-7 years experience', Icon: TreePine },
+    { id: 'senior', title: 'Senior Level', description: '8-12 years experience', Icon: TreePine },
+    { id: 'executive', title: 'Executive', description: '12+ years, leadership roles', Icon: Mountain }
   ];
 
   return (
@@ -465,7 +610,7 @@ const CareerLevelStep = ({ answers, updateAnswer }) => {
               : 'border-gray-200 hover:border-blue-300'
           }`}
         >
-          <span className="text-2xl">{level.icon}</span>
+          <level.Icon className="h-6 w-6 text-gray-600" />
           <div>
             <h3 className="font-semibold text-gray-900">{level.title}</h3>
             <p className="text-sm text-gray-600">{level.description}</p>
@@ -481,11 +626,76 @@ const CareerLevelStep = ({ answers, updateAnswer }) => {
 
 const LocationStep = ({ answers, updateAnswer }) => {
   const [customLocation, setCustomLocation] = useState(answers.location || '');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  const findNearestCity = (lat, lon) => {
+    const majorCities = [
+      { name: 'New York', state: 'NY', lat: 40.7128, lon: -74.0060 },
+      { name: 'Los Angeles', state: 'CA', lat: 34.0522, lon: -118.2437 },
+      { name: 'San Francisco', state: 'CA', lat: 37.7749, lon: -122.4194 },
+      { name: 'Chicago', state: 'IL', lat: 41.8781, lon: -87.6298 },
+      { name: 'Houston', state: 'TX', lat: 29.7604, lon: -95.3698 },
+      { name: 'Austin', state: 'TX', lat: 30.2672, lon: -97.7431 },
+      { name: 'Seattle', state: 'WA', lat: 47.6062, lon: -122.3321 },
+      { name: 'Boston', state: 'MA', lat: 42.3601, lon: -71.0589 },
+      { name: 'Miami', state: 'FL', lat: 25.7617, lon: -80.1918 },
+      { name: 'Denver', state: 'CO', lat: 39.7392, lon: -104.9903 },
+      { name: 'Atlanta', state: 'GA', lat: 33.7490, lon: -84.3880 },
+      { name: 'Phoenix', state: 'AZ', lat: 33.4484, lon: -112.0740 },
+      { name: 'Portland', state: 'OR', lat: 45.5152, lon: -122.6784 },
+      { name: 'San Diego', state: 'CA', lat: 32.7157, lon: -117.1611 },
+      { name: 'Dallas', state: 'TX', lat: 32.7767, lon: -96.7970 },
+      { name: 'Philadelphia', state: 'PA', lat: 39.9526, lon: -75.1652 },
+      { name: 'Charlotte', state: 'NC', lat: 35.2271, lon: -80.8431 },
+      { name: 'Nashville', state: 'TN', lat: 36.1627, lon: -86.7816 }
+    ];
+
+    let nearest = majorCities[0];
+    let minDistance = Infinity;
+
+    majorCities.forEach(city => {
+      const distance = Math.sqrt(
+        Math.pow(lat - city.lat, 2) + Math.pow(lon - city.lon, 2)
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearest = city;
+      }
+    });
+
+    return nearest;
+  };
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsGettingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const nearestCity = findNearestCity(latitude, longitude);
+        const locationString = `${nearestCity.name}, ${nearestCity.state}`;
+
+        setCustomLocation(locationString);
+        updateAnswer('location', locationString);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.warn('Geolocation error:', error);
+        alert('Unable to get your location. Please enter it manually.');
+        setIsGettingLocation(false);
+      }
+    );
+  };
 
   const preferences = [
-    { id: 'remote', title: 'Remote Only', description: 'Connect virtually from anywhere', icon: '🌐' },
-    { id: 'local', title: 'Local Preferred', description: 'I want to meet in person sometimes', icon: '📍' },
-    { id: 'either', title: 'No Preference', description: 'Both virtual and in-person work for me', icon: '🤝' }
+    { id: 'remote', title: 'Remote Only', description: 'Connect virtually from anywhere', Icon: Globe },
+    { id: 'local', title: 'Local Preferred', description: 'I want to meet in person sometimes', Icon: MapPin },
+    { id: 'either', title: 'No Preference', description: 'Both virtual and in-person work for me', Icon: Handshake }
   ];
 
   return (
@@ -501,7 +711,7 @@ const LocationStep = ({ answers, updateAnswer }) => {
                 : 'border-gray-200 hover:border-blue-300'
             }`}
           >
-            <span className="text-2xl">{pref.icon}</span>
+            <pref.Icon className="h-6 w-6 text-gray-600" />
             <div>
               <h3 className="font-semibold text-gray-900">{pref.title}</h3>
               <p className="text-sm text-gray-600">{pref.description}</p>
@@ -510,19 +720,28 @@ const LocationStep = ({ answers, updateAnswer }) => {
         ))}
       </div>
 
-      {answers.meetingPreference === 'local' && (
-        <div className="animate-fade-in">
+      { (answers.meetingPreference === 'local' || answers.meetingPreference === 'either') && (
+        <div className="animate-fade-in space-y-3">
           <label className="block text-sm font-medium text-gray-700 mb-2">Your City</label>
-          <input
-            type="text"
-            value={customLocation}
-            onChange={(e) => {
-              setCustomLocation(e.target.value);
-              updateAnswer('location', e.target.value);
-            }}
-            placeholder="e.g., San Francisco, CA"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customLocation}
+              onChange={(e) => {
+                setCustomLocation(e.target.value);
+                updateAnswer('location', e.target.value);
+              }}
+              placeholder="e.g., San Francisco, CA"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleUseMyLocation}
+              disabled={isGettingLocation}
+              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-400 whitespace-nowrap"
+            >
+              {isGettingLocation ? 'Getting...' : 'Use My Location'}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -531,10 +750,10 @@ const LocationStep = ({ answers, updateAnswer }) => {
 
 const MentorStyleStep = ({ answers, updateAnswer }) => {
   const styles = [
-    { id: 'advisor', title: 'Strategic Advisor', description: 'Big picture career guidance and industry insights', icon: '🎯' },
-    { id: 'coach', title: 'Skills Coach', description: 'Hands-on technical and professional development', icon: '💪' },
-    { id: 'sponsor', title: 'Career Sponsor', description: 'Introductions, referrals, and advocacy', icon: '🚀' },
-    { id: 'peer', title: 'Peer Mentor', description: 'Someone slightly ahead sharing recent experiences', icon: '🤝' }
+    { id: 'advisor', title: 'Strategic Advisor', description: 'Big picture career guidance and industry insights', Icon: Target },
+    { id: 'coach', title: 'Skills Coach', description: 'Hands-on technical and professional development', Icon: Dumbbell },
+    { id: 'sponsor', title: 'Career Sponsor', description: 'Introductions, referrals, and advocacy', Icon: Rocket },
+    { id: 'peer', title: 'Peer Mentor', description: 'Someone slightly ahead sharing recent experiences', Icon: Handshake }
   ];
 
   const focusAreas = [
@@ -564,7 +783,7 @@ const MentorStyleStep = ({ answers, updateAnswer }) => {
                 : 'border-gray-200 hover:border-blue-300'
             }`}
           >
-            <span className="text-2xl">{style.icon}</span>
+            <style.Icon className="h-6 w-6 text-gray-600" />
             <div>
               <h3 className="font-semibold text-gray-900">{style.title}</h3>
               <p className="text-sm text-gray-600">{style.description}</p>

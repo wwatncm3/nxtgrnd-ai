@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { UserContext } from '../App';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
+import { usePageTooltip } from './OnboardingTooltip';
+import { FullPageLoader } from './ui/AnimatedComponents';
 
 // Import dashboard components
 import {
@@ -27,6 +29,8 @@ import {
 } from './dashboard';
 
 const MainContent = ({ setStage }) => {
+  // Trigger dashboard tooltip for new users
+  usePageTooltip('dashboard');
   const { user, setUser } = useContext(UserContext);
   const selectedCareerPath = user?.selectedCareerPath;
 
@@ -60,6 +64,21 @@ const MainContent = ({ setStage }) => {
   const [lastCareerPath, setLastCareerPath] = useState(null);
   const [courseProgress, setCourseProgress] = useState({});
   const [completedTasks, setCompletedTasks] = useState({});
+
+  // Load career path from storage if not in context
+  useEffect(() => {
+    if (!user?.selectedCareerPath && user?.userID) {
+      console.log('Career path not in context, checking storage...');
+      const storedCareerPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
+      if (storedCareerPath) {
+        console.log('Found career path in storage:', storedCareerPath.title);
+        setUser(prev => ({
+          ...prev,
+          selectedCareerPath: storedCareerPath
+        }));
+      }
+    }
+  }, [user?.userID, user?.selectedCareerPath, setUser]);
 
   // Enhanced search with debouncing
   const debouncedSearchQuery = useSearch(searchQuery);
@@ -101,31 +120,49 @@ const MainContent = ({ setStage }) => {
     setShowSearchFilters(false);
   };
 
-  // Progress tracking function
-  const markTaskComplete = (courseId, taskType) => {
-    const taskKey = `${courseId}-${taskType}`;
+  // Progress tracking function - uses course title as key for persistence across sessions
+  const markTaskComplete = (courseIndex, taskType) => {
+    const course = personalizedLearningPaths[courseIndex];
+    if (!course) return;
+
+    // Use course title as stable key (persists even when course order changes)
+    const courseKey = course.title.replace(/\s+/g, '_').toLowerCase();
+    const taskKey = `${courseKey}-${taskType}`;
+
     setCompletedTasks(prev => {
       const newCompletedTasks = {
         ...prev,
         [taskKey]: !prev[taskKey]
       };
 
-      const course = personalizedLearningPaths.find((c, i) => i === courseId);
-      if (course) {
-        const totalTasks = (course.resources?.length || 0) + 1;
-        const completedCount = Object.keys(newCompletedTasks).filter(key =>
-          key.startsWith(`${courseId}-`) && newCompletedTasks[key]
-        ).length;
+      // Calculate progress based on completed tasks for this course
+      const totalTasks = (course.resources?.length || 0) + 1;
+      const completedCount = Object.keys(newCompletedTasks).filter(key =>
+        key.startsWith(`${courseKey}-`) && newCompletedTasks[key]
+      ).length;
 
-        const newProgress = Math.round((completedCount / totalTasks) * 100);
-        setCourseProgress(prevProgress => ({
-          ...prevProgress,
-          [courseId]: newProgress
-        }));
-      }
+      const newProgress = Math.round((completedCount / totalTasks) * 100);
+      setCourseProgress(prevProgress => ({
+        ...prevProgress,
+        [courseKey]: newProgress
+      }));
 
       return newCompletedTasks;
     });
+  };
+
+  // Helper to get progress for a course by title
+  const getCourseProgress = (course) => {
+    if (!course) return 0;
+    const courseKey = course.title.replace(/\s+/g, '_').toLowerCase();
+    return courseProgress[courseKey] || 0;
+  };
+
+  // Helper to check if a task is completed by course title
+  const isTaskCompleted = (course, taskType) => {
+    if (!course) return false;
+    const courseKey = course.title.replace(/\s+/g, '_').toLowerCase();
+    return completedTasks[`${courseKey}-${taskType}`] || false;
   };
 
   // Click outside handler for sidebar
@@ -302,9 +339,15 @@ const MainContent = ({ setStage }) => {
       selectedCareerPathTitle: selectedCareerPath?.title
     });
 
-    // If no career path selected, redirect to Career Compass
+    // If no career path selected, check storage first before redirecting
     if (!user?.selectedCareerPath && user?.userID) {
-      console.log('No career path found, redirecting to Career Compass');
+      const storedCareerPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
+      if (storedCareerPath) {
+        console.log('Found career path in storage during load check:', storedCareerPath.title);
+        // Let the other useEffect handle updating context
+        return;
+      }
+      console.log('No career path found in context or storage, redirecting to Career Compass');
       setStage(4);
       return;
     }
@@ -489,29 +532,11 @@ const MainContent = ({ setStage }) => {
   // Loading state
   if (isDashboardLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="text-center animate-fade-in">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-blue-400 rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-          </div>
-          <p className="mt-6 text-lg sm:text-xl font-semibold text-gray-900 animate-pulse-soft">
-            Personalizing your {selectedCareerPath?.title} dashboard...
-          </p>
-          <p className="mt-2 text-sm sm:text-base text-gray-600">
-            We're customizing your experience based on your career choice
-          </p>
-          <div className="mt-6 flex justify-center gap-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      <FullPageLoader
+        message="Building Your Dashboard"
+        subMessage={`Personalizing your ${selectedCareerPath?.title || 'career'} journey`}
+        icon={Compass}
+      />
     );
   }
 
@@ -538,7 +563,7 @@ const MainContent = ({ setStage }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-blue-50">
       <DashboardHeader
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
@@ -607,6 +632,20 @@ const MainContent = ({ setStage }) => {
                     courseProgress={courseProgress}
                     completedTasks={completedTasks}
                     markTaskComplete={markTaskComplete}
+                    getCourseProgress={getCourseProgress}
+                    isTaskCompleted={isTaskCompleted}
+                    onViewAll={() => {
+                      if (personalizedLearningPaths.length || personalizedOpportunities.length) {
+                        storeDashboardData(user?.userID, {
+                          learningPaths: personalizedLearningPaths,
+                          opportunities: personalizedOpportunities,
+                          goals: personalizedGoals,
+                          events: personalizedEvents,
+                          careerPath: user.selectedCareerPath
+                        });
+                      }
+                      setStage(9);
+                    }}
                   />
 
                   <OpportunitiesSection

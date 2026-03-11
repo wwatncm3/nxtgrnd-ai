@@ -14,13 +14,13 @@ const EventsSection = ({
   if (searchResults.events.length === 0 && debouncedSearchQuery) return null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 animate-fade-in card-hover">
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6 animate-fade-in hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+          <div className="p-2.5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md">
+            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
-          <h2 className="text-lg sm:text-xl font-semibold">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
             Upcoming Milestones
             {debouncedSearchQuery && searchResults.events.length > 0 && (
               <span className="ml-2 text-sm font-normal text-gray-500 animate-fade-in-fast">

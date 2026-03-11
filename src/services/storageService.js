@@ -91,7 +91,7 @@ const syncToDynamoDB = async (userId) => {
     if (!userId) return;
   }
 
-  console.log('🔄 Syncing to DynamoDB...');
+  console.log('RELOADING: Syncing to DynamoDB...');
 
   try {
     // Gather all local data
@@ -113,9 +113,9 @@ const syncToDynamoDB = async (userId) => {
 
     // Update last sync timestamp
     localStore.set(STORAGE_KEYS.LAST_SYNC, new Date().toISOString(), userId);
-    console.log('✅ Sync to DynamoDB complete');
+    console.log('SUCCESS: Sync to DynamoDB complete');
   } catch (error) {
-    console.error('❌ Sync to DynamoDB failed:', error);
+    console.error('ERROR: Sync to DynamoDB failed:', error);
   }
 };
 
@@ -129,7 +129,7 @@ const loadFromDynamoDB = async (userId) => {
     const dynamoData = await dynamoService.loadAllUserData(userId);
 
     if (!dynamoData.hasData) {
-      console.log('ℹ️ No data found in DynamoDB');
+      console.log('INFO: No data found in DynamoDB');
       return null;
     }
 
@@ -170,10 +170,10 @@ const loadFromDynamoDB = async (userId) => {
       }
     }
 
-    console.log('✅ Data loaded from DynamoDB to localStorage');
+    console.log('SUCCESS: Data loaded from DynamoDB to localStorage');
     return dynamoData;
   } catch (error) {
-    console.error('❌ Failed to load from DynamoDB:', error);
+    console.error('ERROR: Failed to load from DynamoDB:', error);
     return null;
   }
 };
@@ -293,7 +293,7 @@ export const userStateService = {
     if (careerPath) completionLevel = 3;
     if (dashboard) completionLevel = 4;
 
-    console.log(`📊 User state for ${userId}:`, {
+    console.log(`STATS: User state for ${userId}:`, {
       hasPreferences: !!preferences,
       hasCareerPath: !!careerPath,
       hasResume: !!resume,

@@ -1,12 +1,12 @@
 import React, { useState, useContext, useEffect } from 'react';
 import {
   ArrowLeft, User, MapPin, Calendar, Award, BookOpen,
-  ExternalLink, Mail, Linkedin, Youtube, Github, Globe,
-  Star, Clock, Users, MessageCircle, Share2, Check,
-  Plus, Edit3, Camera, RefreshCw
+  ExternalLink, Linkedin, Github, Globe,
+  Star, Clock, Users, Check,
+  Plus, Edit3, Camera
 } from 'lucide-react';
 import { UserContext } from '../App';
-import { storageUtils } from '../utils/authUtils';
+import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import analytics from '../utils/analytics';
 import { FullPageLoader } from './ui/AnimatedComponents';
 
@@ -40,12 +40,14 @@ const CreatorProfile = ({ setStage }) => {
   
   const loadCreatorProfile = async () => {
     if (!user?.userID) return;
-    
+
+    console.log('🖼️ CreatorProfile - User avatar:', user.avatar ? 'FOUND' : 'MISSING', user.avatar);
+
     setIsLoading(true);
     try {
       // Load stored profile data
       // storageUtils.getItem already returns parsed data
-      const storedProfile = storageUtils.getItem(`creatorProfile_${user.userID}`);
+      const storedProfile = storageUtils.getItem(STORAGE_KEYS.CREATOR_PROFILE, user.userID);
       if (storedProfile) {
         setProfileData(storedProfile.profileData || profileData);
         setPortfolioItems(storedProfile.portfolioItems || []);
@@ -53,6 +55,17 @@ const CreatorProfile = ({ setStage }) => {
       } else {
         // Initialize with default achievements based on user data
         initializeDefaultAchievements();
+      }
+
+      // Load avatar from storage if not already in user context
+      if (!user.avatar) {
+        const storedUserProfile = storageUtils.getItem(STORAGE_KEYS.USER_PROFILE, user.userID);
+        if (storedUserProfile && storedUserProfile.avatar) {
+          setUser(prevUser => ({
+            ...prevUser,
+            avatar: storedUserProfile.avatar
+          }));
+        }
       }
     } catch (error) {
       console.error('Error loading creator profile:', error);
@@ -114,7 +127,7 @@ const CreatorProfile = ({ setStage }) => {
       };
 
       // storageUtils.setItem handles JSON stringification internally
-      storageUtils.setItem(`creatorProfile_${user.userID}`, profileToSave);
+      storageUtils.setItem(STORAGE_KEYS.CREATOR_PROFILE, profileToSave, user.userID);
       
       // Update user context with public profile info
       setUser(prev => ({
@@ -195,6 +208,7 @@ const CreatorProfile = ({ setStage }) => {
   if (isLoading) {
     return (
       <FullPageLoader
+        icon={User}
         message="Loading your creator profile..."
         subMessage="Preparing your personalized experience"
       />

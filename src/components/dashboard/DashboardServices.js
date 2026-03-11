@@ -226,7 +226,11 @@ export const generateOpportunities = async (user, selectedCareerPath) => {
   }
 };
 
+// No longer using fake company names - removed getCareerCompanies function
+// AI opportunities now show job types only with links to search on job boards
+
 // Fetch AI-generated opportunities from our recommendations API
+// These are job TYPES (not fake listings) - users click to search on real job boards
 const fetchAIOpportunities = async (user, selectedCareerPath) => {
   const recommendationPayload = {
     userId: user.userID,
@@ -252,6 +256,7 @@ const fetchAIOpportunities = async (user, selectedCareerPath) => {
   });
 
   const data = await response.json();
+  const searchUrls = getJobBoardSearchUrls(selectedCareerPath.title);
 
   if (data.body) {
     const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
@@ -259,18 +264,19 @@ const fetchAIOpportunities = async (user, selectedCareerPath) => {
     if (parsedBody.recommendations?.careerPaths) {
       const careerData = parsedBody.recommendations.careerPaths;
 
-      return careerData.map(path => ({
+      // Return job TYPES, not fake company listings
+      return careerData.map((path) => ({
         id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: "job",
+        type: "job_type", // Mark as job type, not actual listing
         role: path.title,
-        company: "Top " + path.title + " Firm",
-        location: "Remote/Hybrid",
+        company: null, // No fake company names
+        location: "Remote/Multiple Locations",
         locationType: 'hybrid',
         matchScore: path.matchScore || calculateMatchScore(path.requiredSkills || [], user?.skills || []),
-        postedDate: "Recently",
-        description: path.description || `${path.title} position matching your skills and interests`,
+        description: path.description || `${path.title} roles matching your skills and career goals`,
         salaryRange: path.salaryRange,
-        source: 'NxtGrnd AI'
+        source: 'NxtGrnd AI',
+        searchUrls // Links to search on real job boards
       }));
     }
   }

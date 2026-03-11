@@ -2,7 +2,8 @@ import API_CONFIG, {
   makeRecommendationRequest,
   uploadFile,
   downloadFile,
-  getDynamicOptions
+  getDynamicOptions,
+  validateAPIConfig
 } from './api';
 
 // Mock fetch globally
@@ -37,6 +38,14 @@ describe('API_CONFIG', () => {
     it('should have analytics endpoint configured', () => {
       expect(API_CONFIG.analytics).toBeDefined();
       expect(API_CONFIG.analytics.get).toBeInstanceOf(Function);
+      expect(API_CONFIG.analytics.enabled).toBeInstanceOf(Function);
+    });
+
+    it('should validate API configuration', () => {
+      const result = validateAPIConfig();
+      expect(result).toHaveProperty('valid');
+      expect(result).toHaveProperty('issues');
+      expect(Array.isArray(result.issues)).toBe(true);
     });
   });
 
@@ -64,6 +73,7 @@ describe('API Helper Functions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve({ success: true })
     });
   });
@@ -94,6 +104,7 @@ describe('API Helper Functions', () => {
     it('should return parsed JSON response', async () => {
       const mockResponse = { recommendations: { careerPaths: [] } };
       global.fetch.mockResolvedValueOnce({
+        ok: true,
         json: () => Promise.resolve(mockResponse)
       });
 
@@ -153,6 +164,67 @@ describe('API Helper Functions', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
+      );
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle network errors in makeRecommendationRequest', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(makeRecommendationRequest({})).rejects.toThrow('Network error');
+    });
+
+    it('should handle HTTP errors in makeRecommendationRequest', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: () => Promise.resolve({})
+      });
+
+      await expect(makeRecommendationRequest({})).rejects.toThrow(
+        'API request failed: 500 Internal Server Error'
+      );
+    });
+
+    it('should handle HTTP errors in uploadFile', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 413,
+        statusText: 'Payload Too Large',
+        json: () => Promise.resolve({})
+      });
+
+      const formData = new FormData();
+      await expect(uploadFile(formData)).rejects.toThrow(
+        'File upload failed: 413 Payload Too Large'
+      );
+    });
+
+    it('should handle HTTP errors in downloadFile', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: () => Promise.resolve({})
+      });
+
+      await expect(downloadFile({ filename: 'invalid' })).rejects.toThrow(
+        'File download failed: 404 Not Found'
+      );
+    });
+
+    it('should handle HTTP errors in getDynamicOptions', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: () => Promise.resolve({})
+      });
+
+      await expect(getDynamicOptions({})).rejects.toThrow(
+        'Dynamic options request failed: 400 Bad Request'
       );
     });
   });

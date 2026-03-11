@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
-  Bell, X, Check, CheckCheck, Trash2, BookOpen, Award, Briefcase,
+  Bell, X, CheckCheck, Trash2, BookOpen, Award, Briefcase,
   Target, Calendar, TrendingUp, AlertCircle, Info, Star, Zap
 } from 'lucide-react';
 import { UserContext } from '../App';

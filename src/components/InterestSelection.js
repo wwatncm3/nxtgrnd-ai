@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { Compass, ChevronRight, ChevronDown, ChevronUp, X, Search, Check, Upload, AlertCircle } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronUp, X, Search, Check, Upload, AlertCircle, Download, FileText, UploadCloud } from 'lucide-react';
 import { UserContext } from '../App';
 import  skillsData  from '../data/skills';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
@@ -11,7 +11,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
   const { user, setUser } = useContext(UserContext);
   const [selectedSkills, setSelectedSkills] = useState(initialData.skills || []);
   const [experienceLevel, setExperienceLevel] = useState(initialData.experienceLevel || '');
-  const [resumeFile, setResumeFile] = useState(null);
+  const [, setResumeFile] = useState(null);
   const [resumeName, setResumeName] = useState('');
   const [step, setStep] = useState(1);
   const [skillOptions, setSkillOptions] = useState([]);
@@ -28,6 +28,18 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+
+  // Handle resume template download
+  const handleDownloadTemplate = () => {
+    const link = document.createElement('a');
+    link.href = '/Resume Template.docx';
+    link.download = 'Resume Template.docx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowTemplateModal(false);
+  };
 
   useEffect(() => {
     const loadSkills = () => {
@@ -146,14 +158,15 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
           content: base64Content,
           uploadDate: new Date().toISOString(),
           path: `${user.userID}/resume/${file.name}`,
-          textract: responseData.textractAnalysis || null
+          textractAnalysis: responseData.textractAnalysis || null  // Match key name with ResumeAnalysis.js
         };
 
         // Store complete resume data in session storage
         console.log('Storing resume data:', {
           name: resumeData.name,
           type: resumeData.type,
-          hasTextract: !!resumeData.textract,
+          hasTextract: !!resumeData.textractAnalysis,
+          textractTextLength: resumeData.textractAnalysis?.rawText?.length || 0,
           path: resumeData.path
         });
         
@@ -282,14 +295,19 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 sm:p-6 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-xl p-6 sm:p-8 max-w-2xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-blue-50 p-4 sm:p-6 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">NxtGrnd AI</h1>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-900 to-teal-600 rounded-2xl mb-4 shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
-          <p className="text-gray-600 text-sm sm:text-base">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Complete Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-teal-600">Profile</span>
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base mt-2">
             Help us understand your interests to personalize your career journey
           </p>
         </div>
@@ -297,14 +315,14 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
         {/* Progress Indicator */}
         <div className="flex items-center justify-center mb-6 sm:mb-8">
           <div className="flex items-center space-x-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-md transition-all ${
+              step >= 1 ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' : 'bg-gray-100 text-gray-400'
             }`}>
               1
             </div>
-            <div className={`h-1 w-12 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+            <div className={`h-1 w-16 rounded-full transition-all ${step >= 2 ? 'bg-gradient-to-r from-blue-500 to-teal-500' : 'bg-gray-200'}`}></div>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-md transition-all ${
+              step >= 2 ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white' : 'bg-gray-100 text-gray-400'
             }`}>
               2
             </div>
@@ -392,7 +410,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
               {!searchTerm && (
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm text-blue-800">
-                    💡 <strong>Tip:</strong> Type to search from our skills database or add your own custom skills by pressing Enter
+                    TIP: <strong>Tip:</strong> Type to search from our skills database or add your own custom skills by pressing Enter
                   </p>
                 </div>
               )}
@@ -529,6 +547,28 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
               </p>
             </div>
 
+            {/* Need a Template? */}
+            <div className="bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <FileText className="h-5 w-5 text-blue-900" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">Need a resume template?</p>
+                    <p className="text-xs text-gray-500">Download our professional template to get started</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowTemplateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-900 to-teal-600 text-white text-sm font-medium rounded-lg hover:shadow-md transition-all"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Download</span>
+                </button>
+              </div>
+            </div>
+
             {/* Upload Area */}
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center hover:border-blue-400 transition-colors">
               <input
@@ -542,7 +582,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
               
               {isUploading ? (
                 <div className="flex flex-col items-center">
-                  <LoadingSpinner size="md" showDots />
+                  <UploadCloud className="h-12 w-12 text-blue-500 animate-bounce" />
                   <p className="text-blue-600 font-medium text-sm sm:text-base mt-4">Uploading & Analyzing Resume...</p>
                   <p className="text-sm text-gray-500 mt-1">This may take a moment</p>
                 </div>
@@ -628,6 +668,65 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
               >
                 Skip resume upload and continue
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Resume Template Download Modal */}
+        {showTemplateModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-900 to-teal-600 px-6 py-4 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-xl">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Resume Template</h3>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                {/* Preview Card */}
+                <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-100 rounded-xl">
+                      <FileText className="h-8 w-8 text-blue-900" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">Resume Template.docx</p>
+                      <p className="text-sm text-gray-500 mt-1">Professional resume template with modern formatting</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Microsoft Word</span>
+                        <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-xs rounded-full">Editable</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-gray-600 text-sm mb-6">
+                  This template includes sections for your contact information, summary, experience, education, and skills.
+                  You can customize it to fit your needs.
+                </p>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowTemplateModal(false)}
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-900 to-teal-600 text-white font-medium rounded-xl hover:shadow-lg transition-all"
+                  >
+                    <Download className="h-5 w-5" />
+                    Download
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

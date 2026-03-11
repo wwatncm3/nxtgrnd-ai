@@ -11,20 +11,23 @@ const LearningPathsSection = ({
   personalizedLearningPaths,
   courseProgress,
   completedTasks,
-  markTaskComplete
+  markTaskComplete,
+  getCourseProgress,
+  isTaskCompleted,
+  onViewAll
 }) => {
   // Don't render if filtered out or no results
   if (!searchFilters.learningPaths) return null;
   if (searchResults.learningPaths.length === 0 && debouncedSearchQuery) return null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 animate-fade-in card-hover">
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6 animate-fade-in hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+          <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md">
+            <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
-          <h2 className="text-lg sm:text-xl font-semibold">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
             Learning Paths
             {debouncedSearchQuery && searchResults.learningPaths.length > 0 && (
               <span className="ml-2 text-sm font-normal text-gray-500 animate-fade-in-fast">
@@ -33,7 +36,10 @@ const LearningPathsSection = ({
             )}
           </h2>
         </div>
-        <button className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 group transition-all duration-200">
+        <button
+          onClick={onViewAll}
+          className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 group transition-all duration-200 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100"
+        >
           View All
           <ChevronRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform duration-200" />
         </button>
@@ -54,9 +60,9 @@ const LearningPathsSection = ({
                 key={`${course.title}-${index}`}
                 course={course}
                 originalIndex={originalIndex}
-                courseProgress={courseProgress}
-                completedTasks={completedTasks}
                 markTaskComplete={markTaskComplete}
+                getCourseProgress={getCourseProgress}
+                isTaskCompleted={isTaskCompleted}
                 searchTerm={debouncedSearchQuery}
                 animationDelay={index * 100}
               />
@@ -116,17 +122,52 @@ const EmptyState = () => (
 const LearningPathCard = ({
   course,
   originalIndex,
-  courseProgress,
-  completedTasks,
   markTaskComplete,
+  getCourseProgress,
+  isTaskCompleted,
   searchTerm,
   animationDelay = 0
 }) => {
-  const progress = courseProgress[originalIndex] || course.progress || 0;
+  // Use getCourseProgress helper for title-based progress (persists across sessions)
+  const progress = getCourseProgress ? getCourseProgress(course) : (course.progress || 0);
   const totalTasks = (course.resources?.length || 0) + 1;
-  const completedCount = Object.keys(completedTasks).filter(key =>
-    key.startsWith(`${originalIndex}-`) && completedTasks[key]
-  ).length;
+
+  // Count completed tasks using title-based keys
+  let completedCount = 0;
+  if (isTaskCompleted) {
+    if (isTaskCompleted(course, 'main-lesson')) completedCount++;
+    (course.resources || []).forEach((_, resIndex) => {
+      if (isTaskCompleted(course, `resource-${resIndex}`)) completedCount++;
+    });
+  }
+
+  // Find the next incomplete task to continue learning
+  const getNextLearningUrl = () => {
+    // If main lesson is not completed and there's a main resource, use that
+    if (isTaskCompleted && !isTaskCompleted(course, 'main-lesson')) {
+      // Find the first resource URL for the main lesson
+      if (course.resources && course.resources.length > 0) {
+        return course.resources[0].url;
+      }
+    }
+
+    // Find the first incomplete resource
+    if (course.resources) {
+      for (let i = 0; i < course.resources.length; i++) {
+        if (!isTaskCompleted || !isTaskCompleted(course, `resource-${i}`)) {
+          return course.resources[i].url;
+        }
+      }
+    }
+
+    // Fallback to first resource or a search URL
+    if (course.resources && course.resources.length > 0) {
+      return course.resources[0].url;
+    }
+
+    // Generate a search URL as fallback
+    return `https://www.google.com/search?q=${encodeURIComponent(course.title + ' course tutorial')}`;
+  };
 
   return (
     <div
@@ -165,8 +206,7 @@ const LearningPathCard = ({
       <div className="space-y-3 mb-4">
         {/* Main Lesson Task */}
         <TaskItem
-          taskKey={`${originalIndex}-main-lesson`}
-          isCompleted={completedTasks[`${originalIndex}-main-lesson`]}
+          isCompleted={isTaskCompleted ? isTaskCompleted(course, 'main-lesson') : false}
           onToggle={() => markTaskComplete(originalIndex, 'main-lesson')}
           label={<>Complete: <HighlightText text={course.nextLesson} searchTerm={searchTerm} /></>}
         />
@@ -175,8 +215,7 @@ const LearningPathCard = ({
         {course.resources && course.resources.map((resource, resIndex) => (
           <TaskItem
             key={resIndex}
-            taskKey={`${originalIndex}-resource-${resIndex}`}
-            isCompleted={completedTasks[`${originalIndex}-resource-${resIndex}`]}
+            isCompleted={isTaskCompleted ? isTaskCompleted(course, `resource-${resIndex}`) : false}
             onToggle={() => markTaskComplete(originalIndex, `resource-${resIndex}`)}
             label={<>Study: <HighlightText text={resource.title} searchTerm={searchTerm} /></>}
             subLabel={<HighlightText text={resource.provider} searchTerm={searchTerm} />}
@@ -199,16 +238,22 @@ const LearningPathCard = ({
             Completed!
           </div>
         ) : (
-          <button className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 hover:shadow-md active:scale-95 transition-all duration-200 text-sm font-medium">
+          <a
+            href={getNextLearningUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 hover:shadow-md active:scale-95 transition-all duration-200 text-sm font-medium inline-flex items-center gap-1"
+          >
             Continue Learning
-          </button>
+            <ChevronRight className="h-4 w-4" />
+          </a>
         )}
       </div>
     </div>
   );
 };
 
-const TaskItem = ({ taskKey, isCompleted, onToggle, label, subLabel, href }) => {
+const TaskItem = ({ isCompleted, onToggle, label, subLabel, href }) => {
   const content = (
     <div className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ${
       isCompleted ? 'bg-green-50' : 'bg-gray-50 hover:bg-gray-100'

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import {
   Compass, ChevronLeft, GitBranch, Briefcase,
   TrendingUp, Award, RefreshCw, Clock, BookOpen, Book,
-  AlertCircle, User, RotateCcw
+  AlertCircle, User, RotateCcw, Info, Calendar, BarChart3, Target
 } from 'lucide-react';
 import { UserContext } from '../App';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
@@ -167,7 +167,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
         scenarioType,
         experienceLevel: user?.experienceLevel || 'entry',
         skills: selectedPath.requiredSkills || [],
-        currentSalary: parseInt(selectedPath.salaryRange?.split('-')[0].replace(/\D/g, '')) || 50000,
+        currentSalary: parseInt(selectedPath.salaryRange?.split('-')?.[0]?.replace(/\D/g, '') || '50000') || 50000,
         timeframe: '5years',
         includeDetails: true
       };
@@ -208,44 +208,44 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
         <h4 className="text-lg font-semibold mb-4">Simulation Results</h4>
 
         <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h5 className="font-medium mb-2">Career Impact</h5>
+          <div className="bg-gradient-to-r from-blue-50 to-teal-50 p-4 rounded-xl border border-blue-100">
+            <h5 className="font-medium mb-2 text-blue-900">Career Impact</h5>
             <p className="text-gray-700">{simulationResults.impact}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-green-50 p-4 rounded-lg">
+            <div className="bg-green-50 p-4 rounded-xl">
               <h5 className="font-medium mb-2">Projected Salary Increase</h5>
               <p className="text-2xl font-bold text-green-600">
                 +{simulationResults.salaryIncrease}%
               </p>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="bg-teal-50 p-4 rounded-xl">
               <h5 className="font-medium mb-2">Time Investment</h5>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-2xl font-bold text-teal-600">
                 {simulationResults.timeInvestment}
               </p>
             </div>
           </div>
 
           {simulationResults.milestones && (
-            <div className="bg-white border rounded-lg p-4">
-              <h5 className="font-medium mb-3">Key Milestones</h5>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <h5 className="font-medium mb-3 text-gray-900">Key Milestones</h5>
               <div className="space-y-3">
                 {simulationResults.milestones.map((milestone, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
+                    <div className="p-2 bg-gradient-to-br from-blue-100 to-teal-100 rounded-xl">
                       {milestone.type === 'certification' ? (
-                        <Award className="h-4 w-4 text-blue-600" />
+                        <Award className="h-4 w-4 text-blue-900" />
                       ) : milestone.type === 'skill' ? (
-                        <Book className="h-4 w-4 text-blue-600" />
+                        <Book className="h-4 w-4 text-blue-900" />
                       ) : (
-                        <Briefcase className="h-4 w-4 text-blue-600" />
+                        <Briefcase className="h-4 w-4 text-blue-900" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium">{milestone.title}</p>
-                      <p className="text-sm text-gray-600">{milestone.timeline}</p>
+                      <p className="font-medium text-gray-900">{milestone.title}</p>
+                      <p className="text-sm text-gray-500">{milestone.timeline}</p>
                     </div>
                   </div>
                 ))}
@@ -254,11 +254,14 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
           )}
 
           {simulationResults.recommendations && (
-            <div className="bg-white border rounded-lg p-4">
-              <h5 className="font-medium mb-3">Recommendations</h5>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <h5 className="font-medium mb-3 text-gray-900">Recommendations</h5>
               <ul className="space-y-2">
                 {simulationResults.recommendations.map((rec, index) => (
-                  <li key={index} className="text-sm text-gray-700">• {rec}</li>
+                  <li key={index} className="text-sm text-gray-700 flex items-start gap-2">
+                    <span className="text-teal-500">•</span>
+                    {rec}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -326,10 +329,10 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
     <div className="space-y-6">
       <h3 className="text-xl font-semibold mb-4">Market Analysis</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="bg-blue-50 p-4 rounded-xl">
           <h4 className="font-medium mb-2">Growth Rate</h4>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-green-600">
+            <span className="text-2xl font-bold text-blue-900">
               {selectedPath.marketData?.growthRate ?
                 (selectedPath.marketData.growthRate.toString().includes('%') ?
                   selectedPath.marketData.growthRate :
@@ -344,7 +347,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
             <span className="text-sm text-gray-600">Annual</span>
           </div>
         </div>
-        <div className="bg-green-50 p-4 rounded-lg">
+        <div className="bg-green-50 p-4 rounded-xl">
           <h4 className="font-medium mb-2">Market Demand</h4>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-green-600">
@@ -352,10 +355,10 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
             </span>
           </div>
         </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
+        <div className="bg-teal-50 p-4 rounded-xl">
           <h4 className="font-medium mb-2">Job Openings</h4>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-purple-600">
+            <span className="text-2xl font-bold text-teal-600">
               {selectedPath.marketData?.jobOpenings?.toLocaleString() || 'Loading...'}
             </span>
           </div>
@@ -409,6 +412,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
   if (isLoading && !isRefreshing) {
     return (
       <FullPageLoader
+        icon={Compass}
         message="Loading career insights..."
         subMessage="Analyzing your profile and career preferences"
       />
@@ -417,12 +421,16 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-blue-100 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-3xl shadow-xl p-8 max-w-md">
+          <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => handleStageChange(3)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
+            className="px-6 py-3 bg-gradient-to-r from-blue-900 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg transition-all"
           >
             Return to Previous Step
           </button>
@@ -432,37 +440,52 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Navigation */}
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={() => handleStageChange(5)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            Back to Dashboard
-          </button>
-
-          {user?.selectedCareerPath && (
-            <button
-              onClick={() => handleStageChange(5)}
-              className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Go to Dashboard
-            </button>
-          )}
-        </div>
-
-        {/* Page Title */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Compass className="h-8 w-8 text-blue-600" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-blue-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Hero Header Card */}
+        <div className="bg-white rounded-3xl shadow-lg overflow-hidden mb-8">
+          {/* Gradient Header */}
+          <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-teal-600 px-6 sm:px-8 py-8 text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => handleStageChange(5)}
+                  className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <div className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl">
+                  <Compass className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold">AI Career Compass</h1>
+                  <p className="text-blue-100 mt-1">AI-Powered career insights and personalized guidance</p>
+                </div>
+              </div>
+              {user?.selectedCareerPath && (
+                <button
+                  onClick={() => handleStageChange(5)}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-colors"
+                >
+                  Go to Dashboard
+                </button>
+              )}
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">AI Career Compass</h1>
-              <p className="text-gray-600 mt-1">AI-Powered career insights and personalized guidance</p>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="px-6 sm:px-8 py-4 bg-gradient-to-r from-blue-50/50 to-teal-50/50 grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-900">{enhancedData?.careerPaths?.length || 0}</p>
+              <p className="text-sm text-gray-600">Career Paths</p>
+            </div>
+            <div className="text-center border-x border-gray-200">
+              <p className="text-2xl font-bold text-teal-600">{selectedPath ? '1' : '0'}</p>
+              <p className="text-sm text-gray-600">Selected</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-900">AI</p>
+              <p className="text-sm text-gray-600">Powered</p>
             </div>
           </div>
         </div>
@@ -478,11 +501,13 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
 
         {/* Loading overlay for refresh */}
         {isRefreshing && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 text-center">
-              <LoadingSpinner size="lg" showDots />
-              <p className="text-lg font-medium mt-6">Getting Fresh Recommendations...</p>
-              <p className="text-gray-600 mt-2">Using AI to analyze your updated preferences</p>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-sm mx-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <RefreshCw className="h-8 w-8 text-blue-900 animate-spin" />
+              </div>
+              <p className="text-xl font-bold text-gray-900">Getting Fresh Recommendations...</p>
+              <p className="text-gray-500 mt-2">Using AI to analyze your updated preferences</p>
             </div>
           </div>
         )}
@@ -491,23 +516,27 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Career Paths Section */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <GitBranch className="h-6 w-6 text-blue-600" />
-                  <h2 className="text-xl font-semibold">AI-Recommended Paths</h2>
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+              <div className="bg-gradient-to-r from-blue-50 to-teal-50 px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-xl shadow-sm">
+                      <GitBranch className="h-5 w-5 text-blue-900" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">AI-Recommended Paths</h2>
+                  </div>
+                  <button
+                    onClick={handleRefreshRecommendations}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-teal-600 hover:bg-teal-50 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
                 </div>
-                <button
-                  onClick={handleRefreshRecommendations}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="p-6 space-y-4">
                 {enhancedData?.careerPaths?.length > 0 ? (
                   enhancedData.careerPaths.map(path => (
                     <CareerPathCard
@@ -519,7 +548,10 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No career paths available at this time.</p>
+                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <GitBranch className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 font-medium">No career paths available at this time.</p>
                     <p className="text-sm text-gray-400 mt-2">Please try refreshing or contact support.</p>
                   </div>
                 )}
@@ -528,29 +560,46 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
 
             {/* Dynamic Content Section */}
             {selectedPath && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="border-b mb-6">
-                  <nav className="flex space-x-8" aria-label="Tabs">
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                {/* Selected Path Header */}
+                <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-teal-600 px-6 py-4 text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-xl">
+                      <Briefcase className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{selectedPath.title}</h3>
+                      <p className="text-sm text-blue-100">{selectedPath.salaryRange || 'Salary info available'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modern Pill Tabs */}
+                <div className="bg-gradient-to-r from-blue-50 to-teal-50 px-6 py-4">
+                  <nav className="flex gap-2 flex-wrap" aria-label="Tabs">
                     {[
-                      { id: 'overview', label: 'Overview' },
-                      { id: 'timeline', label: 'Timeline' },
-                      { id: 'market', label: 'Market' },
-                      { id: 'simulation', label: 'Simulation' }
+                      { id: 'overview', label: 'Overview', Icon: Info },
+                      { id: 'timeline', label: 'Timeline', Icon: Calendar },
+                      { id: 'market', label: 'Market', Icon: BarChart3 },
+                      { id: 'simulation', label: 'Simulation', Icon: Target }
                     ].map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm
+                        className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2
                           ${activeTab === tab.id
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            ? 'bg-white text-blue-900 shadow-md'
+                            : 'text-gray-600 hover:bg-white/60 hover:text-gray-900'
                           }`}
                       >
+                        <tab.Icon className="w-4 h-4" />
                         {tab.label}
                       </button>
                     ))}
                   </nav>
                 </div>
+
+                <div className="p-6">
 
                 {activeTab === 'overview' && (
                   <div className="space-y-6">
@@ -587,6 +636,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                     user={user}
                   />
                 )}
+                </div>
               </div>
             )}
           </div>
@@ -594,12 +644,14 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
           {/* Right Sidebar */}
           <div className="space-y-6">
             {selectedPath && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Award className="h-6 w-6 text-blue-600" />
-                  <h2 className="text-xl font-semibold">Next Steps</h2>
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-900 to-teal-600 px-6 py-4 text-white">
+                  <div className="flex items-center gap-3">
+                    <Award className="h-6 w-6" />
+                    <h2 className="text-lg font-semibold">Next Steps</h2>
+                  </div>
                 </div>
-                <div className="space-y-4">
+                <div className="p-6 space-y-4">
                   <ul className="space-y-3">
                     {(selectedPath.nextSteps || selectedPath.recommendedActions || [
                       `Research ${selectedPath.title} job requirements`,
@@ -609,7 +661,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                       "Apply for entry-level positions or internships"
                     ]).map((step, index) => (
                       <li key={index} className="flex items-start gap-3">
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm flex-shrink-0">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-xl bg-gradient-to-br from-blue-100 to-teal-100 text-blue-900 text-sm font-medium flex-shrink-0">
                           {index + 1}
                         </div>
                         <span className="text-gray-700">{step}</span>
@@ -636,7 +688,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                       await new Promise(resolve => setTimeout(resolve, 100));
                       handleStageChange(5);
                     }}
-                    className="w-full mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    className="w-full mt-4 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-medium hover:shadow-lg transition-all"
                   >
                     Select This Path
                   </button>
@@ -646,41 +698,51 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
 
             {/* Quick Actions for returning users */}
             {isReturningUser && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <RotateCcw className="h-6 w-6 text-gray-600" />
-                  <h2 className="text-xl font-semibold">Quick Actions</h2>
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-xl shadow-sm">
+                      <RotateCcw className="h-5 w-5 text-blue-900" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+                  </div>
                 </div>
-                <div className="space-y-3">
+                <div className="p-4 space-y-3">
                   <button
                     onClick={handleUpdateSkillsAndResume}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-xl hover:border-teal-300 hover:bg-teal-50 transition-all"
                   >
-                    <User className="h-5 w-5 text-gray-600" />
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <User className="h-5 w-5 text-blue-900" />
+                    </div>
                     <div>
                       <p className="font-medium text-gray-900">Update Profile</p>
-                      <p className="text-sm text-gray-600">Change skills & upload new resume</p>
+                      <p className="text-sm text-gray-500">Change skills & upload new resume</p>
                     </div>
                   </button>
                   <button
                     onClick={handleRefreshRecommendations}
                     disabled={isRefreshing}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-xl hover:border-teal-300 hover:bg-teal-50 transition-all disabled:opacity-50"
                   >
-                    <RefreshCw className={`h-5 w-5 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <div className="p-2 bg-teal-50 rounded-lg">
+                      <RefreshCw className={`h-5 w-5 text-teal-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </div>
                     <div>
                       <p className="font-medium text-gray-900">Fresh Recommendations</p>
-                      <p className="text-sm text-gray-600">Get new AI-powered suggestions</p>
+                      <p className="text-sm text-gray-500">Get new AI-powered suggestions</p>
                     </div>
                   </button>
                   <button
                     onClick={() => clearAllCachedData()}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left border border-red-200 rounded-lg hover:border-red-300 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left border border-red-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-all"
                   >
-                    <AlertCircle className="h-5 w-5 text-red-600" />
+                    <div className="p-2 bg-red-50 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                    </div>
                     <div>
                       <p className="font-medium text-red-900">Start Over</p>
-                      <p className="text-sm text-red-600">Clear all data & begin fresh</p>
+                      <p className="text-sm text-red-500">Clear all data & begin fresh</p>
                     </div>
                   </button>
                 </div>

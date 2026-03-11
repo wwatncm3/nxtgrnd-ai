@@ -1,207 +1,291 @@
-import React, { useState } from 'react';
-import { 
-  ExternalLink, Grid, PlayCircle, Heart, MessageCircle, 
-  Share2, Check, Mail, LinkedinIcon, YoutubeIcon 
+import React, { useState, useContext } from 'react';
+import {
+  UserCircle, Edit3, ArrowLeft, Target, Briefcase, Award,
+  BookOpen, Mail, LinkedinIcon, Settings, ChevronRight, Star,
+  TrendingUp, Clock, CheckCircle
 } from 'lucide-react';
+import { UserContext } from './App';
 
 const CreatorProfile = ({ setStage }) => {
-  const [activeTab, setActiveTab] = useState('videos');
-  const [isFollowing, setIsFollowing] = useState(false);
+  const { user } = useContext(UserContext);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Sample creator data
-  const creator = {
-    name: "Baxate Carter",
-    username: "@baxate_carter",
-    avatar: "/api/placeholder/150/150",
-    bio: "Software Engineer & Content Creator 👨‍💻 Sharing tech career tips and life advice",
-    stats: {
-      followers: "492.3K",
-      following: "245",
-      likes: "18.1M"
-    },
-    links: {
-      youtube: "https://youtube.com/@Baxate",
-      linkedin: "#",
-      email: "baxatecarter@withcontent.agency"
-    },
-    tags: ["Software Engineering", "Career Growth", "Tech", "Life Advice"]
+  // Build profile data from user context
+  const profile = {
+    name: user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user?.firstName || 'Your Name',
+    email: user?.email || '',
+    avatar: user?.avatar || null,
+    careerPath: user?.selectedCareerPath?.title || 'Career Explorer',
+    experienceLevel: user?.experienceLevel || user?.careerStage || 'Getting Started',
+    skills: user?.skills || user?.selectedCareerPath?.requiredSkills || [],
+    interests: user?.interests || [],
+    primaryGoal: user?.primaryGoal || 'Career Development',
+    pathType: user?.pathType || 'career'
   };
 
-  // Sample videos data
-  const videos = [
-    {
-      id: 1,
-      thumbnail: "/api/placeholder/300/533",
-      views: "57K",
-      likes: "2.4K",
-      title: "How to Get a Software Engineering Internship in 2024 (Step by Step)",
-      comments: 145
-    },
-    {
-      id: 2,
-      thumbnail: "/api/placeholder/300/533",
-      views: "42K",
-      likes: "1.8K",
-      title: "I Quit My $171K Software Engineering Job...",
-      comments: 232
-    },
-    {
-      id: 3,
-      thumbnail: "/api/placeholder/300/533",
-      views: "38K",
-      likes: "1.5K",
-      title: "Day in the Life: Silicon Valley Software Engineer",
-      comments: 89
-    }
-    // Add more videos as needed
-  ];
+  // Format experience level for display
+  const formatExperienceLevel = (level) => {
+    const levels = {
+      'entry': 'Entry Level',
+      'junior': 'Junior (0-2 years)',
+      'mid': 'Mid-Level (2-5 years)',
+      'senior': 'Senior (5+ years)',
+      'executive': 'Executive/Leadership'
+    };
+    return levels[level?.toLowerCase()] || level || 'Getting Started';
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Profile Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-start gap-8">
-            {/* Avatar and Stats */}
-            <div className="flex flex-col items-center space-y-4">
-              <div className="w-32 h-32 rounded-full overflow-hidden">
-                <img 
-                  src={creator.avatar} 
-                  alt={creator.name} 
-                  className="w-full h-full object-cover"
-                />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-blue-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <button
+            onClick={() => setStage(5)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>Back to Dashboard</span>
+          </button>
+          <button
+            onClick={() => setStage(8)}
+            className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Profile Card */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+          {/* Banner - Brand Colors */}
+          <div className="h-32 bg-gradient-to-r from-blue-900 via-blue-800 to-teal-600"></div>
+
+          {/* Profile Info */}
+          <div className="px-6 pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-16">
+              {/* Avatar */}
+              <div className="relative">
+                {profile.avatar ? (
+                  <img
+                    src={profile.avatar}
+                    alt={profile.name}
+                    className="w-32 h-32 rounded-2xl border-4 border-white shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-2xl border-4 border-white shadow-lg bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center">
+                    <UserCircle className="h-16 w-16 text-blue-400" />
+                  </div>
+                )}
               </div>
-              <div className="flex space-x-6 text-center">
-                <div>
-                  <div className="font-bold">{creator.stats.following}</div>
-                  <div className="text-sm text-gray-500">Following</div>
-                </div>
-                <div>
-                  <div className="font-bold">{creator.stats.followers}</div>
-                  <div className="text-sm text-gray-500">Followers</div>
-                </div>
-                <div>
-                  <div className="font-bold">{creator.stats.likes}</div>
-                  <div className="text-sm text-gray-500">Likes</div>
-                </div>
+
+              {/* Name and Info */}
+              <div className="flex-1 pt-4 sm:pt-0 sm:pb-2">
+                <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
+                <p className="text-gray-500">{profile.email}</p>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Profile Info */}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-1">{creator.name}</h1>
-              <p className="text-gray-600 mb-4">{creator.username}</p>
-              <p className="text-gray-800 mb-4">{creator.bio}</p>
-              
-              <div className="flex flex-wrap gap-2 mb-4">
-                {creator.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Target className="h-5 w-5 text-blue-600" />
               </div>
+              <div>
+                <p className="text-sm text-gray-500">Career Path</p>
+                <p className="font-semibold text-gray-900 truncate">{profile.careerPath}</p>
+              </div>
+            </div>
+          </div>
 
-              <div className="flex space-x-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-50 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Experience</p>
+                <p className="font-semibold text-gray-900">{formatExperienceLevel(profile.experienceLevel)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Star className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Skills</p>
+                <p className="font-semibold text-gray-900">{profile.skills.length} tracked</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Briefcase className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Goal</p>
+                <p className="font-semibold text-gray-900 truncate">{profile.primaryGoal}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Tabs */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="border-b">
+            <div className="flex">
+              {['overview', 'skills', 'interests'].map((tab) => (
                 <button
-                  onClick={() => setIsFollowing(!isFollowing)}
-                  className={`px-6 py-2 rounded-lg font-semibold ${
-                    isFollowing
-                      ? 'bg-gray-100 text-gray-700'
-                      : 'bg-blue-600 text-white'
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 px-6 py-4 font-medium capitalize transition-colors ${
+                    activeTab === tab
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50/50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  {isFollowing ? (
-                    <span className="flex items-center">
-                      <Check size={16} className="mr-1" />
-                      Following
-                    </span>
-                  ) : (
-                    'Follow'
-                  )}
+                  {tab}
                 </button>
-                <a
-                  href={`mailto:${creator.links.email}`}
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Mail size={20} />
-                </a>
-                <a
-                  href={creator.links.youtube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <YoutubeIcon size={20} />
-                </a>
-                <a
-                  href={creator.links.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <LinkedinIcon size={20} />
-                </a>
-              </div>
+              ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Content Tabs */}
-      <div className="border-b bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('videos')}
-              className={`px-8 py-4 font-medium border-b-2 transition-colors ${
-                activeTab === 'videos'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Grid size={20} className="inline-block mr-2" />
-              Videos
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Video Grid */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {videos.map((video) => (
-            <div key={video.id} className="group relative aspect-[9/16] bg-gray-100 rounded-lg overflow-hidden">
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <p className="text-sm font-medium mb-2 line-clamp-2">
-                    {video.title}
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm">
-                    <div className="flex items-center">
-                      <PlayCircle size={16} className="mr-1" />
-                      {video.views}
-                    </div>
-                    <div className="flex items-center">
-                      <Heart size={16} className="mr-1" />
-                      {video.likes}
-                    </div>
-                    <div className="flex items-center">
-                      <MessageCircle size={16} className="mr-1" />
-                      {video.comments}
+          <div className="p-6">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Career Journey</h3>
+                  <div className="bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Target className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Pursuing: {profile.careerPath}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          You're on a journey to become a {profile.careerPath}. Keep learning and growing!
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setStage(9)}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium">Learning Paths</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <button
+                      onClick={() => setStage(10)}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Briefcase className="h-5 w-5 text-green-600" />
+                        <span className="font-medium">Jobs & Projects</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <button
+                      onClick={() => setStage(11)}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Award className="h-5 w-5 text-teal-600" />
+                        <span className="font-medium">Certifications</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <button
+                      onClick={() => setStage(6)}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-orange-600" />
+                        <span className="font-medium">Resume Analysis</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            )}
+
+            {activeTab === 'skills' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Skills</h3>
+                {profile.skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Star className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No skills tracked yet</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Complete learning paths to add skills to your profile
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'interests' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Interests</h3>
+                {profile.interests.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests.map((interest, index) => (
+                      <span
+                        key={index}
+                        className="px-4 py-2 bg-teal-50 text-teal-700 rounded-full text-sm font-medium"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Target className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No interests added yet</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Update your profile in settings to add interests
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

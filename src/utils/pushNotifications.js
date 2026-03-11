@@ -222,7 +222,7 @@ export class NotificationManager {
   }
 }
 
-export default {
+const pushNotifications = {
   isPushSupported,
   getPermissionStatus,
   requestPermission,
@@ -234,3 +234,5 @@ export default {
   sendWeeklyDigest,
   NotificationManager
 };
+
+export default pushNotifications;

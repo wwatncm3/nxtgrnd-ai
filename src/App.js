@@ -1,5 +1,6 @@
 import React, { useState, createContext, useEffect } from 'react';
-import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
 import MainContent from './components/MainContent';
@@ -12,7 +13,9 @@ import JobsProjectsPage from './pages/JobsProjectsPage';
 import CertificationsPage from './pages/CertificationsPage';
 import MentorMatchingQuiz from './components/MentorMatchingQuiz';
 import { AchievementProvider } from './components/AchievementSystem';
-import analytics  from './utils/analytics';
+import { TooltipProvider, TooltipOverlay } from './components/OnboardingTooltip';
+import analytics from './utils/analytics';
+import { userStateService } from './services/storageService';
 
 export const UserContext = createContext();
 
@@ -26,7 +29,7 @@ function App() {
   const [stage, setStage] = useState(1);
   const [user, setUser] = useState({});
   const [selectedCareerPath, setSelectedCareerPath] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   // Check authentication status on app load
   useEffect(() => {
@@ -43,7 +46,7 @@ function App() {
     if (e.ctrlKey && e.shiftKey && e.key === 'C') {
       localStorage.clear();
       sessionStorage.clear();
-      console.log('🧹 CLEARED ALL CACHE - Ctrl+Shift+C pressed');
+      console.log('CLEARING: CLEARED ALL CACHE - Ctrl+Shift+C pressed');
       window.location.reload(); // Fresh start
     }
   };
@@ -60,20 +63,40 @@ function App() {
       const cognitoUser = await getCurrentUser();
       // FIX: Corrected the function name to match the import (fetchUserAttributes)
       const userAttributes = await fetchUserAttributes();
-      
+
       // Convert Cognito attributes to user object
-      const userData = {
+      const baseUserData = {
         username: cognitoUser.username,
         email: userAttributes.email,
         firstName: userAttributes.given_name,
         lastName: userAttributes.family_name,
       };
-      
-      setUser(userData);
-      analytics.setUser(userData.username, {
-      email: userData.email,
-      firstName: userData.firstName,
-      lastName: userData.lastName
+
+      // Load stored preferences (including avatar) and merge with Cognito data
+      const storedState = await userStateService.getUserState(userAttributes.email);
+
+      const completeUserData = {
+        ...baseUserData,
+        ...storedState.preferences  // This includes avatar, pathType, careerStage, primaryGoal
+      };
+
+      // Add selectedCareerPath if it exists
+      if (storedState.careerPath) {
+        completeUserData.selectedCareerPath = storedState.careerPath;
+      }
+
+      // Add resume if it exists
+      if (storedState.resume) {
+        completeUserData.resume = storedState.resume;
+      }
+
+      console.log('🖼️ checkAuthState - Avatar in user data:', completeUserData.avatar ? 'PRESENT' : 'MISSING');
+
+      setUser(completeUserData);
+      analytics.setUser(completeUserData.username, {
+      email: completeUserData.email,
+      firstName: completeUserData.firstName,
+      lastName: completeUserData.lastName
     });
       // Instead of going directly to dashboard, start at the beginning of the flow
       setStage(1);
@@ -86,7 +109,7 @@ function App() {
   };
 
   const handleStageComplete = (data) => {
-    console.log('🎯 Stage completed with data:', data);
+    console.log('TARGET: Stage completed with data:', data);
     
     // ✅ FIX: Update user state with the complete data passed from child component
     if (data && typeof data === 'object') {
@@ -96,7 +119,7 @@ function App() {
           ...prevUser,
           ...data  // This now contains all the data from InterestSelection
         };
-        console.log('👤 User state updated:', updatedUser);
+        console.log('USER: User state updated:', updatedUser);
         return updatedUser;
       });
     }
@@ -131,17 +154,17 @@ function App() {
             <ProfileCreation 
               // The new onNext handler that trusts the decision from the login logic
               onNext={(profileData, navigation) => {
-                console.log('🎯 App.js received navigation:', { profileData, navigation });
+                console.log('TARGET: App.js received navigation:', { profileData, navigation });
                 
                 // ✅ FIX: Trust the navigation decision made by authUtils/LoginHandler
                 if (navigation && navigation.skipToEnd) {
-                  console.log(`✅ Returning user -> Navigating to stage ${navigation.stage} based on restored state.`);
+                  console.log(`SUCCESS: Returning user -> Navigating to stage ${navigation.stage} based on restored state.`);
                   setUser(prev => ({...prev, ...profileData}));
                   // Use the stage number provided by the navigation object
                   setStage(navigation.stage); 
                 } else {
                   // New user signup - proceed to interest selection
-                  console.log('👤 New user -> Interest Selection (Stage 3)');
+                  console.log('USER: New user -> Interest Selection (Stage 3)');
                   setUser(prev => ({...prev, ...profileData}));
                   setStage(3);
                 }
@@ -232,18 +255,23 @@ function App() {
   };
 
   return (
-    <UserContext.Provider value={{ 
-      user, 
-      setUser, 
-      stage, 
-      setStage,
-      selectedCareerPath,
-      setSelectedCareerPath 
-    }}>
-      <AchievementProvider>
-        {renderContent()}
-      </AchievementProvider>
-    </UserContext.Provider>
+    <ErrorBoundary>
+      <UserContext.Provider value={{
+        user,
+        setUser,
+        stage,
+        setStage,
+        selectedCareerPath,
+        setSelectedCareerPath
+      }}>
+        <TooltipProvider userId={user?.userID || user?.username}>
+          <AchievementProvider>
+            {renderContent()}
+            <TooltipOverlay />
+          </AchievementProvider>
+        </TooltipProvider>
+      </UserContext.Provider>
+    </ErrorBoundary>
   );
 }
 

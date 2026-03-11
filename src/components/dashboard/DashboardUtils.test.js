@@ -6,9 +6,10 @@ import {
   calculateMatchScore
 } from './DashboardUtils';
 import { storageUtils, STORAGE_KEYS } from '../../utils/authUtils';
+import { storageService, STORAGE_KEYS as SERVICE_KEYS } from '../../services/storageService';
 import { renderHook, act } from '@testing-library/react';
 
-// Mock storageUtils
+// Mock storageUtils (used by getDashboardFromSession)
 jest.mock('../../utils/authUtils', () => ({
   storageUtils: {
     setItem: jest.fn(),
@@ -17,6 +18,19 @@ jest.mock('../../utils/authUtils', () => ({
   },
   STORAGE_KEYS: {
     USER_DASHBOARD: 'dashboard'
+  }
+}));
+
+// Mock storageService (used by storeDashboardData)
+jest.mock('../../services/storageService', () => ({
+  storageService: {
+    setItem: jest.fn(),
+    getItem: jest.fn(),
+    removeItem: jest.fn()
+  },
+  STORAGE_KEYS: {
+    USER_DASHBOARD: 'dashboard',
+    CAREER_PATH: 'careerPath'
   }
 }));
 
@@ -39,12 +53,12 @@ describe('DashboardUtils', () => {
   describe('storeDashboardData', () => {
     it('should not store data if userId is not provided', () => {
       storeDashboardData(null, { learningPaths: [] });
-      expect(storageUtils.setItem).not.toHaveBeenCalled();
+      expect(storageService.setItem).not.toHaveBeenCalled();
     });
 
     it('should not store data if userId is undefined', () => {
       storeDashboardData(undefined, { learningPaths: [] });
-      expect(storageUtils.setItem).not.toHaveBeenCalled();
+      expect(storageService.setItem).not.toHaveBeenCalled();
     });
 
     it('should store dashboard data with correct parameters', () => {
@@ -59,9 +73,10 @@ describe('DashboardUtils', () => {
 
       storeDashboardData(userId, data);
 
-      expect(storageUtils.setItem).toHaveBeenCalledTimes(1);
-      expect(storageUtils.setItem).toHaveBeenCalledWith(
-        STORAGE_KEYS.USER_DASHBOARD,
+      // storeDashboardData calls setItem twice: once for dashboard, once for careerPath
+      expect(storageService.setItem).toHaveBeenCalledTimes(2);
+      expect(storageService.setItem).toHaveBeenCalledWith(
+        SERVICE_KEYS.USER_DASHBOARD,
         expect.objectContaining({
           learningPaths: data.learningPaths,
           opportunities: data.opportunities,
@@ -81,8 +96,9 @@ describe('DashboardUtils', () => {
 
       storeDashboardData(userId, data);
 
-      expect(storageUtils.setItem).toHaveBeenCalledWith(
-        STORAGE_KEYS.USER_DASHBOARD,
+      // Only dashboard call when no careerPath
+      expect(storageService.setItem).toHaveBeenCalledWith(
+        SERVICE_KEYS.USER_DASHBOARD,
         expect.objectContaining({
           learningPaths: [],
           opportunities: [],

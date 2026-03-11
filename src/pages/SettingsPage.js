@@ -1,11 +1,11 @@
 import React, { useState, useContext, useEffect } from 'react';
 import {
-  ArrowLeft, Upload, Bell, Lock, CreditCard, User, Save,
+  ArrowLeft, Upload, Bell, Lock, User, Save,
   Eye, EyeOff, Check, AlertCircle, RefreshCw, X
 } from 'lucide-react';
-import { updateUserAttributes, getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
+import { updateUserAttributes } from '@aws-amplify/auth';
 import { UserContext } from '../App';
-import { storageUtils } from '../utils/authUtils';
+import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import analytics from '../utils/analytics';
 import API_CONFIG from '../config/api';
 import {
@@ -68,7 +68,7 @@ const SettingsPage = ({ setStage }) => {
       console.log('SettingsPage - User career stage:', user?.careerStage);
       
       // Check for resume in session storage
-      const storedResume = storageUtils.getItem('userResume');
+      const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME, user.userID);
       console.log('SettingsPage - Stored resume:', storedResume ? 'Found' : 'Not found');
       
       setAccountForm({
@@ -84,25 +84,25 @@ const SettingsPage = ({ setStage }) => {
       }
       
       // Load notification preferences from session storage
-      const savedNotifications = storageUtils.getItem(`notifications_${user.userID}`);
+      const savedNotifications = storageUtils.getItem(STORAGE_KEYS.NOTIFICATIONS, user.userID);
       if (savedNotifications) {
         setNotifications(savedNotifications);
       }
     }
   }, [user]);
 
-  // Function to get resume status from session storage
-  const getResumeStatus = () => {
-    try {
-      const storedResume = storageUtils.getItem('userResume');
-      if (storedResume) {
-        return 'Uploaded';
-      }
-      return user?.resume ? 'Uploaded' : 'Not uploaded';
-    } catch (error) {
-      return user?.resume ? 'Uploaded' : 'Not uploaded';
-    }
-  };
+  
+// Function to get resume status from session storage
+const getResumeStatus = () => {
+  if (!user) {
+    return 'Not uploaded';
+  }
+  const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME, user.userID);
+  if (storedResume) {
+    return 'Uploaded';
+  }
+  return user.resume ? 'Uploaded' : 'Not uploaded';
+};
 
   // Function to get experience level from various sources
   const getExperienceLevel = () => {
@@ -239,9 +239,9 @@ const SettingsPage = ({ setStage }) => {
         await updateUserAttributes({
           userAttributes: attributesToUpdate
         });
-        console.log('✅ Cognito attributes updated successfully');
+        console.log('SUCCESS: Cognito attributes updated successfully');
       } catch (cognitoError) {
-        console.error('❌ Cognito update error:', cognitoError);
+        console.error('ERROR: Cognito update error:', cognitoError);
         
         if (cognitoError.name === 'InvalidParameterException') {
           if (cognitoError.message.includes('phone')) {
@@ -296,7 +296,7 @@ const SettingsPage = ({ setStage }) => {
       setUser(updatedUser);
       
       // Store updated user data in session storage
-      storageUtils.setItem('userProfile', updatedUser);
+      storageUtils.setItem(STORAGE_KEYS.USER_PROFILE, updatedUser);
       analytics.trackEvent('account_settings_updated', {
       fieldsUpdated: Object.keys(accountForm).filter(key => accountForm[key]),
       hasAvatar: !!avatar,
@@ -381,7 +381,7 @@ const SettingsPage = ({ setStage }) => {
         }
       }
 
-      storageUtils.setItem(`notifications_${user.userID}`, notifications);
+      storageUtils.setItem(STORAGE_KEYS.NOTIFICATIONS, notifications, user.userID);
       analytics.trackEvent('notification_preferences_saved', { preferences: notifications });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -565,13 +565,12 @@ const SettingsPage = ({ setStage }) => {
   Save Changes
 </button>
 
-// Update success indicators:
 {saveSuccess && (
-  <div className="flex items-center text-green-600 text-sm">
+  <div className="flex items-center text-green-600 text-sm animate-fade-in">
     <Check size={16} className="mr-1" />
     Changes saved successfully!
   </div>
-          )}
+)}
         </div>
       </div>
     </div>
@@ -797,5 +796,6 @@ const SettingsPage = ({ setStage }) => {
     </div>
   );
 };
+
 
 export default SettingsPage;

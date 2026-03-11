@@ -97,12 +97,12 @@ export const saveUserProfile = async (userId, profileData) => {
     });
 
     if (result) {
-      console.log('✅ User profile saved to DynamoDB');
+      console.log('SUCCESS: User profile saved to DynamoDB');
       return { success: true };
     }
     return { success: true, localOnly: true };
   } catch (error) {
-    console.error('❌ Error saving user profile:', error);
+    console.error('ERROR: Error saving user profile:', error);
     return { success: false, error: error.message };
   }
 };
@@ -111,14 +111,14 @@ export const getUserProfile = async (userId) => {
   if (!isApiConfigured()) return null;
 
   try {
-    const data = await apiRequest(`/profile?userId=${userId}`, 'GET');
+    const data = await apiRequest(`/profile?userId=${encodeURIComponent(userId)}`, 'GET');
     if (data?.profile) {
-      console.log('📖 User profile retrieved from DynamoDB');
+      console.log('LOADED: User profile retrieved from DynamoDB');
       return data.profile;
     }
     return null;
   } catch (error) {
-    console.error('❌ Error getting user profile:', error);
+    console.error('ERROR: Error getting user profile:', error);
     return null;
   }
 };
@@ -140,12 +140,12 @@ export const updateUserProfile = async (userId, updates) => {
     });
 
     if (result) {
-      console.log('✅ User profile updated in DynamoDB');
+      console.log('SUCCESS: User profile updated in DynamoDB');
       return { success: true };
     }
     return { success: true, localOnly: true };
   } catch (error) {
-    console.error('❌ Error updating user profile:', error);
+    console.error('ERROR: Error updating user profile:', error);
     return { success: false, error: error.message };
   }
 };
@@ -167,12 +167,12 @@ export const saveDashboardData = async (userId, dashboardData) => {
     });
 
     if (result) {
-      console.log('✅ Dashboard data saved to DynamoDB');
+      console.log('SUCCESS: Dashboard data saved to DynamoDB');
       return { success: true };
     }
     return { success: true, localOnly: true };
   } catch (error) {
-    console.error('❌ Error saving dashboard data:', error);
+    console.error('ERROR: Error saving dashboard data:', error);
     return { success: false, error: error.message };
   }
 };
@@ -181,14 +181,14 @@ export const getDashboardData = async (userId) => {
   if (!isApiConfigured()) return null;
 
   try {
-    const data = await apiRequest(`/dashboard?userId=${userId}`, 'GET');
+    const data = await apiRequest(`/dashboard?userId=${encodeURIComponent(userId)}`, 'GET');
     if (data?.dashboard) {
-      console.log('📖 Dashboard data retrieved from DynamoDB');
+      console.log('LOADED: Dashboard data retrieved from DynamoDB');
       return data.dashboard;
     }
     return null;
   } catch (error) {
-    console.error('❌ Error getting dashboard data:', error);
+    console.error('ERROR: Error getting dashboard data:', error);
     return null;
   }
 };
@@ -210,12 +210,12 @@ export const saveUserPreferences = async (userId, preferencesData) => {
     });
 
     if (result) {
-      console.log('✅ User preferences saved to DynamoDB');
+      console.log('SUCCESS: User preferences saved to DynamoDB');
       return { success: true };
     }
     return { success: true, localOnly: true };
   } catch (error) {
-    console.error('❌ Error saving user preferences:', error);
+    console.error('ERROR: Error saving user preferences:', error);
     return { success: false, error: error.message };
   }
 };
@@ -224,14 +224,14 @@ export const getUserPreferences = async (userId) => {
   if (!isApiConfigured()) return null;
 
   try {
-    const data = await apiRequest(`/preferences?userId=${userId}`, 'GET');
+    const data = await apiRequest(`/preferences?userId=${encodeURIComponent(userId)}`, 'GET');
     if (data?.preferences) {
-      console.log('📖 User preferences retrieved from DynamoDB');
+      console.log('LOADED: User preferences retrieved from DynamoDB');
       return data.preferences;
     }
     return null;
   } catch (error) {
-    console.error('❌ Error getting user preferences:', error);
+    console.error('ERROR: Error getting user preferences:', error);
     return null;
   }
 };
@@ -245,10 +245,10 @@ export const loadAllUserData = async (userId) => {
     return { profile: null, dashboard: null, preferences: null, hasData: false };
   }
 
-  console.log('🔄 Loading all user data from DynamoDB...');
+  console.log('RELOADING: Loading all user data from DynamoDB...');
 
   try {
-    const data = await apiRequest(`/all?userId=${userId}`, 'GET');
+    const data = await apiRequest(`/all?userId=${encodeURIComponent(userId)}`, 'GET');
 
     if (data) {
       return {
@@ -261,7 +261,7 @@ export const loadAllUserData = async (userId) => {
 
     return { profile: null, dashboard: null, preferences: null, hasData: false };
   } catch (error) {
-    console.error('❌ Error loading user data:', error);
+    console.error('ERROR: Error loading user data:', error);
     return { profile: null, dashboard: null, preferences: null, hasData: false };
   }
 };
@@ -272,7 +272,7 @@ export const saveAllUserData = async (userId, data) => {
     return { success: true, localOnly: true };
   }
 
-  console.log('💾 Saving all user data to DynamoDB...');
+  console.log('SAVED: Saving all user data to DynamoDB...');
 
   try {
     const result = await apiRequest('/all', 'POST', {
@@ -283,12 +283,12 @@ export const saveAllUserData = async (userId, data) => {
     });
 
     if (result) {
-      console.log('✅ All data saved successfully');
+      console.log('SUCCESS: All data saved successfully');
       return { success: true };
     }
     return { success: true, localOnly: true };
   } catch (error) {
-    console.error('❌ Error saving all user data:', error);
+    console.error('ERROR: Error saving all user data:', error);
     return { success: false, error: error.message };
   }
 };
@@ -299,17 +299,17 @@ export const deleteAllUserData = async (userId) => {
     return { success: true, localOnly: true };
   }
 
-  console.log('🗑️ Deleting all user data from DynamoDB...');
+  console.log('REMOVED: Deleting all user data from DynamoDB...');
 
   try {
-    const result = await apiRequest(`/all?userId=${userId}`, 'DELETE');
+    const result = await apiRequest(`/all?userId=${encodeURIComponent(userId)}`, 'DELETE');
     if (result) {
-      console.log('✅ All user data deleted');
+      console.log('SUCCESS: All user data deleted');
       return { success: true };
     }
     return { success: true, localOnly: true };
   } catch (error) {
-    console.error('❌ Error deleting user data:', error);
+    console.error('ERROR: Error deleting user data:', error);
     return { success: false, error: error.message };
   }
 };
@@ -322,7 +322,7 @@ export const syncLocalToDynamo = async (userId, localData) => {
     return { success: true, localOnly: true };
   }
 
-  console.log('🔄 Syncing local storage to DynamoDB...');
+  console.log('RELOADING: Syncing local storage to DynamoDB...');
 
   const dataToSave = {};
 

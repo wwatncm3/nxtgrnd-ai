@@ -1,17 +1,20 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import {
-  ArrowLeft, Building2, Search, Filter, MapPin, Clock, CircleDollarSign,
+  ArrowLeft, Building2, Search, Clock, CircleDollarSign,
   ChevronRight, ExternalLink, Bookmark, BookmarkCheck, RefreshCw, X,
-  Briefcase, TrendingUp, Users, Globe, Star, Zap
+  Briefcase, TrendingUp, Users, Globe, Zap
 } from 'lucide-react';
 import { UserContext } from '../App';
-import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
+import { storageUtils } from '../utils/authUtils';
 import analytics from '../utils/analytics';
 import API_CONFIG from '../config/api';
 import { FullPageLoader } from '../components/ui/AnimatedComponents';
 import { getDashboardFromSession } from '../components/dashboard';
+import { usePageTooltip } from '../components/OnboardingTooltip';
 
 const JobsProjectsPage = ({ setStage }) => {
+  // Trigger jobs tooltip for new users
+  usePageTooltip('jobs');
   const { user } = useContext(UserContext);
   const selectedCareerPath = user?.selectedCareerPath;
 
@@ -34,19 +37,21 @@ const JobsProjectsPage = ({ setStage }) => {
     if (saved) setSavedJobs(saved);
   };
 
-  const loadOpportunities = async () => {
+  const loadOpportunities = async (forceRefresh = false) => {
     setIsLoading(true);
     try {
-      // First try to get from stored dashboard data using the shared utility
-      const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
-      if (dashboardData?.opportunities?.length > 0) {
-        console.log('JobsProjectsPage: Using cached dashboard opportunities');
-        setOpportunities(dashboardData.opportunities);
-        setIsLoading(false);
-        return;
+      // First try to get from stored dashboard data using the shared utility (skip if forcing refresh)
+      if (!forceRefresh) {
+        const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
+        if (dashboardData?.opportunities?.length > 0) {
+          console.log('JobsProjectsPage: Using cached dashboard opportunities');
+          setOpportunities(dashboardData.opportunities);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      // If no stored data, generate new opportunities
+      // If no stored data or forcing refresh, generate new opportunities
       console.log('JobsProjectsPage: Generating new opportunities');
       const opps = await generateOpportunities();
       setOpportunities(opps);
@@ -99,57 +104,53 @@ const JobsProjectsPage = ({ setStage }) => {
         id: 'opp-1',
         type: 'job',
         role: `Junior ${careerTitle}`,
-        company: 'Tech Innovators Inc.',
         location: 'Remote',
         locationType: 'remote',
         matchScore: 92,
-        postedDate: '2 days ago',
-        description: `Entry-level ${careerTitle} position with great growth potential. Work on exciting projects with a supportive team.`,
+        description: `Entry-level ${careerTitle} position. Ideal for building foundational skills and gaining industry experience.`,
         salaryRange: '$60,000 - $80,000',
         skills: selectedCareerPath?.requiredSkills?.slice(0, 4) || ['Communication', 'Problem Solving'],
-        benefits: ['Health Insurance', '401k', 'Remote Work', 'Learning Budget']
+        benefits: ['Health Insurance', '401k', 'Remote Work', 'Learning Budget'],
+        isRoleType: true
       },
       {
         id: 'opp-2',
         type: 'job',
         role: `${careerTitle}`,
-        company: 'Global Solutions Corp',
-        location: 'San Francisco, CA',
+        location: 'Hybrid',
         locationType: 'hybrid',
         matchScore: 87,
-        postedDate: '1 week ago',
         description: `Mid-level ${careerTitle} role focused on driving innovation and delivering impactful solutions.`,
         salaryRange: '$80,000 - $110,000',
         skills: selectedCareerPath?.requiredSkills?.slice(0, 5) || ['Leadership', 'Strategy'],
-        benefits: ['Stock Options', 'Unlimited PTO', 'Gym Membership']
+        benefits: ['Stock Options', 'Unlimited PTO', 'Gym Membership'],
+        isRoleType: true
       },
       {
         id: 'opp-3',
         type: 'project',
-        role: `Freelance ${careerTitle} Project`,
-        company: 'StartupXYZ',
+        role: `Freelance ${careerTitle}`,
         location: 'Remote',
         locationType: 'remote',
         matchScore: 85,
-        postedDate: '3 days ago',
-        description: `Short-term project for an early-stage startup. Great opportunity to build your portfolio.`,
-        salaryRange: '$5,000 - $10,000',
-        duration: '2-3 months',
-        skills: selectedCareerPath?.requiredSkills?.slice(0, 3) || ['Adaptability']
+        description: `Contract or freelance ${careerTitle} work. Great for building your portfolio and gaining diverse experience.`,
+        salaryRange: '$50 - $150/hr',
+        duration: 'Varies',
+        skills: selectedCareerPath?.requiredSkills?.slice(0, 3) || ['Adaptability'],
+        isRoleType: true
       },
       {
         id: 'opp-4',
         type: 'job',
         role: `Senior ${careerTitle}`,
-        company: 'Enterprise Leaders',
-        location: 'New York, NY',
+        location: 'On-site',
         locationType: 'onsite',
         matchScore: 78,
-        postedDate: '5 days ago',
-        description: `Senior role with leadership responsibilities. Mentor junior team members and drive strategic initiatives.`,
+        description: `Senior role with leadership responsibilities. Mentor team members and drive strategic initiatives.`,
         salaryRange: '$120,000 - $150,000',
         skills: selectedCareerPath?.requiredSkills || ['Leadership', 'Mentoring'],
-        benefits: ['Executive Benefits', 'Relocation Assistance', 'Signing Bonus']
+        benefits: ['Executive Benefits', 'Relocation Assistance', 'Signing Bonus'],
+        isRoleType: true
       }
     ];
   };
@@ -164,6 +165,18 @@ const JobsProjectsPage = ({ setStage }) => {
       storageUtils.setItem(`savedJobs_${user?.userID}`, newSaved);
       return newSaved;
     });
+  };
+
+  // Helper to determine experience level from role title
+  const getExperienceLevel = (role) => {
+    const roleLower = (role || '').toLowerCase();
+    if (roleLower.includes('senior') || roleLower.includes('lead') || roleLower.includes('principal') || roleLower.includes('director')) {
+      return 'senior';
+    }
+    if (roleLower.includes('junior') || roleLower.includes('entry') || roleLower.includes('associate') || roleLower.includes('intern')) {
+      return 'entry';
+    }
+    return 'mid';
   };
 
   // Filter and search
@@ -183,6 +196,8 @@ const JobsProjectsPage = ({ setStage }) => {
         filtered = filtered.filter(opp => opp.type === 'job');
       } else if (activeFilter === 'projects') {
         filtered = filtered.filter(opp => opp.type === 'project');
+      } else if (activeFilter === 'entry' || activeFilter === 'mid' || activeFilter === 'senior') {
+        filtered = filtered.filter(opp => getExperienceLevel(opp.role) === activeFilter);
       }
     }
 
@@ -228,6 +243,7 @@ const JobsProjectsPage = ({ setStage }) => {
   if (isLoading) {
     return (
       <FullPageLoader
+        icon={Briefcase}
         message="Finding opportunities for you..."
         subMessage="Searching jobs and projects that match your profile"
       />
@@ -259,10 +275,10 @@ const JobsProjectsPage = ({ setStage }) => {
             </div>
 
             <button
-              onClick={() => loadOpportunities()}
+              onClick={() => loadOpportunities(true)}
               className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
@@ -285,8 +301,8 @@ const JobsProjectsPage = ({ setStage }) => {
           </div>
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Zap className="h-6 w-6 text-purple-600" />
+              <div className="p-3 bg-teal-100 rounded-lg">
+                <Zap className="h-6 w-6 text-teal-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{opportunities.filter(o => o.type === 'project').length}</p>
@@ -366,7 +382,7 @@ const JobsProjectsPage = ({ setStage }) => {
                 )}
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-                {['all', 'jobs', 'projects', 'remote'].map((filter) => (
+                {['all', 'entry', 'mid', 'senior', 'jobs', 'projects', 'remote'].map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setActiveFilter(filter)}
@@ -376,7 +392,10 @@ const JobsProjectsPage = ({ setStage }) => {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    {filter === 'entry' ? 'Entry Level' :
+                     filter === 'mid' ? 'Mid Level' :
+                     filter === 'senior' ? 'Senior' :
+                     filter.charAt(0).toUpperCase() + filter.slice(1)}
                   </button>
                 ))}
               </div>
@@ -413,8 +432,13 @@ const JobsProjectsPage = ({ setStage }) => {
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="text-lg font-semibold text-gray-900">{opp.role}</h3>
                             {opp.type === 'project' && (
-                              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                              <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
                                 Project
+                              </span>
+                            )}
+                            {opp.isRoleType && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                Role Type
                               </span>
                             )}
                             {opp.source && (
@@ -423,12 +447,17 @@ const JobsProjectsPage = ({ setStage }) => {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-gray-600 font-medium">{opp.company}</p>
-                            {opp.companyLogo && (
-                              <img src={opp.companyLogo} alt={opp.company} className="h-5 w-5 rounded" />
-                            )}
-                          </div>
+                          {opp.company && !opp.isRoleType && (
+                            <div className="flex items-center gap-2">
+                              <p className="text-gray-600 font-medium">{opp.company}</p>
+                              {opp.companyLogo && (
+                                <img src={opp.companyLogo} alt={opp.company} className="h-5 w-5 rounded" />
+                              )}
+                            </div>
+                          )}
+                          {opp.isRoleType && (
+                            <p className="text-gray-500 text-sm">Search for this role on job boards below</p>
+                          )}
                         </div>
                         <button
                           onClick={() => toggleSaveJob(opp.id)}
@@ -448,10 +477,12 @@ const JobsProjectsPage = ({ setStage }) => {
                           {getLocationIcon(opp.locationType)}
                           {opp.location}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {opp.postedDate}
-                        </span>
+                        {opp.postedDate && !opp.isRoleType && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {opp.postedDate}
+                          </span>
+                        )}
                         {opp.salaryRange && (
                           <span className="flex items-center gap-1">
                             <CircleDollarSign className="h-4 w-4" />
@@ -529,7 +560,7 @@ const JobsProjectsPage = ({ setStage }) => {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => analytics.trackJobApplicationClick(opp.role, 'Indeed')}
-                            className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm"
+                            className="flex items-center justify-center gap-1 px-3 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors text-sm"
                           >
                             Indeed <ExternalLink className="h-3 w-3" />
                           </a>

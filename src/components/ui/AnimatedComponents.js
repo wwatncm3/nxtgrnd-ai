@@ -254,26 +254,47 @@ export const LoadingOverlay = ({ isLoading, children, blur = true }) => {
   );
 };
 
-// Full Page Loader - For full-screen loading states
+// Full Page Loader - For full-screen loading states (matches ResumeAnalysis style)
 export const FullPageLoader = ({
   message = 'Loading...',
   subMessage = '',
-  showDots = true,
-  size = 'lg',
+  icon: Icon = null,
   className = ''
 }) => {
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4 ${className}`}>
-      <div className="text-center animate-fade-in">
-        <LoadingSpinner size={size} showDots={showDots} />
-        <p className="mt-6 text-lg sm:text-xl font-semibold text-gray-900 animate-pulse-soft">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-blue-100 flex items-center justify-center p-4 ${className}`}>
+      <div className="text-center animate-fade-in max-w-md">
+        {/* Animated logo */}
+        <div className="relative mb-8">
+          <div className="w-24 h-24 bg-gradient-to-br from-blue-900 via-blue-800 to-teal-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl rotate-3 transform hover:rotate-0 transition-transform">
+            {Icon ? (
+              <Icon className="w-12 h-12 text-white" />
+            ) : (
+              <LoadingSpinner size="md" className="!border-white !border-t-teal-300" />
+            )}
+          </div>
+          <div className="absolute -inset-4 bg-gradient-to-r from-blue-800 to-teal-500 rounded-3xl opacity-20 animate-pulse blur-xl"></div>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">
           {message}
-        </p>
+        </h2>
         {subMessage && (
-          <p className="mt-2 text-sm sm:text-base text-gray-600">
+          <p className="text-gray-600 text-lg">
             {subMessage}
           </p>
         )}
+
+        {/* Loading progress dots */}
+        <div className="flex justify-center gap-2 mt-6">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

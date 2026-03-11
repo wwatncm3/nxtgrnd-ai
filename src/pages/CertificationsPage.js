@@ -1,17 +1,19 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import {
-  ArrowLeft, Award, Search, Filter, Clock, CircleDollarSign,
-  ChevronRight, ExternalLink, CheckCircle, Circle, RefreshCw, X,
-  TrendingUp, Target, Star, BookOpen, Calendar, AlertCircle, Zap
+  ArrowLeft, Award, Search, Clock,
+  ExternalLink, CheckCircle, Circle, RefreshCw, X,
+  BookOpen, AlertCircle, TrendingUp
 } from 'lucide-react';
 import { UserContext } from '../App';
-import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
-import analytics from '../utils/analytics';
+import { storageUtils } from '../utils/authUtils';
 import API_CONFIG from '../config/api';
 import { FullPageLoader } from '../components/ui/AnimatedComponents';
 import { getDashboardFromSession } from '../components/dashboard';
+import { usePageTooltip } from '../components/OnboardingTooltip';
 
 const CertificationsPage = ({ setStage }) => {
+  // Trigger certifications tooltip for new users
+  usePageTooltip('certifications');
   const { user } = useContext(UserContext);
   const selectedCareerPath = user?.selectedCareerPath;
 
@@ -34,21 +36,23 @@ const CertificationsPage = ({ setStage }) => {
     if (saved) setCertProgress(saved);
   };
 
-  const loadCertifications = async () => {
+  const loadCertifications = async (forceRefresh = false) => {
     setIsLoading(true);
     try {
-      // First try to get from stored dashboard data using the shared utility
-      const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
-      if (dashboardData?.events?.length > 0) {
-        // Transform events to certifications format
-        console.log('CertificationsPage: Using cached dashboard events');
-        const certs = transformEventsToCertifications(dashboardData.events);
-        setCertifications(certs);
-        setIsLoading(false);
-        return;
+      // First try to get from stored dashboard data using the shared utility (skip if forcing refresh)
+      if (!forceRefresh) {
+        const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
+        if (dashboardData?.events?.length > 0) {
+          // Transform events to certifications format
+          console.log('CertificationsPage: Using cached dashboard events');
+          const certs = transformEventsToCertifications(dashboardData.events);
+          setCertifications(certs);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      // If no stored data, generate new certifications
+      // If no stored data or forcing refresh, generate new certifications
       console.log('CertificationsPage: Generating new certifications');
       const certs = await generateCertifications();
       setCertifications(certs);
@@ -259,6 +263,7 @@ const CertificationsPage = ({ setStage }) => {
   if (isLoading) {
     return (
       <FullPageLoader
+        icon={Award}
         message="Loading certifications..."
         subMessage="Finding relevant certifications for your career path"
       />
@@ -290,10 +295,10 @@ const CertificationsPage = ({ setStage }) => {
             </div>
 
             <button
-              onClick={() => loadCertifications()}
+              onClick={() => loadCertifications(true)}
               className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>

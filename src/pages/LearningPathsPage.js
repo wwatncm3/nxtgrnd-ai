@@ -1,17 +1,20 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import {
-  ArrowLeft, BookOpen, Search, Filter, ChevronRight, Star, Clock,
-  Users, Link, Award, RefreshCw, X, CheckCircle, Circle, ExternalLink,
-  TrendingUp, Target, Zap
+  ArrowLeft, BookOpen, Search, ChevronRight, Star, Clock,
+  Users, Link, Award, RefreshCw, X, CheckCircle, ExternalLink,
+  TrendingUp, Target, Zap, Heart
 } from 'lucide-react';
 import { UserContext } from '../App';
-import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
+import { storageUtils } from '../utils/authUtils';
 import analytics from '../utils/analytics';
 import API_CONFIG from '../config/api';
 import { FullPageLoader } from '../components/ui/AnimatedComponents';
 import { getDashboardFromSession } from '../components/dashboard';
+import { usePageTooltip } from '../components/OnboardingTooltip';
 
 const LearningPathsPage = ({ setStage }) => {
+  // Trigger learning paths tooltip for new users
+  usePageTooltip('learningPaths');
   const { user } = useContext(UserContext);
   const selectedCareerPath = user?.selectedCareerPath;
 
@@ -22,6 +25,7 @@ const LearningPathsPage = ({ setStage }) => {
   const [courseProgress, setCourseProgress] = useState({});
   const [completedTasks, setCompletedTasks] = useState({});
   const [expandedPath, setExpandedPath] = useState(null);
+  const [favorites, setFavorites] = useState({});
 
   // Load data on mount
   useEffect(() => {
@@ -33,24 +37,38 @@ const LearningPathsPage = ({ setStage }) => {
     // storageUtils.getItem already returns parsed data
     const savedProgress = storageUtils.getItem(`courseProgress_${user?.userID}`);
     const savedTasks = storageUtils.getItem(`completedTasks_${user?.userID}`);
+    const savedFavorites = storageUtils.getItem(`learningFavorites_${user?.userID}`);
 
     if (savedProgress) setCourseProgress(savedProgress);
     if (savedTasks) setCompletedTasks(savedTasks);
+    if (savedFavorites) setFavorites(savedFavorites);
   };
 
-  const loadLearningPaths = async () => {
+  // Toggle favorite status
+  const toggleFavorite = (pathId, e) => {
+    e?.stopPropagation();
+    setFavorites(prev => {
+      const newFavorites = { ...prev, [pathId]: !prev[pathId] };
+      storageUtils.setItem(`learningFavorites_${user?.userID}`, newFavorites);
+      return newFavorites;
+    });
+  };
+
+  const loadLearningPaths = async (forceRefresh = false) => {
     setIsLoading(true);
     try {
-      // First try to get from stored dashboard data using the shared utility
-      const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
-      if (dashboardData?.learningPaths?.length > 0) {
-        console.log('LearningPathsPage: Using cached dashboard learning paths');
-        setLearningPaths(dashboardData.learningPaths);
-        setIsLoading(false);
-        return;
+      // First try to get from stored dashboard data using the shared utility (skip if forcing refresh)
+      if (!forceRefresh) {
+        const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
+        if (dashboardData?.learningPaths?.length > 0) {
+          console.log('LearningPathsPage: Using cached dashboard learning paths');
+          setLearningPaths(dashboardData.learningPaths);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      // If no stored data, generate new learning paths
+      // If no stored data or forcing refresh, generate new learning paths
       console.log('LearningPathsPage: Generating new learning paths');
       const paths = await generateLearningPaths();
       setLearningPaths(paths);
@@ -233,8 +251,12 @@ const LearningPathsPage = ({ setStage }) => {
   const filteredPaths = useMemo(() => {
     let filtered = learningPaths;
 
-    // Apply category filter
-    if (activeFilter !== 'all') {
+    // Apply favorites filter
+    if (activeFilter === 'favorites') {
+      filtered = filtered.filter(path => favorites[path.id || path.title]);
+    }
+    // Apply category/difficulty filter
+    else if (activeFilter !== 'all') {
       filtered = filtered.filter(path => path.category === activeFilter || path.difficulty?.toLowerCase() === activeFilter);
     }
 
@@ -250,7 +272,10 @@ const LearningPathsPage = ({ setStage }) => {
     }
 
     return filtered;
-  }, [learningPaths, activeFilter, searchQuery]);
+  }, [learningPaths, activeFilter, searchQuery, favorites]);
+
+  // Count favorites
+  const favoritesCount = Object.values(favorites).filter(Boolean).length;
 
   const getIconForType = (type) => {
     switch (type) {
@@ -273,6 +298,7 @@ const LearningPathsPage = ({ setStage }) => {
   if (isLoading) {
     return (
       <FullPageLoader
+        icon={BookOpen}
         message="Loading your learning paths..."
         subMessage="Preparing personalized recommendations"
       />
@@ -304,10 +330,10 @@ const LearningPathsPage = ({ setStage }) => {
             </div>
 
             <button
-              onClick={() => loadLearningPaths()}
+              onClick={() => loadLearningPaths(true)}
               className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
@@ -375,17 +401,25 @@ const LearningPathsPage = ({ setStage }) => {
               )}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-              {['all', 'beginner', 'intermediate', 'advanced'].map((filter) => (
+              {['all', 'favorites', 'beginner', 'intermediate', 'advanced'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                     activeFilter === filter
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
+                  {filter === 'favorites' && <Heart className={`h-4 w-4 ${activeFilter === 'favorites' ? 'fill-current' : ''}`} />}
                   {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  {filter === 'favorites' && favoritesCount > 0 && (
+                    <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                      activeFilter === 'favorites' ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
+                    }`}>
+                      {favoritesCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -442,9 +476,22 @@ const LearningPathsPage = ({ setStage }) => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2 ml-4">
-                        <div className="text-right">
-                          <span className="text-2xl font-bold text-blue-600">{progress}%</span>
-                          <p className="text-sm text-gray-500">Complete</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => toggleFavorite(path.id || path.title, e)}
+                            className={`p-2 rounded-full transition-colors ${
+                              favorites[path.id || path.title]
+                                ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                                : 'text-gray-400 hover:text-red-500 hover:bg-gray-100'
+                            }`}
+                            title={favorites[path.id || path.title] ? 'Remove from favorites' : 'Add to favorites'}
+                          >
+                            <Heart className={`h-5 w-5 ${favorites[path.id || path.title] ? 'fill-current' : ''}`} />
+                          </button>
+                          <div className="text-right">
+                            <span className="text-2xl font-bold text-blue-600">{progress}%</span>
+                            <p className="text-sm text-gray-500">Complete</p>
+                          </div>
                         </div>
                         <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                       </div>

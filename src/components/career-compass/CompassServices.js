@@ -1,20 +1,36 @@
 import API_CONFIG from '../../config/api';
 
-// Enhanced recommendation generation with force refresh option
-export const generateEnhancedRecommendations = async (user, includePredictions = true, forceRefresh = false) => {
+// Enhanced recommendation generation with force refresh option and retry logic
+export const generateEnhancedRecommendations = async (user, includePredictions = true, forceRefresh = false, retryCount = 0) => {
+  const MAX_RETRIES = 3;
+
   if (!user?.userID) {
     console.error('No user ID provided for recommendations');
     return null;
   }
-  console.log('Starting generateEnhancedRecommendations...', { forceRefresh });
+  console.log('Starting generateEnhancedRecommendations...', { forceRefresh, attempt: retryCount + 1 });
+
+  // Extract skills from user or resume
+  const userSkills = Array.isArray(user?.skills) ? user.skills : [];
+  const resumeText = user?.resume?.textractAnalysis?.rawText || '';
+
+  // Use skills as interests if interests not explicitly set
+  const interests = Array.isArray(user?.interests) && user.interests.length > 0
+    ? user.interests
+    : userSkills;
+
   console.log('User data:', {
     userID: user?.userID,
-    interests: user?.interests,
-    skills: user?.skills,
-    pathType: user?.pathType,
-    careerStage: user?.careerStage
+    interests: interests,
+    skills: userSkills,
+    experienceLevel: user?.experienceLevel,
+    hasResume: !!user?.resume,
+    resumeTextLength: resumeText.length
   });
   console.log('Include predictions:', includePredictions);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
   try {
     const recommendationPayload = {
@@ -22,11 +38,12 @@ export const generateEnhancedRecommendations = async (user, includePredictions =
       firstName: user?.firstName,
       lastName: user?.lastName,
       email: user?.email,
-      pathType: user?.pathType,
-      careerStage: user?.careerStage,
-      primaryGoal: user?.primaryGoal,
-      interests: Array.isArray(user?.interests) ? user.interests : [],
-      skills: Array.isArray(user?.skills) ? user.skills : [],
+      pathType: user?.pathType || 'career_growth',
+      careerStage: user?.careerStage || user?.experienceLevel || 'entry',
+      primaryGoal: user?.primaryGoal || 'career_advancement',
+      interests: interests,
+      skills: userSkills,
+      resumeText: resumeText,
       experienceLevel: user?.experienceLevel || user?.careerStage || 'entry',
       includeEnhancedDetails: true,
       includePredictions,
@@ -58,11 +75,14 @@ export const generateEnhancedRecommendations = async (user, includePredictions =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recPayload),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      throw new Error('Failed to fetch enhanced recommendations');
+      throw new Error(`Failed to fetch enhanced recommendations: ${response.status}`);
     }
 
     const data = await response.json();
@@ -75,7 +95,23 @@ export const generateEnhancedRecommendations = async (user, includePredictions =
       skillImpact: parsedBody.recommendations?.skillImpactAnalysis || []
     };
   } catch (error) {
-    console.error('Error generating enhanced recommendations:', error);
+    clearTimeout(timeoutId);
+    console.error(`Error generating enhanced recommendations (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error);
+
+    // Check if we should retry
+    if (retryCount < MAX_RETRIES - 1) {
+      const isTimeout = error.name === 'AbortError' || error.message?.includes('timeout');
+      const isServerError = error.message?.includes('504') || error.message?.includes('503') || error.message?.includes('500');
+
+      if (isTimeout || isServerError) {
+        console.log(`Retrying... (attempt ${retryCount + 2}/${MAX_RETRIES})`);
+        // Wait 2 seconds before retrying
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return generateEnhancedRecommendations(user, includePredictions, forceRefresh, retryCount + 1);
+      }
+    }
+
+    // All retries exhausted, throw the error
     throw error;
   }
 };
@@ -88,7 +124,7 @@ export const runCareerSimulation = async (user, selectedPath, scenarioType) => {
     scenarioType,
     experienceLevel: user?.experienceLevel || 'entry',
     skills: selectedPath.requiredSkills || [],
-    currentSalary: parseInt(selectedPath.salaryRange?.split('-')[0].replace(/\D/g, '')) || 50000,
+    currentSalary: parseInt(selectedPath.salaryRange?.split('-')?.[0]?.replace(/\D/g, '') || '50000') || 50000,
     timeframe: '5years',
     includeDetails: true
   };

@@ -30,7 +30,7 @@ export const setCurrentStorageUserId = (userId) => {
 const getUserKey = (baseKey, userId = null) => {
   const uid = userId || getCurrentStorageUserId();
   if (!uid) {
-    console.warn(`⚠️ No user ID available for key: ${baseKey}`);
+    console.warn(`WARNING: No user ID available for key: ${baseKey}`);
     return null;
   }
   return `${uid}_${baseKey}`;
@@ -60,15 +60,15 @@ export const storageUtils = {
   setItem: (baseKey, data, userId = null) => {
     const key = getUserKey(baseKey, userId);
     if (!key) {
-      console.error(`❌ Cannot store ${baseKey}: No user ID`);
+      console.error(`ERROR: Cannot store ${baseKey}: No user ID`);
       return false;
     }
     try {
       localStorage.setItem(key, typeof data === 'string' ? data : JSON.stringify(data));
-      console.log(`💾 Stored ${key} in localStorage`);
+      console.log(`SAVED: Stored ${key} in localStorage`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to store ${key}:`, error);
+      console.error(`ERROR: Failed to store ${key}:`, error);
       return false;
     }
   },
@@ -84,7 +84,7 @@ export const storageUtils = {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          console.log(`📖 Retrieved ${key} from localStorage`);
+          console.log(`LOADED: Retrieved ${key} from localStorage`);
           return parsed;
         } catch {
           // Return as string if not valid JSON
@@ -93,7 +93,7 @@ export const storageUtils = {
       }
       return null;
     } catch (error) {
-      console.error(`❌ Failed to retrieve ${key}:`, error);
+      console.error(`ERROR: Failed to retrieve ${key}:`, error);
       return null;
     }
   },
@@ -106,10 +106,10 @@ export const storageUtils = {
     }
     try {
       localStorage.removeItem(key);
-      console.log(`🗑️ Removed ${key} from localStorage`);
+      console.log(`REMOVED: Removed ${key} from localStorage`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to remove ${key}:`, error);
+      console.error(`ERROR: Failed to remove ${key}:`, error);
       return false;
     }
   },
@@ -127,11 +127,11 @@ export const storageUtils = {
   // Clear ALL data for a specific user
   clearUserData: (userId) => {
     if (!userId) {
-      console.error('❌ Cannot clear user data: No user ID provided');
+      console.error('ERROR: Cannot clear user data: No user ID provided');
       return false;
     }
 
-    console.log(`🧹 Clearing all data for user: ${userId}`);
+    console.log(`CLEARING: Clearing all data for user: ${userId}`);
 
     Object.values(STORAGE_KEYS).forEach(baseKey => {
       const key = `${userId}_${baseKey}`;
@@ -148,7 +148,7 @@ export const storageUtils = {
   // Clear ALL user data from localStorage (for logout)
   clearAllUserData: () => {
     const userId = getCurrentStorageUserId();
-    console.log(`🧹 Clearing all session data for logout (user: ${userId})`);
+    console.log(`CLEARING: Clearing all session data for logout (user: ${userId})`);
 
     // Clear current user marker
     setCurrentStorageUserId(null);
@@ -166,7 +166,7 @@ export const storageUtils = {
 export const userStateUtils = {
   getUserState: (userId) => {
     if (!userId) {
-      console.warn('⚠️ getUserState called without userId');
+      console.warn('WARNING: getUserState called without userId');
       return {
         preferences: null,
         careerPath: null,
@@ -190,7 +190,7 @@ export const userStateUtils = {
     if (careerPath) completionLevel = 3;
     if (dashboard) completionLevel = 4;
 
-    console.log(`📊 User state for ${userId}:`, {
+    console.log(`STATS: User state for ${userId}:`, {
       hasPreferences: !!preferences,
       hasCareerPath: !!careerPath,
       hasResume: !!resume,
@@ -214,7 +214,7 @@ export const determineUserNavigation = (storedState) => {
 
   // Complete user with dashboard -> Main Dashboard
   if (careerPath && dashboard) {
-    console.log('🎯 Complete user -> Dashboard');
+    console.log('TARGET: Complete user -> Dashboard');
     return {
       stage: 5,
       skipToEnd: true,
@@ -224,7 +224,7 @@ export const determineUserNavigation = (storedState) => {
 
   // Has career path but no dashboard -> Dashboard (it will generate)
   if (careerPath) {
-    console.log('🧭 Has career path -> Dashboard');
+    console.log('NAV: Has career path -> Dashboard');
     return {
       stage: 5,
       skipToEnd: true,
@@ -234,7 +234,7 @@ export const determineUserNavigation = (storedState) => {
 
   // Has preferences and resume -> Career Compass
   if (preferences && resume) {
-    console.log('📋 Has preferences + resume -> Career Compass');
+    console.log('INFO: Has preferences + resume -> Career Compass');
     return {
       stage: 4,
       skipToEnd: true,
@@ -244,7 +244,7 @@ export const determineUserNavigation = (storedState) => {
 
   // Has preferences only -> Interest Selection
   if (preferences) {
-    console.log('⚙️ Has preferences -> Interest Selection');
+    console.log('CONFIG: Has preferences -> Interest Selection');
     return {
       stage: 3,
       skipToEnd: false,
@@ -253,7 +253,7 @@ export const determineUserNavigation = (storedState) => {
   }
 
   // New user -> Profile Creation
-  console.log('👤 New user -> Profile Creation');
+  console.log('USER: New user -> Profile Creation');
   return {
     stage: 2,
     skipToEnd: false,
@@ -285,7 +285,7 @@ export const debugUtils = {
   logAllStoredData: (userId) => {
     if (process.env.NODE_ENV !== 'development') return;
 
-    console.group('🔍 User Storage Debug');
+    console.group('DEBUG: User Storage Debug');
     console.log('User ID:', userId);
 
     const allData = {
@@ -309,13 +309,13 @@ export const debugUtils = {
       const testData = { test: true };
 
       localStorage.setItem(testKey, JSON.stringify(testData));
-      const retrieved = JSON.parse(localStorage.getItem(testKey));
+      JSON.parse(localStorage.getItem(testKey));
       localStorage.removeItem(testKey);
 
-      console.log('✅ localStorage working');
+      console.log('SUCCESS: localStorage working');
       return true;
     } catch (error) {
-      console.error('❌ localStorage not working:', error);
+      console.error('ERROR: localStorage not working:', error);
       return false;
     }
   },
@@ -329,7 +329,7 @@ export const debugUtils = {
         keys.push(key);
       }
     }
-    console.log(`📋 Keys for user ${userId}:`, keys);
+    console.log(`INFO: Keys for user ${userId}:`, keys);
     return keys;
   }
 };
@@ -338,7 +338,7 @@ export const debugUtils = {
 export const determineUserNavigationWithDebug = (storedState) => {
   const { preferences, careerPath, resume, dashboard } = storedState;
 
-  console.group('🧭 Navigation Logic Debug');
+  console.group('NAV: Navigation Logic Debug');
   console.log('Stored State:', {
     hasPreferences: !!preferences,
     hasCareerPath: !!careerPath,
@@ -354,7 +354,7 @@ export const determineUserNavigationWithDebug = (storedState) => {
       skipToEnd: true,
       reason: 'Returning user with career path, go to dashboard'
     };
-    console.log('🎯 DECISION: Returning user -> Dashboard (Stage 5)');
+    console.log('TARGET: DECISION: Returning user -> Dashboard (Stage 5)');
   }
   else if (preferences && resume) {
     decision = {
@@ -362,7 +362,7 @@ export const determineUserNavigationWithDebug = (storedState) => {
       skipToEnd: true,
       reason: 'Has basic setup, continue to career path selection'
     };
-    console.log('📋 DECISION: Has preferences + resume -> Career Compass (Stage 4)');
+    console.log('INFO: DECISION: Has preferences + resume -> Career Compass (Stage 4)');
   }
   else if (preferences) {
     decision = {
@@ -370,7 +370,7 @@ export const determineUserNavigationWithDebug = (storedState) => {
       skipToEnd: false,
       reason: 'Has path preferences, continue profile setup'
     };
-    console.log('⚙️ DECISION: Has preferences -> Interest Selection (Stage 3)');
+    console.log('CONFIG: DECISION: Has preferences -> Interest Selection (Stage 3)');
   }
   else {
     decision = {
@@ -378,7 +378,7 @@ export const determineUserNavigationWithDebug = (storedState) => {
       skipToEnd: false,
       reason: 'New user, complete onboarding'
     };
-    console.log('👤 DECISION: New user -> Profile Creation (Stage 2)');
+    console.log('USER: DECISION: New user -> Profile Creation (Stage 2)');
   }
 
   console.log('Final Decision:', decision);
@@ -391,7 +391,7 @@ export const determineUserNavigationWithDebug = (storedState) => {
 export const migrateOldStorageKeys = (userId) => {
   if (!userId) return;
 
-  console.log('🔄 Checking for old storage keys to migrate...');
+  console.log('RELOADING: Checking for old storage keys to migrate...');
 
   const oldKeyMap = {
     'userPathPreferences': STORAGE_KEYS.USER_PREFERENCES,
@@ -411,12 +411,12 @@ export const migrateOldStorageKeys = (userId) => {
         // Only migrate if new key doesn't exist
         if (!localStorage.getItem(newKey)) {
           localStorage.setItem(newKey, oldData);
-          console.log(`✅ Migrated ${oldKey} -> ${newKey}`);
+          console.log(`SUCCESS: Migrated ${oldKey} -> ${newKey}`);
           migrated = true;
         }
         // Remove old key after migration
         localStorage.removeItem(oldKey);
-        console.log(`🗑️ Removed old key: ${oldKey}`);
+        console.log(`REMOVED: Removed old key: ${oldKey}`);
       }
     } catch (e) {
       console.error(`Failed to migrate ${oldKey}:`, e);
@@ -431,7 +431,7 @@ export const migrateOldStorageKeys = (userId) => {
       const newKey = `${userId}_${STORAGE_KEYS.USER_DASHBOARD}`;
       if (!localStorage.getItem(newKey)) {
         localStorage.setItem(newKey, oldDashboard);
-        console.log(`✅ Migrated ${oldUserDashboardKey} -> ${newKey}`);
+        console.log(`SUCCESS: Migrated ${oldUserDashboardKey} -> ${newKey}`);
         migrated = true;
       }
       localStorage.removeItem(oldUserDashboardKey);
@@ -441,9 +441,9 @@ export const migrateOldStorageKeys = (userId) => {
   }
 
   if (migrated) {
-    console.log('✅ Migration complete');
+    console.log('SUCCESS: Migration complete');
   } else {
-    console.log('ℹ️ No old keys to migrate');
+    console.log('INFO: No old keys to migrate');
   }
 };
 
@@ -459,13 +459,13 @@ export const cleanupNonScopedKeys = () => {
     'userInterests'
   ];
 
-  console.log('🧹 Cleaning up non-scoped storage keys...');
+  console.log('CLEARING: Cleaning up non-scoped storage keys...');
 
   nonScopedKeys.forEach(key => {
     try {
       if (localStorage.getItem(key)) {
         localStorage.removeItem(key);
-        console.log(`🗑️ Removed non-scoped key: ${key}`);
+        console.log(`REMOVED: Removed non-scoped key: ${key}`);
       }
     } catch (e) {
       console.error(`Failed to remove ${key}:`, e);

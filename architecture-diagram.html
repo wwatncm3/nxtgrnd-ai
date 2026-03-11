@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NxtGrnd AI – Architecture Diagram</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; }
+    header span { font-size: 0.9rem; opacity: 0.75; }
+    .badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      margin-left: auto;
+    }
+
+    /* ── Main canvas ─────────────────────────────────────────── */
+    main { padding: 32px 40px; display: flex; flex-direction: column; gap: 32px; }
+
+    /* ── Layer wrapper ───────────────────────────────────────── */
+    .layer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .layer-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.45;
+      padding-left: 4px;
+    }
+    .layer-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3548;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 200px;
+      flex: 1;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .card:hover {
+      border-color: var(--accent, #6366f1);
+      box-shadow: 0 0 0 1px var(--accent, #6366f1), 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .card-sub {
+      font-size: 0.72rem;
+      opacity: 0.5;
+      margin-top: -4px;
+    }
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .tag {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+    .tag.active {
+      background: rgba(99,102,241,0.15);
+      border-color: rgba(99,102,241,0.4);
+      color: #a5b4fc;
+    }
+    .tag.warn {
+      background: rgba(245,158,11,0.1);
+      border-color: rgba(245,158,11,0.3);
+      color: #fbbf24;
+    }
+
+    /* ── Colour themes ───────────────────────────────────────── */
+    .theme-blue   { --accent:#3b82f6; }
+    .theme-purple { --accent:#a855f7; }
+    .theme-green  { --accent:#22c55e; }
+    .theme-orange { --accent:#f97316; }
+    .theme-cyan   { --accent:#06b6d4; }
+    .theme-pink   { --accent:#ec4899; }
+    .theme-yellow { --accent:#eab308; }
+    .theme-red    { --accent:#ef4444; }
+    .theme-teal   { --accent:#14b8a6; }
+
+    .icon-blue   { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+    .icon-purple { background: rgba(168,85,247,0.15);  color: #c084fc; }
+    .icon-green  { background: rgba(34,197,94,0.15);   color: #4ade80; }
+    .icon-orange { background: rgba(249,115,22,0.15);  color: #fb923c; }
+    .icon-cyan   { background: rgba(6,182,212,0.15);   color: #22d3ee; }
+    .icon-pink   { background: rgba(236,72,153,0.15);  color: #f472b6; }
+    .icon-yellow { background: rgba(234,179,8,0.15);   color: #facc15; }
+    .icon-red    { background: rgba(239,68,68,0.15);   color: #f87171; }
+    .icon-teal   { background: rgba(20,184,166,0.15);  color: #2dd4bf; }
+
+    /* ── Connector arrows ────────────────────────────────────── */
+    .arrow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 4px 0;
+    }
+    .arrow-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+    .arrow-line {
+      width: 2px;
+      height: 28px;
+      background: linear-gradient(to bottom, #374151, #6366f1);
+      position: relative;
+    }
+    .arrow-line::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #6366f1;
+    }
+    .arrow-label {
+      font-size: 0.62rem;
+      color: #6366f1;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+
+    /* ── Single wide connector ───────────────────────────────── */
+    .connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 2px 0;
+    }
+    .connector-line {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(to right, #1a1f2e, #374151, #6366f1, #374151, #1a1f2e);
+    }
+    .connector-text {
+      font-size: 0.65rem;
+      color: #6366f1;
+      opacity: 0.7;
+      white-space: nowrap;
+      background: #0f1117;
+      padding: 0 6px;
+    }
+
+    /* ── Big full-width connector bar ───────────────────────── */
+    .bus {
+      border: 1px dashed #2d3548;
+      border-radius: 10px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(99,102,241,0.04);
+    }
+    .bus-label {
+      font-size: 0.72rem;
+      color: #818cf8;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    .bus-line { flex: 1; height: 1px; background: #2d3548; }
+
+    /* ── Status dots ─────────────────────────────────────────── */
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+    .dot-green  { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .dot-yellow { background: #eab308; box-shadow: 0 0 6px #eab308; }
+    .dot-gray   { background: #64748b; }
+
+    /* ── Legend ──────────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-top: 1px solid #1e2535;
+      padding-top: 24px;
+      margin-top: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      opacity: 0.65;
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+    /* ── Flow diagram for data paths ─────────────────────────── */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .flow-card {
+      background: #141824;
+      border: 1px solid #2d3548;
+      border-radius: 10px;
+      padding: 14px 18px;
+    }
+    .flow-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+    .step-num {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.2);
+      border: 1px solid rgba(99,102,241,0.4);
+      color: #818cf8;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ── Section title ───────────────────────────────────────── */
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>NxtGrnd AI</h1>
+    <span>System Architecture &amp; Integration Map</span>
+  </div>
+  <div class="badge">March 2026</div>
+</header>
+
+<main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LAYER 1 – CLIENT
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="layer">
+    <div class="layer-label">Client Layer</div>
+    <div class="layer-row">
+
+      <div class="card theme-blue" style="max-width:320px;">
+        <div class="card-header">
+          <div class="card-icon icon-blue">⚛️</div>
+          <div>
+            <div class="card-title">React 19 SPA</div>
+            <div class="card-sub">Create React App · React Router v6</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">MUI v6</span>
+          <span class="tag active">Framer Motion</span>
+          <span class="tag active">TailwindCSS</span>
+          <span class="tag active">Lucide Icons</span>
+          <span class="tag active">react-icons</span>
+        </div>
+      </div>
+
+      <div class="card theme-purple" style="max-width:220px;">
+        <div class="card-header">
+          <div class="card-icon icon-purple">📦</div>
+          <div>
+            <div class="card-title">Local Storage</div>
+            <div class="card-sub">storageService.js</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag">Profile</span>
+          <span class="tag">CareerPath</span>
+          <span class="tag">Dashboard</span>
+          <span class="tag">Preferences</span>
+          <span class="tag">Achievements</span>
+          <span class="tag">Cache</span>
+        </div>
+      </div>
+
+      <div class="card theme-teal" style="max-width:220px;">
+        <div class="card-header">
+          <div class="card-icon icon-teal">🔔</div>
+          <div>
+            <div class="card-title">Service Worker</div>
+            <div class="card-sub">PWA · Push Notifications</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Offline Cache</span>
+          <span class="tag active">Web Push</span>
+          <span class="tag active">Background Sync</span>
+        </div>
+      </div>
+
+      <div class="card theme-yellow" style="max-width:200px;">
+        <div class="card-header">
+          <div class="card-icon icon-yellow">📊</div>
+          <div>
+            <div class="card-title">Analytics</div>
+            <div class="card-sub">analytics.js · Batched events</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag warn">Optional endpoint</span>
+          <span class="tag">10s batching</span>
+          <span class="tag">sendBeacon</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Connector -->
+  <div class="bus">
+    <div class="bus-label">HTTPS / REST  ·  AWS Amplify Auth SDK  ·  fetch()</div>
+    <div class="bus-line"></div>
+    <div class="bus-label">API Gateway (us-east-1)</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LAYER 2 – AUTH
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="layer">
+    <div class="layer-label">Authentication Layer</div>
+    <div class="layer-row">
+
+      <div class="card theme-orange" style="max-width:260px;">
+        <div class="card-header">
+          <div class="card-icon icon-orange">🔑</div>
+          <div>
+            <div class="card-title">AWS Cognito</div>
+            <div class="card-sub">User Pool · us-east-1</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">USER_PASSWORD_AUTH</span>
+          <span class="tag active">JWT ID Tokens</span>
+          <span class="tag">Pool: nZs87K3XT</span>
+        </div>
+      </div>
+
+      <div class="card theme-orange" style="max-width:280px;">
+        <div class="card-header">
+          <div class="card-icon icon-orange">🛡️</div>
+          <div>
+            <div class="card-title">AWS Amplify Auth</div>
+            <div class="card-sub">@aws-amplify/auth v6</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">fetchAuthSession()</span>
+          <span class="tag active">signIn / signOut</span>
+          <span class="tag active">Token refresh</span>
+          <span class="tag active">LoginHandler.js</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Connector -->
+  <div class="bus">
+    <div class="bus-label">AWS API Gateway Endpoints</div>
+    <div class="bus-line"></div>
+    <div class="bus-label">Lambda Proxy Integration</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LAYER 3 – API GATEWAY
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="layer">
+    <div class="layer-label">API Gateway Layer</div>
+    <div class="layer-row">
+
+      <div class="card theme-cyan">
+        <div class="card-header">
+          <div class="card-icon icon-cyan">🤖</div>
+          <div>
+            <div class="card-title">Recommendations API</div>
+            <div class="card-sub">3ub6swm509.execute-api.us-east-1.amazonaws.com</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">POST /recommendations/generate</span>
+          <span class="tag active">POST /recommendations</span>
+          <span class="tag active">GET /recommendations/:userId</span>
+          <span class="tag active">DELETE /recommendations</span>
+        </div>
+      </div>
+
+      <div class="card theme-green">
+        <div class="card-header">
+          <div class="card-icon icon-green">📁</div>
+          <div>
+            <div class="card-title">Files API</div>
+            <div class="card-sub">7dgswradw7.execute-api.us-east-1.amazonaws.com</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">POST /files/upload</span>
+          <span class="tag active">POST /files/download</span>
+          <span class="tag">Resume storage</span>
+        </div>
+      </div>
+
+      <div class="card theme-purple">
+        <div class="card-header">
+          <div class="card-icon icon-purple">⚙️</div>
+          <div>
+            <div class="card-title">Dynamic Options API</div>
+            <div class="card-sub">qvuwgujm49.execute-api.us-east-1.amazonaws.com</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">POST /dynamic-options</span>
+          <span class="tag active">GET /user/profile</span>
+          <span class="tag active">GET /user/dashboard</span>
+          <span class="tag active">GET /user/preferences</span>
+          <span class="tag active">GET /user/all</span>
+          <span class="tag active">POST /user/all</span>
+          <span class="tag active">DELETE /user/all</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LAYER 4 – LAMBDA
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="layer">
+    <div class="layer-label">Lambda Functions</div>
+    <div class="layer-row">
+
+      <div class="card theme-cyan">
+        <div class="card-header">
+          <div class="card-icon icon-cyan">⚡</div>
+          <div>
+            <div class="card-title">recommendations-optimized</div>
+            <div class="card-sub">Node.js · ES Modules</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Career recommendations</span>
+          <span class="tag active">Milestones</span>
+          <span class="tag active">Market insights</span>
+          <span class="tag active">Career simulation</span>
+          <span class="tag active">Mentor matching</span>
+          <span class="tag">GPT-4o powered</span>
+        </div>
+      </div>
+
+      <div class="card theme-green">
+        <div class="card-header">
+          <div class="card-icon icon-green">⚡</div>
+          <div>
+            <div class="card-title">user-data/index</div>
+            <div class="card-sub">Node.js · CommonJS</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">CRUD – user profile</span>
+          <span class="tag active">CRUD – dashboard</span>
+          <span class="tag active">CRUD – preferences</span>
+          <span class="tag active">Cognito JWT auth</span>
+        </div>
+      </div>
+
+      <div class="card theme-purple">
+        <div class="card-header">
+          <div class="card-icon icon-purple">⚡</div>
+          <div>
+            <div class="card-title">mentor-search/index</div>
+            <div class="card-sub">Node.js · CommonJS</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">LinkedIn search</span>
+          <span class="tag active">OpenAI matching</span>
+          <span class="tag warn">LINKEDIN_API_KEY</span>
+        </div>
+      </div>
+
+      <div class="card theme-pink">
+        <div class="card-header">
+          <div class="card-icon icon-pink">⚡</div>
+          <div>
+            <div class="card-title">youtube-search</div>
+            <div class="card-sub">Node.js · ES Modules</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">YouTube Data API v3</span>
+          <span class="tag active">Video search + stats</span>
+          <span class="tag active">Career query builder</span>
+        </div>
+      </div>
+
+      <div class="card theme-orange">
+        <div class="card-header">
+          <div class="card-icon icon-orange">⚡</div>
+          <div>
+            <div class="card-title">dynamic-options-update</div>
+            <div class="card-sub">add-to-dynamic-options</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Career path options</span>
+          <span class="tag active">Skills suggestions</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LAYER 5 – AWS SERVICES
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="layer">
+    <div class="layer-label">AWS Backend Services</div>
+    <div class="layer-row">
+
+      <div class="card theme-yellow">
+        <div class="card-header">
+          <div class="card-icon icon-yellow">🗄️</div>
+          <div>
+            <div class="card-title">DynamoDB</div>
+            <div class="card-sub">us-east-1 · @aws-sdk v3</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Recommendations</span>
+          <span class="tag active">nxtgrnd-users</span>
+          <span class="tag active">nxtgrnd-user-dashboards</span>
+          <span class="tag active">nxtgrnd-user-preferences</span>
+        </div>
+      </div>
+
+      <div class="card theme-orange">
+        <div class="card-header">
+          <div class="card-icon icon-orange">🪣</div>
+          <div>
+            <div class="card-title">S3</div>
+            <div class="card-sub">Bucket: tw3tech-career-day</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Resume file storage</span>
+          <span class="tag active">GetObjectCommand</span>
+          <span class="tag active">@aws-sdk/client-s3</span>
+        </div>
+      </div>
+
+      <div class="card theme-blue">
+        <div class="card-header">
+          <div class="card-icon icon-blue">🔍</div>
+          <div>
+            <div class="card-title">AWS Textract</div>
+            <div class="card-sub">@aws-sdk/client-textract</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Resume OCR / parse</span>
+          <span class="tag active">Document analysis</span>
+          <span class="tag active">ResumeAnalysis.js</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LAYER 6 – THIRD-PARTY APIs
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="layer">
+    <div class="layer-label">Third-Party APIs</div>
+    <div class="layer-row">
+
+      <div class="card theme-green">
+        <div class="card-header">
+          <div class="card-icon icon-green">🧠</div>
+          <div>
+            <div class="card-title">OpenAI API</div>
+            <div class="card-sub">Model: gpt-4o · openai npm</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">Career recommendations</span>
+          <span class="tag active">Market insights</span>
+          <span class="tag active">Career simulation</span>
+          <span class="tag active">Mentor matching</span>
+          <span class="tag active">Milestone generation</span>
+          <span class="tag active">JSON response format</span>
+          <span class="tag">max_tokens: 800–2500</span>
+        </div>
+      </div>
+
+      <div class="card theme-red">
+        <div class="card-header">
+          <div class="card-icon icon-red">▶️</div>
+          <div>
+            <div class="card-title">YouTube Data API v3</div>
+            <div class="card-sub">googleapis.com/youtube/v3</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active">videos?part=statistics</span>
+          <span class="tag active">search?part=snippet</span>
+          <span class="tag active">Career tutorial videos</span>
+          <span class="tag active">Duration filter: medium</span>
+          <span class="tag warn">YOUTUBE_API_KEY</span>
+        </div>
+      </div>
+
+      <div class="card theme-blue">
+        <div class="card-header">
+          <div class="card-icon icon-blue">💼</div>
+          <div>
+            <div class="card-title">Job Boards</div>
+            <div class="card-sub">Live API feeds</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag active"><span class="dot dot-green"></span>Remotive</span>
+          <span class="tag active"><span class="dot dot-green"></span>Arbeitnow</span>
+          <span class="tag"><span class="dot dot-yellow"></span>Adzuna (keyed)</span>
+          <span class="tag"><span class="dot dot-yellow"></span>Jooble (keyed)</span>
+        </div>
+      </div>
+
+      <div class="card theme-teal">
+        <div class="card-header">
+          <div class="card-icon icon-teal">🔗</div>
+          <div>
+            <div class="card-title">Job Board Deep Links</div>
+            <div class="card-sub">jobSearchService.js · URL generation</div>
+          </div>
+        </div>
+        <div class="tag-list">
+          <span class="tag">LinkedIn</span>
+          <span class="tag">Indeed</span>
+          <span class="tag">Glassdoor</span>
+          <span class="tag">Handshake</span>
+          <span class="tag">ZipRecruiter</span>
+          <span class="tag">Dice</span>
+          <span class="tag">Wellfound</span>
+          <span class="tag">Builtin</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       DATA FLOWS
+  ═══════════════════════════════════════════════════════════ -->
+  <div>
+    <div class="section-title">Key Data Flows</div>
+    <div class="flow-grid">
+
+      <div class="flow-card">
+        <div class="flow-title" style="color:#22d3ee;">🤖 AI Career Recommendation</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div>User submits profile (skills, interests, resume)</div>
+          <div class="flow-step"><div class="step-num">2</div>React → API Gateway /recommendations/generate</div>
+          <div class="flow-step"><div class="step-num">3</div>Lambda fetches resume from S3</div>
+          <div class="flow-step"><div class="step-num">4</div>Single GPT-4o call → career paths + match scores</div>
+          <div class="flow-step"><div class="step-num">5</div>Parallel DynamoDB writes (Recommendations table)</div>
+          <div class="flow-step"><div class="step-num">6</div>Response returned to React → rendered in dashboard</div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title" style="color:#4ade80;">📄 Resume Upload &amp; Analysis</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div>User uploads PDF/DOCX via ResumeAnalysis.js</div>
+          <div class="flow-step"><div class="step-num">2</div>POST /files/upload → Files Lambda → S3 bucket</div>
+          <div class="flow-step"><div class="step-num">3</div>AWS Textract parses text &amp; structure</div>
+          <div class="flow-step"><div class="step-num">4</div>POST /files/download → fetch parsed content</div>
+          <div class="flow-step"><div class="step-num">5</div>Analysis cached in sessionStorage</div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title" style="color:#a5b4fc;">🔐 Auth &amp; User State</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div>Amplify signIn → Cognito User Pool</div>
+          <div class="flow-step"><div class="step-num">2</div>JWT ID token stored in Amplify session</div>
+          <div class="flow-step"><div class="step-num">3</div>storageService checks localStorage</div>
+          <div class="flow-step"><div class="step-num">4</div>If empty → loads from DynamoDB via /user/all</div>
+          <div class="flow-step"><div class="step-num">5</div>Changes debounced (2s) then synced back to DynamoDB</div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title" style="color:#fb923c;">💼 Job Search</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div>React calls jobSearchService.searchJobs()</div>
+          <div class="flow-step"><div class="step-num">2</div>Parallel fetch: Remotive + Arbeitnow APIs</div>
+          <div class="flow-step"><div class="step-num">3</div>Match scores calculated against user profile</div>
+          <div class="flow-step"><div class="step-num">4</div>Sorted by score, rendered in OpportunitiesSection</div>
+          <div class="flow-step"><div class="step-num">5</div>Deep-link buttons open job boards in new tab</div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title" style="color:#f472b6;">▶️ Video Recommendations</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div>VideoRecommendations.js triggers on career path change</div>
+          <div class="flow-step"><div class="step-num">2</div>POST to youtube-search Lambda</div>
+          <div class="flow-step"><div class="step-num">3</div>Lambda queries YouTube /search + /videos APIs</div>
+          <div class="flow-step"><div class="step-num">4</div>Stats, thumbnails &amp; durations returned</div>
+          <div class="flow-step"><div class="step-num">5</div>VideoGrid renders cards with embed links</div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-title" style="color:#2dd4bf;">🧭 Career Simulation</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div>User selects scenario in CareerScenarioSimulator</div>
+          <div class="flow-step"><div class="step-num">2</div>POST to Recommendations API (requestType: career_simulation)</div>
+          <div class="flow-step"><div class="step-num">3</div>GPT-4o generates salary projection + milestones</div>
+          <div class="flow-step"><div class="step-num">4</div>Response validated &amp; salary capped at 50% increase</div>
+          <div class="flow-step"><div class="step-num">5</div>Results animated with Framer Motion</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       LEGEND
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#22c55e;"></div> Live / Active integration
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#eab308;"></div> Requires API key / optional
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#64748b;"></div> Planned / disabled
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#6366f1;"></div> AWS managed service
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#ec4899;"></div> Third-party API
+    </div>
+    <div class="legend-item" style="margin-left:auto; opacity:0.4;">
+      Generated from source code · NxtGrnd AI · us-east-1
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
