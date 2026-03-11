@@ -19,6 +19,7 @@ const CertificationsPage = ({ setStage }) => {
 
   const [certifications, setCertifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [certProgress, setCertProgress] = useState({});
@@ -38,13 +39,13 @@ const CertificationsPage = ({ setStage }) => {
 
   const loadCertifications = async (forceRefresh = false) => {
     setIsLoading(true);
+    setError(null);
     try {
       // First try to get from stored dashboard data using the shared utility (skip if forcing refresh)
       if (!forceRefresh) {
         const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
         if (dashboardData?.events?.length > 0) {
           // Transform events to certifications format
-          console.log('CertificationsPage: Using cached dashboard events');
           const certs = transformEventsToCertifications(dashboardData.events);
           setCertifications(certs);
           setIsLoading(false);
@@ -53,11 +54,11 @@ const CertificationsPage = ({ setStage }) => {
       }
 
       // If no stored data or forcing refresh, generate new certifications
-      console.log('CertificationsPage: Generating new certifications');
       const certs = await generateCertifications();
       setCertifications(certs);
-    } catch (error) {
-      console.error('Error loading certifications:', error);
+    } catch (err) {
+      console.error('Error loading certifications:', err);
+      setError('Unable to load certifications. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -267,6 +268,35 @@ const CertificationsPage = ({ setStage }) => {
         message="Loading certifications..."
         subMessage="Finding relevant certifications for your career path"
       />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Award className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Unable to Load Certifications</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => loadCertifications(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+            <button
+              onClick={() => setStage(5)}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

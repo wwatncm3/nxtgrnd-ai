@@ -90,8 +90,6 @@ function App() {
         completeUserData.resume = storedState.resume;
       }
 
-      console.log('🖼️ checkAuthState - Avatar in user data:', completeUserData.avatar ? 'PRESENT' : 'MISSING');
-
       setUser(completeUserData);
       analytics.setUser(completeUserData.username, {
       email: completeUserData.email,
@@ -101,7 +99,6 @@ function App() {
       // Instead of going directly to dashboard, start at the beginning of the flow
       setStage(1);
     } catch (error) {
-      console.log('User is not authenticated');
       setStage(1); // Go to login/signup if not authenticated
     } finally {
       setIsLoading(false);
@@ -109,27 +106,13 @@ function App() {
   };
 
   const handleStageComplete = (data) => {
-    console.log('TARGET: Stage completed with data:', data);
-    
-    // ✅ FIX: Update user state with the complete data passed from child component
     if (data && typeof data === 'object') {
-      console.log('📝 Updating user state with complete data');
-      setUser(prevUser => {
-        const updatedUser = {
-          ...prevUser,
-          ...data  // This now contains all the data from InterestSelection
-        };
-        console.log('USER: User state updated:', updatedUser);
-        return updatedUser;
-      });
+      setUser(prevUser => ({
+        ...prevUser,
+        ...data
+      }));
     }
-    
-    // ✅ FIX: Use setStage instead of setCurrentStage
-    setStage(prevStage => {
-      const nextStage = prevStage + 1;
-      console.log(`🚀 Moving from stage ${prevStage} to stage ${nextStage}`);
-      return nextStage;
-    });
+    setStage(prevStage => prevStage + 1);
   };
 
   const handleCareerPathSelect = (path) => {
@@ -154,17 +137,11 @@ function App() {
             <ProfileCreation 
               // The new onNext handler that trusts the decision from the login logic
               onNext={(profileData, navigation) => {
-                console.log('TARGET: App.js received navigation:', { profileData, navigation });
-                
-                // ✅ FIX: Trust the navigation decision made by authUtils/LoginHandler
                 if (navigation && navigation.skipToEnd) {
-                  console.log(`SUCCESS: Returning user -> Navigating to stage ${navigation.stage} based on restored state.`);
                   setUser(prev => ({...prev, ...profileData}));
-                  // Use the stage number provided by the navigation object
-                  setStage(navigation.stage); 
+                  setStage(navigation.stage);
                 } else {
                   // New user signup - proceed to interest selection
-                  console.log('USER: New user -> Interest Selection (Stage 3)');
                   setUser(prev => ({...prev, ...profileData}));
                   setStage(3);
                 }

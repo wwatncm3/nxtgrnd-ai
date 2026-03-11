@@ -20,15 +20,27 @@ const openai = new OpenAI({
 
 export const handler = async (event) => {
   try {
-    console.log('Received event:', JSON.stringify(event));
     const { httpMethod, path } = event;
-    console.log(`Processing ${httpMethod} request to ${path}`);
+
+    // Safely parse request body once upfront
+    let parsedBody;
+    if (event.body) {
+      try {
+        parsedBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      } catch (parseError) {
+        return {
+          statusCode: 400,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ message: 'Invalid JSON in request body' })
+        };
+      }
+    }
 
     if (httpMethod === 'POST' && path === '/recommendations')
-      return await createRecommendation(JSON.parse(event.body));
+      return await createRecommendation(parsedBody);
 
     if (httpMethod === 'POST' && path === '/recommendations/generate')
-      return await generateRecommendation(JSON.parse(event.body));
+      return await generateRecommendation(parsedBody);
 
     if (httpMethod === 'GET' && path.startsWith('/recommendations/')) {
       const userId = path.split('/recommendations/')[1];
@@ -207,6 +219,9 @@ Return JSON with this EXACT structure:
 
     console.log(`OpenAI call completed in ${Date.now() - startTime}ms`);
 
+    if (!completion?.choices?.[0]?.message?.content) {
+      throw new Error('No content returned from AI model');
+    }
     const recommendations = JSON.parse(completion.choices[0].message.content);
 
     // OPTIMIZED: Store all recommendations to DynamoDB IN PARALLEL

@@ -20,6 +20,7 @@ const LearningPathsPage = ({ setStage }) => {
 
   const [learningPaths, setLearningPaths] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [courseProgress, setCourseProgress] = useState({});
@@ -56,12 +57,12 @@ const LearningPathsPage = ({ setStage }) => {
 
   const loadLearningPaths = async (forceRefresh = false) => {
     setIsLoading(true);
+    setError(null);
     try {
       // First try to get from stored dashboard data using the shared utility (skip if forcing refresh)
       if (!forceRefresh) {
         const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
         if (dashboardData?.learningPaths?.length > 0) {
-          console.log('LearningPathsPage: Using cached dashboard learning paths');
           setLearningPaths(dashboardData.learningPaths);
           setIsLoading(false);
           return;
@@ -69,11 +70,11 @@ const LearningPathsPage = ({ setStage }) => {
       }
 
       // If no stored data or forcing refresh, generate new learning paths
-      console.log('LearningPathsPage: Generating new learning paths');
       const paths = await generateLearningPaths();
       setLearningPaths(paths);
-    } catch (error) {
-      console.error('Error loading learning paths:', error);
+    } catch (err) {
+      console.error('Error loading learning paths:', err);
+      setError('Unable to load learning paths. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -302,6 +303,35 @@ const LearningPathsPage = ({ setStage }) => {
         message="Loading your learning paths..."
         subMessage="Preparing personalized recommendations"
       />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Unable to Load Learning Paths</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => loadLearningPaths(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+            <button
+              onClick={() => setStage(5)}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

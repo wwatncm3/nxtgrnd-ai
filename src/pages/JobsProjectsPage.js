@@ -20,6 +20,7 @@ const JobsProjectsPage = ({ setStage }) => {
 
   const [opportunities, setOpportunities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [savedJobs, setSavedJobs] = useState([]);
@@ -39,12 +40,12 @@ const JobsProjectsPage = ({ setStage }) => {
 
   const loadOpportunities = async (forceRefresh = false) => {
     setIsLoading(true);
+    setError(null);
     try {
       // First try to get from stored dashboard data using the shared utility (skip if forcing refresh)
       if (!forceRefresh) {
         const dashboardData = getDashboardFromSession(user?.userID, selectedCareerPath);
         if (dashboardData?.opportunities?.length > 0) {
-          console.log('JobsProjectsPage: Using cached dashboard opportunities');
           setOpportunities(dashboardData.opportunities);
           setIsLoading(false);
           return;
@@ -52,11 +53,11 @@ const JobsProjectsPage = ({ setStage }) => {
       }
 
       // If no stored data or forcing refresh, generate new opportunities
-      console.log('JobsProjectsPage: Generating new opportunities');
       const opps = await generateOpportunities();
       setOpportunities(opps);
-    } catch (error) {
-      console.error('Error loading opportunities:', error);
+    } catch (err) {
+      console.error('Error loading opportunities:', err);
+      setError('Unable to load opportunities. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -247,6 +248,35 @@ const JobsProjectsPage = ({ setStage }) => {
         message="Finding opportunities for you..."
         subMessage="Searching jobs and projects that match your profile"
       />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Unable to Load Opportunities</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => loadOpportunities(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+            <button
+              onClick={() => setStage(5)}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

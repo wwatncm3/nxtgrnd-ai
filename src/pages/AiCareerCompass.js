@@ -40,12 +40,8 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  console.log('Component mounted with setStage:', setStage);
-
   // Function to clear all cached data
   const clearAllCachedData = () => {
-    console.log('Clearing all cached career data...');
-
     storageUtils.removeItem(STORAGE_KEYS.COMPASS_CACHE);
     storageUtils.removeItem(STORAGE_KEYS.CAREER_PATH);
     storageUtils.removeItem(STORAGE_KEYS.USER_DASHBOARD);
@@ -54,20 +50,16 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
       ...prevUser,
       selectedCareerPath: null
     }));
-
-    console.log('All cached career data cleared');
   };
 
   // Function to handle updating skills and resume
   const handleUpdateSkillsAndResume = () => {
-    console.log('Redirecting to skills and resume update...');
     clearAllCachedData();
     setStage(3);
   };
 
   // Function to refresh recommendations with current data
   const handleRefreshRecommendations = async () => {
-    console.log('Refreshing recommendations with current data...');
     setIsRefreshing(true);
 
     try {
@@ -81,7 +73,6 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
       }
 
       setShowRefreshOptions(false);
-      console.log('Recommendations refreshed successfully');
     } catch (error) {
       console.error('Error refreshing recommendations:', error);
       setError('Failed to refresh recommendations. Please try again.');
@@ -91,11 +82,8 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
   };
 
   const handleStageChange = (newStage) => {
-    console.log('Attempting to change stage to:', newStage);
     if (typeof setStage === 'function') {
       setStage(newStage);
-    } else {
-      console.error('setStage is not a function:', setStage);
     }
   };
 
@@ -103,7 +91,6 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
   useEffect(() => {
     const storedPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
     if (storedPath && !selectedPath) {
-      console.log('Retrieved stored career path:', storedPath.title);
       setSelectedPath(storedPath);
     }
   }, [selectedPath]);
@@ -117,12 +104,10 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
       setIsReturningUser(isReturning);
 
       if (isReturning) {
-        console.log('Detected returning user - showing refresh options');
         setShowRefreshOptions(true);
       }
 
       if (cachedData) {
-        console.log('Restoring Career Compass recommendations from session storage');
         setEnhancedData(cachedData);
         setIsLoading(false);
         return;
@@ -189,7 +174,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
       );
 
       const data = await response.json();
-      const parsedBody = JSON.parse(data.body);
+      const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
 
       setSimulationResults(parsedBody.recommendations?.simulation || generateFallbackSimulation(selectedPath, scenarioType));
     } catch (error) {
@@ -670,12 +655,10 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                   </ul>
                   <button
                     onClick={async () => {
-                      console.log('Selected path:', selectedPath);
                       analytics.trackCareerPathSelected(selectedPath);
 
                       // Clear dashboard cache for new career path selection (user-scoped)
                       storageService.removeItem(STORAGE_KEYS.USER_DASHBOARD);
-                      console.log('Cleared dashboard cache for new career path selection');
 
                       setUser(prevUser => ({
                         ...prevUser,

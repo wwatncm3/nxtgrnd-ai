@@ -68,10 +68,8 @@ const MainContent = ({ setStage }) => {
   // Load career path from storage if not in context
   useEffect(() => {
     if (!user?.selectedCareerPath && user?.userID) {
-      console.log('Career path not in context, checking storage...');
       const storedCareerPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
       if (storedCareerPath) {
-        console.log('Found career path in storage:', storedCareerPath.title);
         setUser(prev => ({
           ...prev,
           selectedCareerPath: storedCareerPath
@@ -277,7 +275,6 @@ const MainContent = ({ setStage }) => {
   };
 
   const loadPersonalizedContent = async (forceRefresh = false) => {
-    console.log('Starting to load personalized content...', { forceRefresh });
     setIsDashboardLoading(true);
     setDashboardError(null);
 
@@ -285,7 +282,6 @@ const MainContent = ({ setStage }) => {
       if (!forceRefresh) {
         const storedDashboard = getDashboardFromSession(user.userID, selectedCareerPath);
         if (storedDashboard) {
-          console.log('Using stored dashboard data for same career path');
           setPersonalizedLearningPaths(storedDashboard.learningPaths);
           setPersonalizedOpportunities(storedDashboard.opportunities);
           setPersonalizedGoals(storedDashboard.goals);
@@ -294,8 +290,6 @@ const MainContent = ({ setStage }) => {
           return;
         }
       }
-
-      console.log('Loading fresh dashboard data for career:', selectedCareerPath.title);
       const learningPaths = await loadLearningPaths();
       const opportunities = await loadOpportunities();
       const goals = await loadGoals();
@@ -332,29 +326,19 @@ const MainContent = ({ setStage }) => {
 
   // Main effect to load dashboard data
   useEffect(() => {
-    console.log('useEffect triggered with:', {
-      userCareerPath: user?.selectedCareerPath?.title,
-      userId: user?.userID,
-      lastCareerPathTitle: lastCareerPath?.title,
-      selectedCareerPathTitle: selectedCareerPath?.title
-    });
-
     // If no career path selected, check storage first before redirecting
     if (!user?.selectedCareerPath && user?.userID) {
       const storedCareerPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
       if (storedCareerPath) {
-        console.log('Found career path in storage during load check:', storedCareerPath.title);
         // Let the other useEffect handle updating context
         return;
       }
-      console.log('No career path found in context or storage, redirecting to Career Compass');
       setStage(4);
       return;
     }
 
     // Early return if no user or career path
     if (!user?.userID || !selectedCareerPath) {
-      console.log('Missing user ID or career path, skipping load');
       setIsDashboardLoading(false);
       return;
     }
@@ -362,20 +346,8 @@ const MainContent = ({ setStage }) => {
     const currentCareerPathId = selectedCareerPath?.id || selectedCareerPath?.title;
     const lastCareerPathId = lastCareerPath?.id || lastCareerPath?.title;
 
-    console.log('Career path comparison:', {
-      current: currentCareerPathId,
-      last: lastCareerPathId,
-      isChange: currentCareerPathId !== lastCareerPathId,
-      isFirstLoad: lastCareerPath === null
-    });
-
     // Check if career path has changed (but not on first load when lastCareerPath is null)
     if (lastCareerPath !== null && currentCareerPathId !== lastCareerPathId) {
-      console.log('Career path changed, forcing refresh:', {
-        from: lastCareerPathId,
-        to: currentCareerPathId
-      });
-
       // Clear existing data
       setPersonalizedLearningPaths([]);
       setPersonalizedOpportunities([]);
@@ -394,7 +366,6 @@ const MainContent = ({ setStage }) => {
     const storedDashboard = getDashboardFromSession(user.userID, selectedCareerPath);
 
     if (storedDashboard) {
-      console.log('Restoring dashboard data from session storage');
       setPersonalizedLearningPaths(storedDashboard.learningPaths || []);
       setPersonalizedOpportunities(storedDashboard.opportunities || []);
       setPersonalizedGoals(storedDashboard.goals || []);
@@ -412,7 +383,6 @@ const MainContent = ({ setStage }) => {
         setLastCareerPath(selectedCareerPath);
       }
     } else {
-      console.log('No stored dashboard found, loading fresh content');
       // Set last career path before loading
       setLastCareerPath(selectedCareerPath);
       loadPersonalizedContent(false);
@@ -423,7 +393,6 @@ const MainContent = ({ setStage }) => {
   // Initialize lastCareerPath on component mount
   useEffect(() => {
     if (lastCareerPath === null && selectedCareerPath) {
-      console.log('Initializing lastCareerPath on mount:', selectedCareerPath.title);
       setLastCareerPath(selectedCareerPath);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

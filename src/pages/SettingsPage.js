@@ -3,7 +3,7 @@ import {
   ArrowLeft, Upload, Bell, Lock, User, Save,
   Eye, EyeOff, Check, AlertCircle, RefreshCw, X
 } from 'lucide-react';
-import { updateUserAttributes } from '@aws-amplify/auth';
+import { updateUserAttributes, updatePassword } from '@aws-amplify/auth';
 import { UserContext } from '../App';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import analytics from '../utils/analytics';
@@ -62,15 +62,6 @@ const SettingsPage = ({ setStage }) => {
   // Load user data on component mount
   useEffect(() => {
     if (user) {
-      // Debug: Log all user data to see what's available
-      console.log('SettingsPage - Full user data:', user);
-      console.log('SettingsPage - User experience level:', user?.experienceLevel);
-      console.log('SettingsPage - User career stage:', user?.careerStage);
-      
-      // Check for resume in session storage
-      const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME, user.userID);
-      console.log('SettingsPage - Stored resume:', storedResume ? 'Found' : 'Not found');
-      
       setAccountForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -78,13 +69,13 @@ const SettingsPage = ({ setStage }) => {
         username: user.username || '',
         phoneNumber: user.phoneNumber || ''
       });
-      
+
       if (user.avatar) {
         setAvatarPreview(user.avatar);
       }
-      
+
       // Load notification preferences from session storage
-      const savedNotifications = storageUtils.getItem(STORAGE_KEYS.NOTIFICATIONS, user.userID);
+      const savedNotifications = storageUtils.getItem(STORAGE_KEYS.NOTIFICATIONS);
       if (savedNotifications) {
         setNotifications(savedNotifications);
       }
@@ -97,7 +88,7 @@ const getResumeStatus = () => {
   if (!user) {
     return 'Not uploaded';
   }
-  const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME, user.userID);
+  const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME);
   if (storedResume) {
     return 'Uploaded';
   }
@@ -239,9 +230,8 @@ const getResumeStatus = () => {
         await updateUserAttributes({
           userAttributes: attributesToUpdate
         });
-        console.log('SUCCESS: Cognito attributes updated successfully');
       } catch (cognitoError) {
-        console.error('ERROR: Cognito update error:', cognitoError);
+        console.error('Cognito update error:', cognitoError);
         
         if (cognitoError.name === 'InvalidParameterException') {
           if (cognitoError.message.includes('phone')) {
@@ -332,10 +322,12 @@ const getResumeStatus = () => {
         throw new Error('Password must contain at least 8 characters, uppercase letter, number, and special character');
       }
       
-      // Note: AWS Cognito password change would typically be handled here
-      // For now, we'll simulate success
-      console.log('Password change request submitted');
-      
+      // Call Cognito to change the password
+      await updatePassword({
+        oldPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -381,7 +373,7 @@ const getResumeStatus = () => {
         }
       }
 
-      storageUtils.setItem(STORAGE_KEYS.NOTIFICATIONS, notifications, user.userID);
+      storageUtils.setItem(STORAGE_KEYS.NOTIFICATIONS, notifications);
       analytics.trackEvent('notification_preferences_saved', { preferences: notifications });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);

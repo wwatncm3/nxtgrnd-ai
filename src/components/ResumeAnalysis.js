@@ -45,7 +45,6 @@ const getStoredAnalysis = (userId, resumePath) => {
 
 const downloadResumeFromS3 = async (path) => {
   try {
-    console.log('Downloading and analyzing resume:', path);
     const response = await fetch(API_CONFIG.files.download(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -55,10 +54,6 @@ const downloadResumeFromS3 = async (path) => {
     if (!response.ok) throw new Error('Failed to download resume');
 
     const data = await response.json();
-    console.log('Resume download successful:', {
-      contentLength: data.fileContent?.length,
-      hasTextractAnalysis: !!data.textractAnalysis
-    });
 
     return {
       content: data.fileContent,
@@ -100,9 +95,7 @@ const ResumeAnalysis = ({ setStage }) => {
   };
 
   const getResumeData = async () => {
-    console.log('Getting resume data...');
     const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME);
-    console.log('Session storage resume check:', storedResume ? 'Found' : 'Not found');
 
     if (storedResume) {
       if (isValidResumeData(storedResume)) {
@@ -110,7 +103,6 @@ const ResumeAnalysis = ({ setStage }) => {
           fileType: storedResume.type,
           hasContent: !!storedResume.content
         });
-        console.log('Valid resume data found in session storage');
         return storedResume;
       }
     }
@@ -131,7 +123,6 @@ const ResumeAnalysis = ({ setStage }) => {
           textractAnalysis
         };
 
-        console.log('Successfully downloaded and analyzed resume from S3');
         storageUtils.setItem(STORAGE_KEYS.USER_RESUME, newResumeData);
         return newResumeData;
       } catch (err) {
@@ -150,14 +141,7 @@ const ResumeAnalysis = ({ setStage }) => {
     // Use provided data, or fall back to state
     let currentResumeData = providedResumeData || resumeData;
 
-    console.log('Starting resume analysis...', {
-      hasResumeData: !!currentResumeData,
-      contentLength: currentResumeData?.content?.length,
-      name: currentResumeData?.name
-    });
-
     if (!currentResumeData?.content) {
-      console.log('No resume content, attempting to reload...');
       try {
         const freshData = await getResumeData();
         if (!freshData?.content) {
@@ -179,14 +163,12 @@ const ResumeAnalysis = ({ setStage }) => {
       if (!forceRefresh) {
         const cachedAnalysis = getStoredAnalysis(user.userID, currentResumeData.path);
         if (cachedAnalysis) {
-          console.log('Using cached analysis results');
           setAnalysis(cachedAnalysis);
           setLoading(false);
           return;
         }
       }
 
-      console.log('Generating new analysis - this may take 60-90 seconds...');
       setLoadingMessage('Sending your resume for analysis...');
 
       const recommendationPayload = {
@@ -315,7 +297,7 @@ const ResumeAnalysis = ({ setStage }) => {
           };
         };
 
-        const fallbackScore = calculateFallbackScore(currentResumeData, currentResumeData.textract);
+        const fallbackScore = calculateFallbackScore(currentResumeData, currentResumeData.textractAnalysis);
 
         const fallbackAnalysis = {
           careerAnalysis: {
@@ -454,7 +436,7 @@ const ResumeAnalysis = ({ setStage }) => {
       };
 
       // Use API score if valid, otherwise calculate our own
-      const calculatedScore = calculateResumeScore(currentResumeData, currentResumeData.textract);
+      const calculatedScore = calculateResumeScore(currentResumeData, currentResumeData.textractAnalysis);
       const defaultScore = calculatedScore;
 
       const defaultCareerAnalysis = {
