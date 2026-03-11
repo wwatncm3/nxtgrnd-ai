@@ -466,7 +466,7 @@ const ResumeAnalysis = ({ setStage }) => {
 
       storageUtils.setItem(`${ANALYSIS_CACHE_KEY}_${currentResumeData.path}`, analysisResult);
       setAnalysis(analysisResult);
-      unlockAchievement('resume_analyzed');
+      unlockAchievement('RESUME_ANALYZED');
 
     } catch (error) {
       console.error('Resume analysis failed:', error);
