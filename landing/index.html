@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NxtGrnd AI — Your AI-Powered Career OS</title>
+  <meta name="description" content="NxtGrnd AI uses advanced AI to analyze your resume, map your career path, and build a personalized roadmap to your dream career. Join the closed beta today." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#EFF6FF', 100: '#DBEAFE', 500: '#3B82F6', 600: '#2563EB', 700: '#1D4ED8' },
+            indigo: { 500: '#6366F1', 600: '#4F46E5' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #2563EB 0%, #6366F1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-blob {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, rgba(59,130,246,0.05) 50%, transparent 70%);
+      border-radius: 50%;
+      top: -100px;
+      right: -100px;
+      pointer-events: none;
+    }
+
+    .hero-blob-2 {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -50px;
+      left: -50px;
+      pointer-events: none;
+    }
+
+    .feature-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(59,130,246,0.1);
+    }
+
+    .check-green { color: #10B981; }
+    .check-no { color: #D1D5DB; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+
+    .step-line {
+      position: absolute;
+      top: 32px;
+      left: calc(50% + 48px);
+      width: calc(100% - 96px);
+      height: 2px;
+      background: linear-gradient(90deg, #3B82F6, #6366F1);
+      opacity: 0.3;
+    }
+
+    #beta-form input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .nav-link {
+      position: relative;
+      color: #374151;
+      transition: color 0.2s;
+    }
+    .nav-link:hover { color: #2563EB; }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #2563EB;
+      transition: width 0.2s;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    .comparison-row:hover td { background: #F0F9FF; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+  <!-- ============================================================ -->
+  <!-- NAV -->
+  <!-- ============================================================ -->
+  <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <span class="font-bold text-lg text-gray-900">NxtGrnd <span class="gradient-text">AI</span></span>
+      </div>
+
+      <!-- Nav Links (hidden on mobile) -->
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#features" class="nav-link text-sm font-medium">Features</a>
+        <a href="#how-it-works" class="nav-link text-sm font-medium">How It Works</a>
+        <a href="#comparison" class="nav-link text-sm font-medium">Why NxtGrnd</a>
+        <a href="#beta" class="nav-link text-sm font-medium">Beta</a>
+      </div>
+
+      <!-- CTA -->
+      <a href="#beta" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+        Join Closed Beta
+      </a>
+    </div>
+  </nav>
+
+
+  <!-- ============================================================ -->
+  <!-- HERO -->
+  <!-- ============================================================ -->
+  <section class="relative overflow-hidden pt-20 pb-24 px-6">
+    <div class="hero-blob"></div>
+    <div class="hero-blob-2"></div>
+
+    <div class="max-w-4xl mx-auto text-center relative z-10">
+
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full mb-8">
+        <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+        Now Accepting Closed Beta Users
+      </div>
+
+      <!-- Headline -->
+      <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+        Your Career,<br/>
+        <span class="gradient-text">Guided by AI.</span>
+      </h1>
+
+      <!-- Subheadline -->
+      <p class="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+        NxtGrnd AI combines advanced AI with resume analysis, career mapping, and personalized learning paths — everything you need to land your next opportunity, in one place.
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#beta"
+          class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl text-base transition-colors shadow-lg shadow-blue-500/20">
+          Request Beta Access →
+        </a>
+        <a href="#features"
+          class="w-full sm:w-auto bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold px-8 py-4 rounded-xl text-base transition-colors border border-gray-200">
+          See All Features
+        </a>
+      </div>
+
+      <!-- Social proof micro -->
+      <p class="text-sm text-gray-400 mt-8">Powered by GPT-4o · Built on AWS · Resume-aware AI</p>
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- STATS BAR -->
+  <!-- ============================================================ -->
+  <section class="border-y border-gray-100 bg-gray-50 py-8 px-6">
+    <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div>
+        <div class="text-2xl font-bold text-gray-900">GPT-4o</div>
+        <div class="text-sm text-gray-500 mt-1">AI Engine</div>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-900">6+</div>
+        <div class="text-sm text-gray-500 mt-1">AI-Powered Features</div>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-900">AWS</div>
+        <div class="text-sm text-gray-500 mt-1">Enterprise Infrastructure</div>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-900">100%</div>
+        <div class="text-sm text-gray-500 mt-1">Personalized to You</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- FEATURES -->
+  <!-- ============================================================ -->
+  <section id="features" class="py-24 px-6">
+    <div class="max-w-6xl mx-auto">
+
+      <div class="text-center mb-16">
+        <div class="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-3">Everything You Need</div>
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-4">One Platform. Every Career Tool.</h2>
+        <p class="text-lg text-gray-500 max-w-xl mx-auto">
+          Stop bouncing between LinkedIn, Coursera, job boards, and career coaches. NxtGrnd puts it all in one intelligent system.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Feature 1: AI Career Compass -->
+        <div class="feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">AI Career Compass</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Get personalized career path recommendations with real match scores. Our AI analyzes your skills, experience, and goals to show you exactly where you fit — and where you can go.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">Match Scores</span>
+            <span class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium">Career Simulations</span>
+          </div>
+        </div>
+
+        <!-- Feature 2: Resume Analysis -->
+        <div class="feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Resume Analysis</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Upload your resume and get an instant AI-powered breakdown — skill gaps, resume score, strengths, and exactly what to improve to stand out for your target roles.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">Skill Gap Analysis</span>
+            <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">Resume Score</span>
+          </div>
+        </div>
+
+        <!-- Feature 3: Learning Paths -->
+        <div class="feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Learning Paths</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Curated, AI-generated learning roadmaps tailored to your career goals. Know exactly what to learn, in what order, and how long it'll take — no guesswork.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">Custom Roadmaps</span>
+            <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">Timeline Estimates</span>
+          </div>
+        </div>
+
+        <!-- Feature 4: Jobs & Projects -->
+        <div class="feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Jobs & Projects</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Discover job opportunities and freelance projects matched specifically to your profile and career stage. Not generic listings — opportunities curated for where you're headed.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-xs bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full font-medium">AI Matching</span>
+            <span class="text-xs bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full font-medium">Salary Insights</span>
+          </div>
+        </div>
+
+        <!-- Feature 5: Certifications -->
+        <div class="feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Certifications</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Know exactly which certifications are worth your time — and which aren't. AI-ranked by priority, difficulty, and ROI for your specific career path.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-medium">Priority Ranked</span>
+            <span class="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-medium">ROI Focused</span>
+          </div>
+        </div>
+
+        <!-- Feature 6: Mentor Matching -->
+        <div class="feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div class="w-12 h-12 bg-pink-50 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Mentor Matching</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Get paired with industry mentors through an AI-powered matching quiz. Find people who've walked the exact path you're trying to take.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-xs bg-pink-50 text-pink-700 px-2.5 py-1 rounded-full font-medium">AI-Matched</span>
+            <span class="text-xs bg-pink-50 text-pink-700 px-2.5 py-1 rounded-full font-medium">Industry Experts</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- HOW IT WORKS -->
+  <!-- ============================================================ -->
+  <section id="how-it-works" class="bg-gray-50 py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+
+      <div class="text-center mb-16">
+        <div class="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-3">Simple by Design</div>
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Up and Running in Minutes</h2>
+        <p class="text-lg text-gray-500 max-w-xl mx-auto">
+          No career counselor appointments. No expensive coaching sessions. Just tell us about yourself and let the AI do the work.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 relative">
+
+        <!-- Step 1 -->
+        <div class="text-center relative">
+          <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30">
+            <span class="text-2xl font-extrabold text-white">1</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Build Your Profile</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Tell us your background, interests, skills, and career goals. Upload your resume for a deeper AI analysis of where you stand today.
+          </p>
+        </div>
+
+        <!-- Connector -->
+        <div class="hidden md:block absolute top-8 left-1/3 w-1/3 h-0.5 bg-gradient-to-r from-blue-200 to-indigo-200"></div>
+
+        <!-- Step 2 -->
+        <div class="text-center relative">
+          <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/30">
+            <span class="text-2xl font-extrabold text-white">2</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">AI Builds Your Map</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Our advanced AI analyzes your profile against thousands of career trajectories and generates a personalized roadmap — with real match scores, not guesses.
+          </p>
+        </div>
+
+        <!-- Connector -->
+        <div class="hidden md:block absolute top-8 right-1/3 w-1/3 h-0.5 bg-gradient-to-r from-indigo-200 to-purple-200"></div>
+
+        <!-- Step 3 -->
+        <div class="text-center">
+          <div class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-500/30">
+            <span class="text-2xl font-extrabold text-white">3</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-3">Execute & Grow</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Follow your custom learning path, apply to matched opportunities, earn certifications, and connect with mentors — all from one dashboard.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- COMPARISON TABLE -->
+  <!-- ============================================================ -->
+  <section id="comparison" class="py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+
+      <div class="text-center mb-16">
+        <div class="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-3">The NxtGrnd Difference</div>
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Why Not Just Use LinkedIn?</h2>
+        <p class="text-lg text-gray-500 max-w-xl mx-auto">
+          Other tools do one thing. NxtGrnd does everything — and connects it all together with AI that actually knows your goals.
+        </p>
+      </div>
+
+      <div class="overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50">
+              <th class="text-left px-6 py-4 text-gray-500 font-semibold w-1/3">Feature</th>
+              <th class="px-6 py-4 text-center">
+                <div class="inline-flex flex-col items-center">
+                  <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-1">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                  </div>
+                  <span class="font-bold text-gray-900">NxtGrnd AI</span>
+                </div>
+              </th>
+              <th class="px-6 py-4 text-center text-gray-500 font-semibold">LinkedIn</th>
+              <th class="px-6 py-4 text-center text-gray-500 font-semibold">Coursera</th>
+              <th class="px-6 py-4 text-center text-gray-500 font-semibold">Job Boards</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="comparison-row">
+              <td class="px-6 py-4 font-medium text-gray-700">AI Career Path Recommendations</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+            <tr class="comparison-row bg-blue-50/30">
+              <td class="px-6 py-4 font-medium text-gray-700">Resume Analysis & Scoring</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+            <tr class="comparison-row">
+              <td class="px-6 py-4 font-medium text-gray-700">Personalized Match Scores</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+            <tr class="comparison-row bg-blue-50/30">
+              <td class="px-6 py-4 font-medium text-gray-700">Custom Learning Roadmaps</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center">⚠️ <span class="text-xs text-gray-400">Generic</span></td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+            <tr class="comparison-row">
+              <td class="px-6 py-4 font-medium text-gray-700">Job & Project Matching</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center">⚠️ <span class="text-xs text-gray-400">Basic</span></td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center">⚠️ <span class="text-xs text-gray-400">Generic</span></td>
+            </tr>
+            <tr class="comparison-row bg-blue-50/30">
+              <td class="px-6 py-4 font-medium text-gray-700">Certification Guidance</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center">⚠️ <span class="text-xs text-gray-400">Paid Add-on</span></td>
+              <td class="px-6 py-4 text-center">⚠️ <span class="text-xs text-gray-400">No Guidance</span></td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+            <tr class="comparison-row">
+              <td class="px-6 py-4 font-medium text-gray-700">AI Mentor Matching</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+            <tr class="comparison-row bg-blue-50/30">
+              <td class="px-6 py-4 font-medium text-gray-700">Everything in One Platform</td>
+              <td class="px-6 py-4 text-center text-xl">✅</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+              <td class="px-6 py-4 text-center text-gray-300 text-xl">✗</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-center text-sm text-gray-400 mt-6">
+        LinkedIn, Coursera, and job boards are great at one thing. NxtGrnd connects all of them with AI that knows your goals.
+      </p>
+
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- TESTIMONIALS / SOCIAL PROOF STRIP -->
+  <!-- ============================================================ -->
+  <section class="bg-gradient-to-r from-blue-600 to-indigo-600 py-16 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <p class="text-blue-100 text-sm font-semibold uppercase tracking-widest mb-4">Built Different</p>
+      <h2 class="text-3xl font-extrabold text-white mb-6">
+        "Finally, a career platform that actually understands where I'm trying to go."
+      </h2>
+      <p class="text-blue-200 text-base max-w-xl mx-auto">
+        NxtGrnd AI doesn't just show you jobs — it builds you a complete career system powered by the same AI behind ChatGPT.
+      </p>
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- BETA SIGNUP -->
+  <!-- ============================================================ -->
+  <section id="beta" class="py-24 px-6 bg-gray-50">
+    <div class="max-w-xl mx-auto">
+
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 text-sm font-medium px-4 py-1.5 rounded-full mb-6">
+          <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+          Closed Beta — Limited Spots
+        </div>
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Get Early Access</h2>
+        <p class="text-gray-500 text-lg">
+          Join the closed beta and be among the first to experience AI-powered career guidance. Spots are limited.
+        </p>
+      </div>
+
+      <!-- Form -->
+      <!--
+        TO ACTIVATE:
+        1. Go to formspree.io → create free account → New Form
+        2. Copy your form ID (looks like: xpzgkwab)
+        3. Replace YOUR_FORM_ID below with your actual ID
+      -->
+      <form
+        id="beta-form"
+        action="https://formspree.io/f/YOUR_FORM_ID"
+        method="POST"
+        onsubmit="handleFormSubmit(event)"
+        class="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm"
+      >
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">First Name</label>
+            <input
+              type="text"
+              name="firstName"
+              required
+              placeholder="Alex"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm transition-all"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="alex@example.com"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm transition-all"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">What's your biggest career challenge right now?</label>
+            <select
+              name="challenge"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-700 text-sm bg-white transition-all"
+            >
+              <option value="">Select one...</option>
+              <option value="direction">I don't know what career path to take</option>
+              <option value="transition">I want to switch careers</option>
+              <option value="growth">I want to level up in my current field</option>
+              <option value="resume">My resume isn't getting results</option>
+              <option value="skills">I'm not sure what skills to build</option>
+              <option value="jobs">I can't find the right opportunities</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-base transition-colors shadow-lg shadow-blue-500/20"
+        >
+          Request Beta Access →
+        </button>
+
+        <!-- Success message (hidden by default) -->
+        <div id="form-success" class="hidden mt-4 bg-green-50 border border-green-100 text-green-700 text-sm text-center py-3 rounded-xl font-medium">
+          🎉 You're on the list! We'll reach out with your access link soon.
+        </div>
+
+        <p class="text-xs text-gray-400 text-center mt-4">No spam, ever. We'll only email you with your access link.</p>
+      </form>
+
+    </div>
+  </section>
+
+
+  <!-- ============================================================ -->
+  <!-- FOOTER -->
+  <!-- ============================================================ -->
+  <footer class="bg-gray-900 text-gray-400 py-12 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <!-- Logo -->
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <span class="font-bold text-white">NxtGrnd AI</span>
+        </div>
+
+        <!-- Links -->
+        <div class="flex items-center gap-6 text-sm">
+          <a href="#features" class="hover:text-white transition-colors">Features</a>
+          <a href="#how-it-works" class="hover:text-white transition-colors">How It Works</a>
+          <a href="#comparison" class="hover:text-white transition-colors">Why NxtGrnd</a>
+          <a href="#beta" class="hover:text-white transition-colors">Join Beta</a>
+        </div>
+
+        <!-- Tagline -->
+        <p class="text-sm text-gray-600">© 2026 NxtGrnd AI. All rights reserved.</p>
+      </div>
+
+      <div class="mt-8 pt-8 border-t border-gray-800 text-center text-xs text-gray-600">
+        Powered by GPT-4o · Built on AWS · Secured by Amazon Cognito
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ============================================================ -->
+  <!-- JS: Form handling + smooth scroll -->
+  <!-- ============================================================ -->
+  <script>
+    function handleFormSubmit(e) {
+      // If form action still has placeholder, show a preview success message
+      const form = document.getElementById('beta-form');
+      if (form.action.includes('YOUR_FORM_ID')) {
+        e.preventDefault();
+        showSuccess();
+        return;
+      }
+      // Real Formspree submission — show success after a beat
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.textContent = 'Submitting...';
+      btn.disabled = true;
+
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'Accept': 'application/json' }
+      })
+      .then(res => {
+        if (res.ok) {
+          showSuccess();
+          form.reset();
+        } else {
+          btn.textContent = 'Something went wrong. Try again.';
+          btn.disabled = false;
+        }
+      })
+      .catch(() => {
+        btn.textContent = 'Something went wrong. Try again.';
+        btn.disabled = false;
+      });
+    }
+
+    function showSuccess() {
+      document.getElementById('submit-btn').classList.add('hidden');
+      document.getElementById('form-success').classList.remove('hidden');
+    }
+
+    // Highlight nav link on scroll
+    const sections = document.querySelectorAll('section[id]');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        if (window.scrollY >= section.offsetTop - 100) {
+          current = section.getAttribute('id');
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
