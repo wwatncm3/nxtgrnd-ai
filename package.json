@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "NxtGrnd AI - AI-powered career development platform",
-  "homepage": ".",
+  "homepage": "/",
   "repository": {
     "type": "git",
     "url": "https://github.com/wwatncm3/nxtgrnd-ai.git"
@@ -36,6 +36,7 @@
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.469.0",
     "papaparse": "^5.5.1",
+    "puppeteer": "^24.39.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0",
