@@ -284,8 +284,19 @@ export const generateOpportunities = async (user, selectedCareerPath) => {
       return opportunities;
     }
 
-    // Fallback to AI-generated opportunities if job board APIs fail
-    console.log('No job board results, falling back to AI recommendations');
+    // Fallback: try Tavily real job search via Lambda before using AI-generated types
+    console.log('No job board results, trying Tavily web job search...');
+    try {
+      const tavilyJobs = await fetchTavilyJobs(user, selectedCareerPath);
+      if (tavilyJobs.length > 0) {
+        console.log(`Tavily found ${tavilyJobs.length} real job listings`);
+        return tavilyJobs;
+      }
+    } catch (tavilyErr) {
+      console.warn('Tavily job search failed, falling back to AI types:', tavilyErr.message);
+    }
+
+    console.log('Falling back to AI job type recommendations');
     return await fetchAIOpportunities(user, selectedCareerPath);
 
   } catch (error) {
@@ -293,6 +304,48 @@ export const generateOpportunities = async (user, selectedCareerPath) => {
     // Final fallback
     return getFallbackOpportunities(selectedCareerPath);
   }
+};
+
+// Fetch real job listings via Tavily web search (Lambda)
+const fetchTavilyJobs = async (user, selectedCareerPath) => {
+  const payload = {
+    requestType: 'job_search',
+    careerPath: selectedCareerPath.title,
+    experienceLevel: user?.experienceLevel || user?.careerStage || 'entry',
+    skills: selectedCareerPath.requiredSkills || user?.skills || [],
+    location: user?.location || 'United States',
+  };
+
+  const response = await fetch(API_CONFIG.recommendations.generate(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      httpMethod: 'POST',
+      path: '/recommendations/generate',
+      body: JSON.stringify(payload)
+    })
+  });
+
+  const data = await response.json();
+  const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+  const jobs = parsedBody?.recommendations?.jobs || [];
+  const searchUrls = getJobBoardSearchUrls(selectedCareerPath.title);
+
+  return jobs.map((job, i) => ({
+    id: `tavily-${Date.now()}-${i}`,
+    type: 'job',
+    role: job.role,
+    company: job.company,
+    location: job.location,
+    locationType: job.locationType || 'remote',
+    matchScore: job.matchScore || 70,
+    salary: job.salary,
+    description: job.description,
+    url: job.url,
+    source: `${job.source || 'Web'} via Tavily`,
+    tags: job.tags || [],
+    searchUrls
+  }));
 };
 
 // No longer using fake company names - removed getCareerCompanies function
