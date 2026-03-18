@@ -52,7 +52,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
     id,
     title,
     channel,
-    thumbnail: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+    thumbnail: null, // AI-generated IDs are not real; skip network request, show placeholder
     duration,
     views,
     likes,
@@ -436,19 +436,33 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
           >
             {/* Thumbnail */}
             <div className="relative w-36 sm:w-44 h-20 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const placeholder = e.target.parentElement.querySelector('.thumbnail-placeholder');
-                  if (placeholder) placeholder.style.display = 'flex';
-                }}
-              />
+              {video.thumbnail && (
+                <img
+                  src={video.thumbnail}
+                  alt={video.title}
+                  className="w-full h-full object-cover"
+                  onLoad={(e) => {
+                    // YouTube returns a 90px grey placeholder for missing maxresdefault
+                    // without a 404 — detect and swap to hqdefault
+                    if (e.target.naturalHeight <= 90) {
+                      e.target.src = video.thumbnail.replace('maxresdefault', 'hqdefault');
+                    }
+                  }}
+                  onError={(e) => {
+                    // Try hqdefault first, then show placeholder
+                    if (!e.target.src.includes('hqdefault')) {
+                      e.target.src = video.thumbnail.replace(/\w+default/, 'hqdefault');
+                    } else {
+                      e.target.style.display = 'none';
+                      const placeholder = e.target.parentElement.querySelector('.thumbnail-placeholder');
+                      if (placeholder) placeholder.style.display = 'flex';
+                    }
+                  }}
+                />
+              )}
               <div
                 className="thumbnail-placeholder absolute inset-0 items-center justify-center bg-gray-200"
-                style={{ display: 'none' }}
+                style={{ display: video.thumbnail ? 'none' : 'flex' }}
                 aria-hidden="true"
               >
                 <Play className="h-8 w-8 text-gray-400" />

@@ -61,13 +61,19 @@ const fetchRemotiveJobs = async (keywords, category = '') => {
     const data = await response.json();
     const jobs = data.jobs || [];
 
-    // Filter by keywords if provided
-    const filteredJobs = keywords
-      ? jobs.filter(job =>
-        job.title.toLowerCase().includes(keywords.toLowerCase()) ||
-          job.company_name.toLowerCase().includes(keywords.toLowerCase()) ||
-          (job.tags || []).some(tag => tag.toLowerCase().includes(keywords.toLowerCase()))
-      )
+    // Filter by keywords — split on "/" so "DevOps / SRE" matches either term
+    const keywordParts = keywords
+      ? keywords.split(/[\/,]/).map(s => s.trim().toLowerCase()).filter(Boolean)
+      : [];
+    const filteredJobs = keywordParts.length
+      ? jobs.filter(job => {
+          const title = job.title.toLowerCase();
+          const company = job.company_name.toLowerCase();
+          const tags = (job.tags || []).map(t => t.toLowerCase());
+          return keywordParts.some(kw =>
+            title.includes(kw) || company.includes(kw) || tags.some(t => t.includes(kw))
+          );
+        })
       : jobs;
 
     return filteredJobs.slice(0, 20).map(job => ({
@@ -99,13 +105,19 @@ const fetchArbeitnowJobs = async (keywords) => {
     const data = await response.json();
     const jobs = data.data || [];
 
-    // Filter by keywords
-    const filteredJobs = keywords
-      ? jobs.filter(job =>
-        job.title.toLowerCase().includes(keywords.toLowerCase()) ||
-          job.company_name.toLowerCase().includes(keywords.toLowerCase()) ||
-          (job.tags || []).some(tag => tag.toLowerCase().includes(keywords.toLowerCase()))
-      )
+    // Filter by keywords — split on "/" so "DevOps / SRE" matches either term
+    const keywordParts = keywords
+      ? keywords.split(/[\/,]/).map(s => s.trim().toLowerCase()).filter(Boolean)
+      : [];
+    const filteredJobs = keywordParts.length
+      ? jobs.filter(job => {
+          const title = job.title.toLowerCase();
+          const company = job.company_name.toLowerCase();
+          const tags = (job.tags || []).map(t => t.toLowerCase());
+          return keywordParts.some(kw =>
+            title.includes(kw) || company.includes(kw) || tags.some(t => t.includes(kw))
+          );
+        })
       : jobs;
 
     return filteredJobs.slice(0, 20).map(job => ({
