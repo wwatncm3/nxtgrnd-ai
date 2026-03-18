@@ -19,7 +19,8 @@ import {
   MarketInsights,
   generateEnhancedRecommendations,
   generateDefaultTimeline,
-  generateFallbackSimulation
+  generateFallbackSimulation,
+  generateLocalFallbackPaths
 } from '../components/career-compass';
 
 // Enhanced AI Career Compass Component with refresh functionality
@@ -70,12 +71,30 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
       if (data && data.careerPaths && data.careerPaths.length > 0) {
         storageUtils.setItem(STORAGE_KEYS.COMPASS_CACHE, data);
         setEnhancedData(data);
+      } else {
+        // API returned empty — regenerate local fallback with updated user data
+        const existingPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
+        const fallbackPaths = generateLocalFallbackPaths(user, existingPath);
+        const fallbackData = {
+          careerPaths: fallbackPaths,
+          marketTrends: data?.marketTrends || [],
+          simulations: data?.simulations || [],
+          skillImpact: data?.skillImpact || []
+        };
+        storageUtils.setItem(STORAGE_KEYS.COMPASS_CACHE, fallbackData);
+        setEnhancedData(fallbackData);
       }
 
       setShowRefreshOptions(false);
     } catch (error) {
       console.error('Error refreshing recommendations:', error);
-      setError('Failed to refresh recommendations. Please try again.');
+      // On hard failure, regenerate from local data rather than leaving blank
+      const existingPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
+      const fallbackPaths = generateLocalFallbackPaths(user, existingPath);
+      setEnhancedData(prev => ({
+        ...prev,
+        careerPaths: fallbackPaths
+      }));
     } finally {
       setIsRefreshing(false);
     }
@@ -119,12 +138,31 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
 
         if (data && data.careerPaths && data.careerPaths.length > 0) {
           storageUtils.setItem(STORAGE_KEYS.COMPASS_CACHE, data);
+          setEnhancedData(data);
+        } else {
+          // API returned empty — build locally from user's skills & selected path
+          const existingPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
+          const fallbackPaths = generateLocalFallbackPaths(user, existingPath);
+          const fallbackData = {
+            careerPaths: fallbackPaths,
+            marketTrends: data?.marketTrends || [],
+            simulations: data?.simulations || [],
+            skillImpact: data?.skillImpact || []
+          };
+          storageUtils.setItem(STORAGE_KEYS.COMPASS_CACHE, fallbackData);
+          setEnhancedData(fallbackData);
         }
-
-        setEnhancedData(data);
       } catch (error) {
         console.error('Error fetching enhanced data:', error);
-        setError('Failed to load enhanced recommendations');
+        // Even on hard failure, show local fallback paths so the page is usable
+        const existingPath = storageUtils.getItem(STORAGE_KEYS.CAREER_PATH);
+        const fallbackPaths = generateLocalFallbackPaths(user, existingPath);
+        setEnhancedData({
+          careerPaths: fallbackPaths,
+          marketTrends: [],
+          simulations: [],
+          skillImpact: []
+        });
       } finally {
         setIsLoading(false);
       }

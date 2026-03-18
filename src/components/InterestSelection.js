@@ -228,7 +228,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
       const preferencesPayload = {
         userId: user.userID,
         skills: selectedSkills,
-        experienceLevel,
+        experienceLevel: experienceLevel || 'entry', // default if user skipped selector
         resume: storedResume || null
       };
 
@@ -256,7 +256,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
       const updatedUserData = {
         ...user,
         skills: selectedSkills,
-        experienceLevel,
+        experienceLevel: experienceLevel || 'entry',
         resume: storedResume || null
       };
 
@@ -545,6 +545,33 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
               <p className="text-gray-600 text-sm sm:text-base">
                 Help us understand your background better (optional but recommended)
               </p>
+            </div>
+
+            {/* Experience Level Selector */}
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-3">Where are you in your career?</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { label: 'Student / New Grad', value: 'entry' },
+                  { label: 'Early Career', sublabel: '1–3 yrs', value: 'early' },
+                  { label: 'Mid-Level', sublabel: '4–7 yrs', value: 'mid' },
+                  { label: 'Senior+', sublabel: '8+ yrs', value: 'senior' },
+                ].map(({ label, sublabel, value }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setExperienceLevel(value)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 text-sm font-medium transition-all
+                      ${experienceLevel === value
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm'
+                        : 'border-gray-200 text-gray-600 hover:border-blue-300 hover:bg-gray-50'
+                      }`}
+                  >
+                    <span>{label}</span>
+                    {sublabel && <span className="text-xs font-normal text-gray-400 mt-0.5">{sublabel}</span>}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Need a Template? */}

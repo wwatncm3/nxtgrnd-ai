@@ -270,6 +270,7 @@ function OnboardingFlow({ onNext }) {
                          placeholder-transparent"
                 placeholder="Email"
                 id="email"
+                autoComplete="off"
               />
               <label
                 htmlFor="email"
@@ -295,6 +296,7 @@ function OnboardingFlow({ onNext }) {
                          placeholder-transparent"
                 placeholder="Password"
                 id="password"
+                autoComplete="new-password"
               />
               <label
                 htmlFor="password"
@@ -439,6 +441,7 @@ function OnboardingFlow({ onNext }) {
                          placeholder-transparent"
                 placeholder="First Name"
                 id="firstName"
+                autoComplete="off"
               />
               <label
                 htmlFor="firstName"
@@ -467,6 +470,7 @@ function OnboardingFlow({ onNext }) {
                          placeholder-transparent"
                 placeholder="Last Name"
                 id="lastName"
+                autoComplete="off"
               />
               <label
                 htmlFor="lastName"
@@ -495,6 +499,7 @@ function OnboardingFlow({ onNext }) {
                          placeholder-transparent"
                 placeholder="Email"
                 id="formEmail"
+                autoComplete="off"
               />
               <label
                 htmlFor="formEmail"
@@ -523,6 +528,7 @@ function OnboardingFlow({ onNext }) {
                          placeholder-transparent"
                 placeholder="Username"
                 id="username"
+                autoComplete="off"
               />
               <label
                 htmlFor="username"

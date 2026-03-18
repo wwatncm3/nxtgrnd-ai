@@ -136,6 +136,12 @@ export const generateLearningPaths = async (user, selectedCareerPath) => {
       }
 
       console.log('Generated learning paths:', learningPaths);
+
+      // If the API responded but careerPaths was missing/empty, fall through to fallback
+      if (learningPaths.length === 0) {
+        throw new Error('No valid learning paths found in API response');
+      }
+
       return learningPaths;
     }
 
@@ -143,24 +149,87 @@ export const generateLearningPaths = async (user, selectedCareerPath) => {
 
   } catch (error) {
     console.error('Error in generateLearningPaths:', error);
-    return [{
-      title: `${selectedCareerPath.title} Fundamentals`,
-      progress: 0,
-      provider: "NxtGrnd AI Pro",
-      nextLesson: "Introduction to " + selectedCareerPath.title,
-      description: `Essential skills and knowledge for ${selectedCareerPath.title}`,
-      resources: [
-        {
-          type: 'course',
-          title: 'Getting Started',
-          url: `https://www.udemy.com/courses/search/?q=${encodeURIComponent(selectedCareerPath.title)}+fundamentals`,
-          provider: 'Udemy',
-          description: 'Foundational concepts and skills',
-          rating: 4.0,
-          duration: '10-15 hours'
-        }
-      ]
-    }];
+    const title = selectedCareerPath.title;
+    const encoded = encodeURIComponent(title);
+    // Return 3 rich fallback paths so the Learning Paths section never looks empty
+    return [
+      {
+        title: `${title} Core Skills`,
+        progress: 0,
+        provider: "NxtGrnd AI Pro",
+        nextLesson: `${title} Fundamentals`,
+        description: `Master the essential skills required for your role as a ${title}.`,
+        difficulty: 'Beginner',
+        duration: '20-30 hours',
+        resources: [
+          {
+            type: 'course',
+            title: `${title} — Complete Course`,
+            url: `https://www.udemy.com/courses/search/?q=${encoded}`,
+            provider: 'Udemy',
+            description: 'Comprehensive beginner-to-advanced training',
+            rating: 4.6,
+            duration: '20-30 hours'
+          },
+          {
+            type: 'course',
+            title: `${title} Learning Path`,
+            url: `https://www.linkedin.com/learning/search?keywords=${encoded}`,
+            provider: 'LinkedIn Learning',
+            description: 'Professional development courses',
+            rating: 4.5,
+            duration: '15-20 hours'
+          }
+        ]
+      },
+      {
+        title: "Professional Development",
+        progress: 0,
+        provider: "NxtGrnd AI Pro",
+        nextLesson: "Industry Standards & Best Practices",
+        description: `Enhance your professional capabilities and soft skills for the ${title} role.`,
+        difficulty: 'Intermediate',
+        duration: '15-20 hours',
+        resources: [
+          {
+            type: 'community',
+            title: `${title} Community`,
+            url: `https://www.meetup.com/find/?keywords=${encoded}`,
+            platform: 'Meetup',
+            description: 'Connect with local professionals',
+            memberCount: 5000
+          },
+          {
+            type: 'resource',
+            title: 'Industry News & Trends',
+            url: `https://news.google.com/search?q=${encoded}+industry+trends`,
+            provider: 'Google News',
+            description: 'Stay current with what\'s happening in your field',
+            category: 'News'
+          }
+        ]
+      },
+      {
+        title: "Advanced Specialisation",
+        progress: 0,
+        provider: "NxtGrnd AI Pro",
+        nextLesson: "Advanced Topics",
+        description: `Deep dive into advanced ${title} topics and specialised techniques.`,
+        difficulty: 'Advanced',
+        duration: '30-40 hours',
+        resources: [
+          {
+            type: 'course',
+            title: `Advanced ${title}`,
+            url: `https://www.coursera.org/search?query=${encoded}+advanced`,
+            provider: 'Coursera',
+            description: 'University-grade advanced training',
+            rating: 4.7,
+            duration: '30-40 hours'
+          }
+        ]
+      }
+    ];
   }
 };
 

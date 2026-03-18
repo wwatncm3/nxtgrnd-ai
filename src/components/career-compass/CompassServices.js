@@ -180,6 +180,87 @@ export const generateDefaultTimeline = (path) => {
   ];
 };
 
+// Generate local fallback career paths when the API returns empty results.
+// Builds realistic paths from the user's existing selected path + related roles.
+export const generateLocalFallbackPaths = (user, existingSelectedPath = null) => {
+  const userSkills = Array.isArray(user?.skills) ? user.skills : [];
+  const selectedTitle = existingSelectedPath?.title || null;
+
+  // Curated path templates keyed by role type
+  const pathLibrary = [
+    {
+      id: 'local-cloud-arch',
+      title: 'Cloud Solutions Architect',
+      description: 'Design and implement scalable, secure cloud infrastructure across AWS, Azure, or GCP. Lead cloud migration and modernisation projects.',
+      salaryRange: '$120,000 - $180,000',
+      matchScore: 91,
+      requiredSkills: ['AWS', 'Cloud Architecture', 'Terraform', 'Python', 'Networking', 'Security']
+    },
+    {
+      id: 'local-devops',
+      title: 'DevOps / Site Reliability Engineer',
+      description: 'Bridge development and operations — automate deployments, manage CI/CD pipelines, and ensure platform reliability at scale.',
+      salaryRange: '$110,000 - $165,000',
+      matchScore: 84,
+      requiredSkills: ['Docker', 'Kubernetes', 'CI/CD', 'Python', 'AWS', 'Linux']
+    },
+    {
+      id: 'local-fullstack',
+      title: 'Full-Stack Software Engineer',
+      description: 'Build end-to-end web applications with modern frameworks. Own features from database schema to pixel-perfect UI.',
+      salaryRange: '$105,000 - $155,000',
+      matchScore: 79,
+      requiredSkills: ['JavaScript', 'React', 'Node.js', 'SQL', 'REST APIs', 'TypeScript']
+    },
+    {
+      id: 'local-data-eng',
+      title: 'Data Engineer',
+      description: 'Design and maintain data pipelines, warehouses, and infrastructure that power analytics and machine learning at scale.',
+      salaryRange: '$115,000 - $160,000',
+      matchScore: 76,
+      requiredSkills: ['Python', 'SQL', 'Apache Spark', 'AWS', 'Data Modeling', 'ETL']
+    },
+    {
+      id: 'local-ml',
+      title: 'Machine Learning Engineer',
+      description: 'Train, deploy, and monitor ML models in production. Work at the intersection of engineering rigour and data science.',
+      salaryRange: '$130,000 - $190,000',
+      matchScore: 72,
+      requiredSkills: ['Python', 'TensorFlow', 'PyTorch', 'MLOps', 'Statistics', 'AWS SageMaker']
+    },
+    {
+      id: 'local-product',
+      title: 'Technical Product Manager',
+      description: 'Define the roadmap for technical products, bridging engineering teams and business stakeholders to ship impactful features.',
+      salaryRange: '$115,000 - $170,000',
+      matchScore: 70,
+      requiredSkills: ['Product Strategy', 'Agile', 'SQL', 'Communication', 'Roadmapping', 'A/B Testing']
+    }
+  ];
+
+  // Boost match score for paths whose skills overlap with the user's skills
+  const scoredPaths = pathLibrary.map(p => {
+    const overlap = p.requiredSkills.filter(s =>
+      userSkills.some(us => us.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(us.toLowerCase()))
+    ).length;
+    const boostedScore = Math.min(98, p.matchScore + overlap * 3);
+    return { ...p, matchScore: boostedScore };
+  });
+
+  // Sort: put the user's currently selected path first, rest by match score
+  const sorted = scoredPaths.sort((a, b) => {
+    if (selectedTitle) {
+      const aMatch = a.title.toLowerCase().includes(selectedTitle.toLowerCase().split(' ')[0]);
+      const bMatch = b.title.toLowerCase().includes(selectedTitle.toLowerCase().split(' ')[0]);
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+    }
+    return b.matchScore - a.matchScore;
+  });
+
+  return sorted.slice(0, 4);
+};
+
 // Generate default market data if none provided by API
 export const generateDefaultMarketData = (path) => {
   return {

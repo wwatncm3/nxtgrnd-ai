@@ -274,17 +274,17 @@ export const getJobRecommendations = async (user, careerPath) => {
     userSkills: user?.skills || careerPath?.requiredSkills || [],
     userInterests: user?.interests || [],
     careerPath: careerPath?.title || '',
-    remote: true, // Start with remote jobs as they're most accessible
+    remote: false, // Don't filter to remote-only — include all job types
     limit: 20
   };
 
   const results = await searchJobs(searchParams);
 
-  // If we got less than 5 jobs, also try searching without remote filter
+  // If we got less than 5 jobs, also try a broader keyword search
   if (results.jobs.length < 5) {
     const additionalResults = await searchJobs({
       ...searchParams,
-      remote: false,
+      keywords: '',
       limit: 20 - results.jobs.length
     });
 

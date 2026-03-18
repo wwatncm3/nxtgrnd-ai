@@ -10,5 +10,6 @@ export {
   runCareerSimulation,
   generateDefaultTimeline,
   generateDefaultMarketData,
-  generateFallbackSimulation
+  generateFallbackSimulation,
+  generateLocalFallbackPaths
 } from './CompassServices';

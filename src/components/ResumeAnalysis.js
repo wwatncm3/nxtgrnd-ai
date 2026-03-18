@@ -4,7 +4,8 @@ import {
   File, ArrowLeft, CheckCircle, AlertCircle,
   RefreshCw, ChevronDown, ChevronUp, TrendingUp, Target,
   Zap, Book, Star, Award, Briefcase, Clock, Sparkles, BarChart3,
-  FileText, Lightbulb, ArrowRight, CheckCircle2, Download
+  FileText, Lightbulb, ArrowRight, CheckCircle2, Download,
+  Shield, User, XCircle, ScanLine
 } from 'lucide-react';
 import { useAchievements } from './AchievementSystem';
 import * as lucide from 'lucide-react';
@@ -65,6 +66,130 @@ const downloadResumeFromS3 = async (path) => {
   }
 };
 
+const getCareerPathKeywords = (careerPath) => {
+  const path = (careerPath || '').toLowerCase();
+  const keywordMap = {
+    devops: ['docker', 'kubernetes', 'ci/cd', 'terraform', 'ansible', 'jenkins', 'aws', 'azure', 'gcp', 'linux', 'python', 'bash', 'helm', 'git', 'monitoring'],
+    cloud: ['aws', 'azure', 'gcp', 'terraform', 'kubernetes', 'docker', 'serverless', 'iam', 'lambda', 'vpc', 'cloudformation', 'infrastructure', 'security', 'networking'],
+    'machine learning': ['python', 'tensorflow', 'pytorch', 'scikit', 'ml', 'ai', 'neural', 'nlp', 'statistics', 'pandas', 'numpy', 'model', 'training', 'data'],
+    'software engineer': ['javascript', 'python', 'java', 'react', 'node', 'sql', 'api', 'git', 'agile', 'testing', 'typescript', 'microservices', 'rest', 'backend'],
+    'data engineer': ['python', 'sql', 'spark', 'kafka', 'etl', 'pipeline', 'airflow', 'aws', 'databricks', 'warehouse', 'postgresql', 'hadoop'],
+    'full stack': ['javascript', 'react', 'node', 'python', 'sql', 'html', 'css', 'api', 'database', 'git', 'typescript', 'aws'],
+    'product manager': ['roadmap', 'stakeholder', 'agile', 'scrum', 'kpi', 'user research', 'strategy', 'requirements', 'analytics', 'prioritization'],
+  };
+  const matchedKey = Object.keys(keywordMap).find(k => path.includes(k));
+  return keywordMap[matchedKey] || ['python', 'javascript', 'aws', 'git', 'agile', 'sql', 'api', 'cloud', 'docker', 'leadership'];
+};
+
+const computeATSScore = (resumeData, user) => {
+  const text = resumeData?.textractAnalysis?.rawText || '';
+  const careerPath = user?.selectedCareerPath?.title || '';
+
+  // Contact Info (20 pts)
+  const hasEmail = /[\w.+-]+@[\w.-]+\.\w+/.test(text);
+  const hasPhone = /(\d{3}[\s.-]?\d{3}[\s.-]?\d{4}|\(\d{3}\)\s?\d{3}[\s.-]?\d{4})/.test(text);
+  const hasLinkedIn = /linkedin/i.test(text);
+  const contactScore = (hasEmail ? 8 : 0) + (hasPhone ? 8 : 0) + (hasLinkedIn ? 4 : 0);
+
+  // Sections (20 pts)
+  const sectionChecks = [
+    { label: 'Work Experience', regex: /work experience|experience|employment history/i, pts: 5 },
+    { label: 'Education', regex: /education|academic background/i, pts: 4 },
+    { label: 'Skills', regex: /skills|competencies|proficiencies/i, pts: 4 },
+    { label: 'Summary / Objective', regex: /summary|objective|profile/i, pts: 4 },
+    { label: 'Certifications', regex: /certification|licenses|credentials/i, pts: 3 },
+  ];
+  const foundSections = sectionChecks.filter(s => s.regex.test(text));
+  const sectionScore = foundSections.reduce((sum, s) => sum + s.pts, 0);
+
+  // Keywords (30 pts)
+  const pathKeywords = getCareerPathKeywords(careerPath);
+  const foundKeywords = pathKeywords.filter(k => new RegExp(`\\b${k}\\b`, 'i').test(text));
+  const keywordScore = Math.round((foundKeywords.length / Math.max(pathKeywords.length, 1)) * 20);
+  const actionVerbs = ['developed', 'implemented', 'designed', 'led', 'managed', 'created', 'built', 'engineered', 'optimized', 'reduced', 'increased', 'improved', 'delivered', 'collaborated', 'architected', 'automated', 'deployed', 'integrated', 'launched', 'mentored'];
+  const foundVerbs = actionVerbs.filter(v => new RegExp(`\\b${v}`, 'i').test(text));
+  const verbScore = Math.min(10, foundVerbs.length);
+
+  // Experience Quality (15 pts)
+  const metricsMatches = text.match(/\d+%|\$[\d,]+|\d+\s*(users|clients|employees|projects|applications|systems|teams|people)/gi) || [];
+  const metricScore = Math.min(10, metricsMatches.length * 2);
+  const hasDatePattern = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{4}|\d{4}\s*[-–]\s*(\d{4}|present|current)/i.test(text);
+  const dateScore = hasDatePattern ? 5 : 0;
+
+  // ATS Format (15 pts)
+  const textLength = text.length;
+  const lengthScore = textLength > 300 && textLength < 12000 ? 5 : 2;
+  const hasCleanText = (text.match(/[^\x00-\x7F]/g) || []).length < 20;
+  const cleanScore = hasCleanText ? 5 : 2;
+  const fileTypeScore = resumeData?.type === 'application/pdf' ? 5 : 3;
+  const formatScore = lengthScore + cleanScore + fileTypeScore;
+
+  const total = Math.min(100, contactScore + sectionScore + keywordScore + verbScore + metricScore + dateScore + formatScore);
+
+  return {
+    total,
+    performance: total >= 90 ? 'Excellent' : total >= 75 ? 'Good' : total >= 60 ? 'Fair' : 'Needs Work',
+    breakdown: [
+      {
+        label: 'Keyword Match',
+        score: keywordScore + verbScore,
+        max: 30,
+        Icon: Target,
+        color: 'blue',
+        items: [
+          `${foundKeywords.length}/${pathKeywords.length} role keywords matched`,
+          `${foundVerbs.length} action verbs detected`,
+          foundKeywords.length > 0 ? `Found: ${foundKeywords.slice(0, 4).join(', ')}` : 'Add more role-specific keywords',
+        ],
+      },
+      {
+        label: 'Contact Information',
+        score: contactScore,
+        max: 20,
+        Icon: User,
+        color: 'teal',
+        items: [
+          hasEmail ? '✓ Email address found' : '✗ Add email address',
+          hasPhone ? '✓ Phone number found' : '✗ Add phone number',
+          hasLinkedIn ? '✓ LinkedIn found' : '✗ Consider adding LinkedIn URL',
+        ],
+      },
+      {
+        label: 'Resume Sections',
+        score: sectionScore,
+        max: 20,
+        Icon: FileText,
+        color: 'purple',
+        items: sectionChecks.map(s => `${s.regex.test(text) ? '✓' : '✗'} ${s.label}`),
+      },
+      {
+        label: 'Experience Quality',
+        score: metricScore + dateScore,
+        max: 15,
+        Icon: TrendingUp,
+        color: 'green',
+        items: [
+          `${metricsMatches.length} quantifiable achievement${metricsMatches.length !== 1 ? 's' : ''} found`,
+          hasDatePattern ? '✓ Employment dates present' : '✗ Add dates to all experience entries',
+          metricsMatches.length < 3 ? '⚠ Add numbers/metrics to strengthen impact' : '✓ Good use of metrics',
+        ],
+      },
+      {
+        label: 'ATS Format',
+        score: formatScore,
+        max: 15,
+        Icon: Shield,
+        color: 'orange',
+        items: [
+          resumeData?.type === 'application/pdf' ? '✓ PDF format (ATS compatible)' : '⚠ Consider submitting as PDF',
+          hasCleanText ? '✓ Clean text, no encoding issues' : '⚠ Special characters detected',
+          textLength > 300 ? '✓ Sufficient content length' : '✗ Resume content seems too short',
+        ],
+      },
+    ],
+  };
+};
+
 const ResumeAnalysis = ({ setStage }) => {
   const { user } = useContext(UserContext);
   const { unlockAchievement } = useAchievements();
@@ -76,6 +201,9 @@ const ResumeAnalysis = ({ setStage }) => {
   const [resumeData, setResumeData] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [atsResults, setAtsResults] = useState(null);
+  const [atsScanning, setAtsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     overallScore: true,
     keyStrengths: true,
@@ -172,6 +300,7 @@ const ResumeAnalysis = ({ setStage }) => {
       setLoadingMessage('Sending your resume for analysis...');
 
       const recommendationPayload = {
+        requestType: 'resume_analysis',
         userId: user?.userID,
         firstName: user?.firstName,
         lastName: user?.lastName,
@@ -182,7 +311,6 @@ const ResumeAnalysis = ({ setStage }) => {
         interests: Array.isArray(user?.interests) ? user.interests : [],
         skills: Array.isArray(user?.skills) ? user.skills : [],
         experienceLevel: user?.experienceLevel || user?.careerStage || 'entry',
-        includeEnhancedDetails: true,
         location: 'United States',
         resume: {
           name: currentResumeData.name,
@@ -193,7 +321,6 @@ const ResumeAnalysis = ({ setStage }) => {
           tables: currentResumeData.textractAnalysis?.tables || [],
         },
         selectedCareerPath: user.selectedCareerPath?.title,
-        detailsRequested: ['resumeAnalysis', 'skillGapAnalysis', 'improvementSuggestions', 'careerAlignment']
       };
 
       const recPayload = {
@@ -514,6 +641,23 @@ const ResumeAnalysis = ({ setStage }) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
 
+  const startATSScan = () => {
+    setAtsResults(null);
+    setAtsScanning(true);
+    setScanProgress(0);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 1;
+      setScanProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        const results = computeATSScore(resumeData, user);
+        setAtsResults(results);
+        setAtsScanning(false);
+      }
+    }, 28); // ~2.8 seconds total
+  };
+
   // Get score color based on value
   const getScoreColor = (score) => {
     if (score >= 90) return 'text-green-600';
@@ -813,6 +957,207 @@ const ResumeAnalysis = ({ setStage }) => {
                 );
               })}
             </div>
+          </div>
+        </div>
+
+        {/* ATS Scanner */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+          <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-indigo-50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-600 rounded-xl">
+                <Shield className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">ATS Compatibility Scanner</h2>
+                <p className="text-xs text-gray-500">See how your resume performs against applicant tracking systems</p>
+              </div>
+            </div>
+            {atsResults && (
+              <button onClick={startATSScan} className="text-sm text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1">
+                <RefreshCw className="h-3 w-3" /> Re-scan
+              </button>
+            )}
+          </div>
+
+          <div className="p-8">
+            {/* Initial state */}
+            {!atsScanning && !atsResults && (
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                {/* Document preview */}
+                <div className="flex-shrink-0">
+                  <div className="relative w-40 h-52 bg-white border-2 border-gray-200 rounded-lg shadow-md overflow-hidden">
+                    <div className="p-2 h-full overflow-hidden">
+                      {(resumeData?.textractAnalysis?.rawText || '').split('\n').slice(0, 18).map((line, i) => (
+                        <div key={i} className={`h-1.5 rounded mb-1 ${i === 0 ? 'bg-gray-500 w-3/4' : i === 1 ? 'bg-gray-400 w-1/2' : 'bg-gray-200'}`}
+                          style={{ width: i > 1 ? `${50 + (i * 17 % 40)}%` : undefined }} />
+                      ))}
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-100/30 to-transparent" />
+                  </div>
+                </div>
+                {/* CTA */}
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Check ATS Compatibility</h3>
+                  <p className="text-gray-600 mb-4 text-sm">
+                    75% of resumes are rejected by ATS before a human sees them. Scan yours to find formatting issues, missing keywords, and gaps that could be costing you interviews.
+                  </p>
+                  <ul className="text-sm text-gray-500 mb-6 space-y-1">
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Keyword match against your target role</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Section & formatting check</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Contact info & dates validation</li>
+                  </ul>
+                  <button
+                    onClick={startATSScan}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium flex items-center gap-2 mx-auto md:mx-0"
+                  >
+                    <ScanLine className="h-5 w-5" />
+                    Scan My Resume
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Scanning animation */}
+            {atsScanning && (
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                {/* Animated document */}
+                <div className="flex-shrink-0">
+                  <div className="relative w-40 h-52 bg-white border-2 border-purple-300 rounded-lg shadow-md overflow-hidden">
+                    <div className="p-2 h-full overflow-hidden">
+                      {(resumeData?.textractAnalysis?.rawText || '').split('\n').slice(0, 18).map((line, i) => (
+                        <div key={i} className={`h-1.5 rounded mb-1 ${i === 0 ? 'bg-gray-500 w-3/4' : i === 1 ? 'bg-gray-400 w-1/2' : 'bg-gray-200'}`}
+                          style={{ width: i > 1 ? `${50 + (i * 17 % 40)}%` : undefined }} />
+                      ))}
+                    </div>
+                    {/* Scan line */}
+                    <div
+                      className="absolute left-0 right-0 h-0.5 pointer-events-none"
+                      style={{
+                        top: `${scanProgress}%`,
+                        background: 'linear-gradient(90deg, transparent, #7c3aed, #4f46e5, #7c3aed, transparent)',
+                        boxShadow: '0 0 8px 2px rgba(124, 58, 237, 0.6)',
+                      }}
+                    />
+                    {/* Scanned overlay */}
+                    <div
+                      className="absolute left-0 right-0 top-0 bg-purple-500/5 pointer-events-none"
+                      style={{ height: `${scanProgress}%` }}
+                    />
+                  </div>
+                </div>
+                {/* Progress */}
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-purple-700 font-semibold text-lg mb-1">Scanning resume...</p>
+                  <p className="text-gray-500 text-sm mb-4">
+                    {scanProgress < 30 ? 'Checking contact information & sections...'
+                      : scanProgress < 60 ? 'Matching keywords against your target role...'
+                      : scanProgress < 85 ? 'Analyzing experience quality & metrics...'
+                      : 'Evaluating ATS format compatibility...'}
+                  </p>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-100"
+                      style={{ width: `${scanProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-purple-600 font-bold text-2xl">{scanProgress}%</p>
+                </div>
+              </div>
+            )}
+
+            {/* Results */}
+            {atsResults && (
+              <div>
+                {/* Score hero */}
+                <div className="flex flex-col md:flex-row items-center gap-6 mb-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl">
+                  {/* Circular score */}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-32 h-32 relative">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="64" cy="64" r="56" stroke="rgba(124,58,237,0.15)" strokeWidth="10" fill="none" />
+                        <circle cx="64" cy="64" r="56" stroke="url(#atsGrad)" strokeWidth="10" fill="none"
+                          strokeLinecap="round"
+                          strokeDasharray={`${(atsResults.total / 100) * 352} 352`}
+                        />
+                        <defs>
+                          <linearGradient id="atsGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#7c3aed" />
+                            <stop offset="100%" stopColor="#4f46e5" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-3xl font-bold text-purple-700">{atsResults.total}</span>
+                        <span className="text-xs text-gray-500">/ 100</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-2xl font-bold text-gray-900">{atsResults.performance}</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        atsResults.total >= 90 ? 'bg-green-100 text-green-700'
+                        : atsResults.total >= 75 ? 'bg-blue-100 text-blue-700'
+                        : atsResults.total >= 60 ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-red-100 text-red-700'
+                      }`}>ATS Score</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">
+                      {atsResults.total >= 90 ? 'Your resume is highly ATS compatible and should pass most automated filters.'
+                        : atsResults.total >= 75 ? 'Your resume passes most ATS filters. A few tweaks could push it higher.'
+                        : atsResults.total >= 60 ? 'Your resume may pass some ATS systems but could be filtered out. Review the areas below.'
+                        : 'Your resume is at risk of being filtered out. Address the issues below before applying.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Breakdown */}
+                <div className="space-y-4">
+                  {atsResults.breakdown.map((section, i) => {
+                    const pct = Math.round((section.score / section.max) * 100);
+                    const { Icon } = section;
+                    const barColor = pct >= 80 ? 'from-green-400 to-emerald-500'
+                      : pct >= 60 ? 'from-yellow-400 to-orange-400'
+                      : 'from-red-400 to-rose-500';
+                    return (
+                      <div key={i} className="border border-gray-100 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium text-gray-800 text-sm">{section.label}</span>
+                          </div>
+                          <span className={`text-sm font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>
+                            {section.score}/{section.max}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+                          <div className={`h-full bg-gradient-to-r ${barColor} rounded-full transition-all duration-700`}
+                            style={{ width: `${pct}%` }} />
+                        </div>
+                        <ul className="space-y-1">
+                          {section.items.map((item, j) => (
+                            <li key={j} className={`text-xs flex items-start gap-1.5 ${
+                              item.startsWith('✓') ? 'text-green-700'
+                              : item.startsWith('✗') ? 'text-red-600'
+                              : item.startsWith('⚠') ? 'text-yellow-700'
+                              : 'text-gray-600'
+                            }`}>
+                              <span className="mt-0.5 flex-shrink-0">
+                                {item.startsWith('✓') ? <CheckCircle className="h-3 w-3" />
+                                  : item.startsWith('✗') ? <XCircle className="h-3 w-3" />
+                                  : item.startsWith('⚠') ? <AlertCircle className="h-3 w-3" />
+                                  : <ArrowRight className="h-3 w-3 text-gray-400" />}
+                              </span>
+                              <span>{item.replace(/^[✓✗⚠]\s*/, '')}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

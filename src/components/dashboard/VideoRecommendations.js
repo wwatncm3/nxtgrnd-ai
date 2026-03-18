@@ -440,7 +440,19 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
                 src={video.thumbnail}
                 alt={video.title}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const placeholder = e.target.parentElement.querySelector('.thumbnail-placeholder');
+                  if (placeholder) placeholder.style.display = 'flex';
+                }}
               />
+              <div
+                className="thumbnail-placeholder absolute inset-0 items-center justify-center bg-gray-200"
+                style={{ display: 'none' }}
+                aria-hidden="true"
+              >
+                <Play className="h-8 w-8 text-gray-400" />
+              </div>
               {/* Duration */}
               <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
                 {video.duration}
