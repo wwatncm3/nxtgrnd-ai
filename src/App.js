@@ -13,6 +13,7 @@ import JobsProjectsPage from './pages/JobsProjectsPage';
 import CertificationsPage from './pages/CertificationsPage';
 import MentorMatchingQuiz from './components/MentorMatchingQuiz';
 import PricingPage from './pages/PricingPage';
+import AdminPage from './pages/AdminPage';
 import SubscriptionGate from './components/SubscriptionGate';
 import { AchievementProvider } from './components/AchievementSystem';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
@@ -224,6 +225,10 @@ function App() {
       // ✅ NEW: Pricing Page is stage 13
       case 13:
         return <PricingPage />;
+
+      // ✅ NEW: Admin Page is stage 14
+      case 14:
+        return <AdminPage setStage={setStage} />;
 
       default:
         return (

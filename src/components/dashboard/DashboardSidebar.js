@@ -8,7 +8,7 @@ const DashboardSidebar = ({
   setIsSidebarOpen,
   navigationItems
 }) => {
-  const { isFreeUser } = useSubscription();
+  const { isFreeUser, isAdmin } = useSubscription();
 
   return (
     <>
@@ -45,6 +45,8 @@ const DashboardSidebar = ({
             {navigationItems.map((item, index) => {
               // Hide "Upgrade to Pro" button if user is already pro
               if (item.highlight && !isFreeUser) return null;
+              // Hide admin panel from non-admins
+              if (item.adminOnly && !isAdmin) return null;
 
               if (item.highlight) {
                 return (

@@ -1,9 +1,10 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { signOut } from '@aws-amplify/auth';
 import {
-  Compass, BookOpen, Award, Users, Building2, FileText, UserPlus, Crown
+  Compass, BookOpen, Award, Users, Building2, FileText, UserPlus, Crown, Shield
 } from 'lucide-react';
 import { UserContext } from '../App';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import { usePageTooltip } from './OnboardingTooltip';
 import { FullPageLoader } from './ui/AnimatedComponents';
@@ -32,6 +33,7 @@ const MainContent = ({ setStage }) => {
   // Trigger dashboard tooltip for new users
   usePageTooltip('dashboard');
   const { user, setUser } = useContext(UserContext);
+  const { isAdmin } = useSubscription();
   const selectedCareerPath = user?.selectedCareerPath;
 
   // UI State
@@ -503,7 +505,13 @@ const MainContent = ({ setStage }) => {
       label: 'Upgrade to Pro',
       highlight: true,
       onClick: () => setStage(13)
-    }
+    },
+    ...(isAdmin ? [{
+      icon: Shield,
+      label: 'Admin Panel',
+      adminOnly: true,
+      onClick: () => setStage(14)
+    }] : [])
   ];
 
   // Loading state
