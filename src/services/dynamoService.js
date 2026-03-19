@@ -314,6 +314,36 @@ export const deleteAllUserData = async (userId) => {
   }
 };
 
+// ============== SUBSCRIPTION OPERATIONS ==============
+
+export const getUserSubscription = async (userId) => {
+  if (!isApiConfigured()) return { tier: null };
+
+  try {
+    const profile = await getUserProfile(userId);
+    return {
+      tier: profile?.subscriptionTier || null,
+      stripeCustomerId: profile?.stripeCustomerId || null,
+      subscriptionId: profile?.subscriptionId || null,
+      subscriptionStatus: profile?.subscriptionStatus || null,
+      currentPeriodEnd: profile?.currentPeriodEnd || null
+    };
+  } catch (error) {
+    console.error('ERROR: Error getting user subscription:', error);
+    return { tier: null };
+  }
+};
+
+export const updateUserSubscription = async (userId, subscriptionData) => {
+  return updateUserProfile(userId, {
+    subscriptionTier: subscriptionData.tier,
+    stripeCustomerId: subscriptionData.stripeCustomerId,
+    subscriptionId: subscriptionData.subscriptionId,
+    subscriptionStatus: subscriptionData.subscriptionStatus,
+    currentPeriodEnd: subscriptionData.currentPeriodEnd
+  });
+};
+
 // ============== SYNC UTILITIES ==============
 
 // Sync localStorage data to DynamoDB (for migration)
@@ -390,6 +420,8 @@ const dynamoService = {
   deleteAllUserData,
   syncLocalToDynamo,
   checkDynamoConnection,
+  getUserSubscription,
+  updateUserSubscription,
   TABLES,
   isApiConfigured
 };

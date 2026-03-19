@@ -80,7 +80,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
         createVideo('pm-3', '3nRDNb7VnVg', 'Product Management Interview Questions', 'Exponent', '19:20', '320K views', '15K', '1 month ago')
       ],
       'CRNA': [
-        createVideo('crna-1', 'dQw4w9WgXcQ', 'Becoming a CRNA: Complete Guide', 'Nurse Anesthesia Talk', '22:15', '85K views', '3.2K', '2 months ago'),
+        createVideo('crna-1', 'OFGMbNMILMs', 'Becoming a CRNA: Complete Guide', 'Nurse Anesthesia Talk', '22:15', '85K views', '3.2K', '2 months ago'),
         createVideo('crna-2', 'eBGIQ7ZuuiU', 'Day in the Life of a CRNA', 'Healthcare Professionals', '18:45', '124K views', '5.1K', '3 weeks ago'),
         createVideo('crna-3', 'jNQXAC9IVRw', 'CRNA Salary and Career Path 2024', 'Med School Insiders', '15:30', '67K views', '2.8K', '1 month ago')
       ],

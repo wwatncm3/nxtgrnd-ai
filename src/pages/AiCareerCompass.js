@@ -9,6 +9,7 @@ import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import { storageService } from '../services/storageService';
 import analytics from '../utils/analytics';
 import CareerScenarioSimulator from '../components/CareerScenarioSimulator';
+import SubscriptionGate from '../components/SubscriptionGate';
 import API_CONFIG from '../config/api';
 import { LoadingSpinner, FullPageLoader } from '../components/ui/AnimatedComponents';
 
@@ -428,7 +429,9 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
         </div>
       </div>
 
-      <MarketInsights pathId={selectedPath.id} path={selectedPath} />
+      <SubscriptionGate feature="market_insights">
+        <MarketInsights pathId={selectedPath.id} path={selectedPath} />
+      </SubscriptionGate>
     </div>
   );
 
@@ -654,10 +657,12 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                 {activeTab === 'market' && renderMarketAnalysis()}
 
                 {activeTab === 'simulation' && (
-                  <CareerScenarioSimulator
-                    selectedPath={selectedPath}
-                    user={user}
-                  />
+                  <SubscriptionGate feature="career_simulator">
+                    <CareerScenarioSimulator
+                      selectedPath={selectedPath}
+                      user={user}
+                    />
+                  </SubscriptionGate>
                 )}
                 </div>
               </div>

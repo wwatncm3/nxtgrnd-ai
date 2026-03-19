@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { signOut } from '@aws-amplify/auth';
 import {
-  Compass, BookOpen, Award, Users, Building2, FileText, UserPlus
+  Compass, BookOpen, Award, Users, Building2, FileText, UserPlus, Crown
 } from 'lucide-react';
 import { UserContext } from '../App';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
@@ -424,6 +424,7 @@ const MainContent = ({ setStage }) => {
     {
       icon: FileText,
       label: 'Resume Analysis',
+      proOnly: true,
       onClick: () => {
         const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME);
         if (!storedResume) {
@@ -483,6 +484,7 @@ const MainContent = ({ setStage }) => {
     {
       icon: UserPlus,
       label: 'Find Mentors',
+      proOnly: true,
       onClick: () => {
         if (personalizedLearningPaths.length || personalizedOpportunities.length) {
           storeDashboardData(user?.userID, {
@@ -495,6 +497,12 @@ const MainContent = ({ setStage }) => {
         }
         setStage(12);
       }
+    },
+    {
+      icon: Crown,
+      label: 'Upgrade to Pro',
+      highlight: true,
+      onClick: () => setStage(13)
     }
   ];
 

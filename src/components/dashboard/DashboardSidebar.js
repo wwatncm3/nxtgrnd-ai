@@ -1,12 +1,15 @@
 // Dashboard Sidebar Component
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Crown } from 'lucide-react';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 const DashboardSidebar = ({
   isSidebarOpen,
   setIsSidebarOpen,
   navigationItems
 }) => {
+  const { isFreeUser } = useSubscription();
+
   return (
     <>
       {/* Mobile Sidebar Overlay */}
@@ -39,22 +42,53 @@ const DashboardSidebar = ({
 
         <nav className="p-4">
           <div className="space-y-1">
-            {navigationItems.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  item.onClick();
-                  setIsSidebarOpen(false);
-                }}
-                className="w-full flex items-center space-x-3 px-3 py-3 text-gray-700 rounded-lg
-                         hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 text-left group
-                         active:scale-[0.98]"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <item.icon size={20} className="transition-transform duration-200 group-hover:scale-110" />
-                <span className="text-sm sm:text-base">{item.label}</span>
-              </button>
-            ))}
+            {navigationItems.map((item, index) => {
+              // Hide "Upgrade to Pro" button if user is already pro
+              if (item.highlight && !isFreeUser) return null;
+
+              if (item.highlight) {
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      item.onClick();
+                      setIsSidebarOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-3 mt-4 rounded-lg
+                             bg-gradient-to-r from-indigo-600 to-purple-600 text-white
+                             hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-left group
+                             active:scale-[0.98] shadow-md"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <item.icon size={20} className="transition-transform duration-200 group-hover:scale-110" />
+                    <span className="text-sm sm:text-base font-semibold">{item.label}</span>
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    item.onClick();
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center space-x-3 px-3 py-3 text-gray-700 rounded-lg
+                           hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 text-left group
+                           active:scale-[0.98]"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <item.icon size={20} className="transition-transform duration-200 group-hover:scale-110" />
+                  <span className="text-sm sm:text-base">{item.label}</span>
+                  {item.proOnly && isFreeUser && (
+                    <span className="ml-auto inline-flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      <Crown size={10} />
+                      PRO
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </nav>
       </aside>

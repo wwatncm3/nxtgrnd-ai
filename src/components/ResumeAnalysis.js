@@ -34,7 +34,10 @@ const getSafeIcon = (iconName) => {
 
 const getStoredAnalysis = (userId, resumePath) => {
   try {
-    const stored = storageUtils.getItem(`${ANALYSIS_CACHE_KEY}_${resumePath}`);
+    const cacheKey = userId
+      ? `${ANALYSIS_CACHE_KEY}_${userId}_${resumePath}`
+      : `${ANALYSIS_CACHE_KEY}_${resumePath}`;
+    const stored = storageUtils.getItem(cacheKey);
     if (stored) {
       return stored;
     }
@@ -468,7 +471,10 @@ const ResumeAnalysis = ({ setStage }) => {
           ]
         };
 
-        storageUtils.setItem(`${ANALYSIS_CACHE_KEY}_${currentResumeData.path}`, fallbackAnalysis);
+        const fallbackCacheKey = user?.userID
+          ? `${ANALYSIS_CACHE_KEY}_${user.userID}_${currentResumeData.path}`
+          : `${ANALYSIS_CACHE_KEY}_${currentResumeData.path}`;
+        storageUtils.setItem(fallbackCacheKey, fallbackAnalysis);
         setAnalysis(fallbackAnalysis);
         setIsFallbackAnalysis(true);
         setLoading(false);
@@ -591,7 +597,10 @@ const ResumeAnalysis = ({ setStage }) => {
 
       analytics.trackResumeAnalyzed(analysisResult.resumeScore.totalScore, Date.now() - analysisStartTime);
 
-      storageUtils.setItem(`${ANALYSIS_CACHE_KEY}_${currentResumeData.path}`, analysisResult);
+      const analysisCacheKey = user?.userID
+        ? `${ANALYSIS_CACHE_KEY}_${user.userID}_${currentResumeData.path}`
+        : `${ANALYSIS_CACHE_KEY}_${currentResumeData.path}`;
+      storageUtils.setItem(analysisCacheKey, analysisResult);
       setAnalysis(analysisResult);
       unlockAchievement('RESUME_ANALYZED');
 

@@ -35,6 +35,14 @@ const API_CONFIG = {
     all: () => `${API_CONFIG.userData.getBaseUrl()}/all`
   },
 
+  // Subscription API - Stripe portal and subscription status
+  subscription: {
+    portalUrl: process.env.REACT_APP_SUBSCRIPTION_PORTAL_API || '',
+    betaAccessUrl: process.env.REACT_APP_BETA_ACCESS_API || '',
+    createPortalSession: () => API_CONFIG.subscription.portalUrl,
+    checkBetaAccess: () => API_CONFIG.subscription.betaAccessUrl
+  },
+
   // Analytics API (optional - leave empty if not using external analytics)
   analytics: {
     baseUrl: process.env.REACT_APP_ANALYTICS_ENDPOINT || null,

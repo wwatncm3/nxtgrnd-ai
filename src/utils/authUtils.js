@@ -51,7 +51,8 @@ export const STORAGE_KEYS = {
   COURSE_PROGRESS: 'courseProgress',
   COMPLETED_TASKS: 'completedTasks',
   COMPASS_CACHE: 'compassRecs',
-  ANALYSIS_CACHE: 'analysisCache'
+  ANALYSIS_CACHE: 'analysisCache',
+  SUBSCRIPTION_TIER: 'subscriptionTier'
 };
 
 // User-scoped Storage Utilities
@@ -65,7 +66,7 @@ export const storageUtils = {
     }
     try {
       localStorage.setItem(key, typeof data === 'string' ? data : JSON.stringify(data));
-      console.log(`SAVED: Stored ${key} in localStorage`);
+      if (process.env.NODE_ENV === 'development') console.log(`SAVED: Stored ${key} in localStorage`);
       return true;
     } catch (error) {
       console.error(`ERROR: Failed to store ${key}:`, error);
@@ -84,7 +85,7 @@ export const storageUtils = {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          console.log(`LOADED: Retrieved ${key} from localStorage`);
+          if (process.env.NODE_ENV === 'development') console.log(`LOADED: Retrieved ${key} from localStorage`);
           return parsed;
         } catch {
           // Return as string if not valid JSON
@@ -106,7 +107,7 @@ export const storageUtils = {
     }
     try {
       localStorage.removeItem(key);
-      console.log(`REMOVED: Removed ${key} from localStorage`);
+      if (process.env.NODE_ENV === 'development') console.log(`REMOVED: Removed ${key} from localStorage`);
       return true;
     } catch (error) {
       console.error(`ERROR: Failed to remove ${key}:`, error);

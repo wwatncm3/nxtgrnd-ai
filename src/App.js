@@ -12,7 +12,10 @@ import LearningPathsPage from './pages/LearningPathsPage';
 import JobsProjectsPage from './pages/JobsProjectsPage';
 import CertificationsPage from './pages/CertificationsPage';
 import MentorMatchingQuiz from './components/MentorMatchingQuiz';
+import PricingPage from './pages/PricingPage';
+import SubscriptionGate from './components/SubscriptionGate';
 import { AchievementProvider } from './components/AchievementSystem';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { TooltipProvider, TooltipOverlay } from './components/OnboardingTooltip';
 import analytics from './utils/analytics';
 import { userStateService } from './services/storageService';
@@ -37,6 +40,16 @@ function App() {
     // sessionStorage.clear();
     analytics.init();
     checkAuthState();
+
+    // Handle Stripe checkout return
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('subscription') === 'success') {
+      // Clear the query param from URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Will be picked up by SubscriptionProvider's refreshSubscription
+      setStage(5);
+    }
+
     return () => analytics.cleanup();
 
   }, []);
@@ -117,16 +130,10 @@ function App() {
 
   const handleCareerPathSelect = (path) => {
     setSelectedCareerPath(path);
-    // When a career path is selected, update user data but stay on the AICareerCompass page
     setUser(prev => ({
       ...prev,
       selectedCareerPath: path
     }));
-    // Store the selection in session storage for persistence
-    sessionStorage.setItem('selectedCareerPath', JSON.stringify(path));
-    
-    // Removed navigation to dashboard (stage 6)
-    // We'll stay on the AICareerCompass page (stage 5)
   };
 
   const renderContent = () => {
@@ -150,15 +157,9 @@ function App() {
           </OnboardingLayout>
         );
 
-      case 2: // Path Selection (Start Your Journey)
-        return (
-          <OnboardingLayout>
-            <ProfileCreation
-              currentSection="compass"
-              onNext={(data) => handleStageComplete(data, 3)}
-            />
-          </OnboardingLayout>
-        );
+      case 2: // Redirect to InterestSelection (stage 2 is no longer used directly)
+        setStage(3);
+        return null;
 
       // ✅ FIX: Stage 3 is now the complete Interests & Resume flow
       case 3: 
@@ -176,9 +177,7 @@ function App() {
       case 4: // AI Career Compass
         return (
           <OnboardingLayout>
-            <AICareerCompass
-              onPathSelect={handleCareerPathSelect}
-            />
+            <AICareerCompass />
           </OnboardingLayout>
         );
 
@@ -186,9 +185,13 @@ function App() {
       case 5: 
         return <MainContent setStage={setStage} />;
 
-      // ✅ FIX: Resume Analysis is now stage 6
-      case 6: 
-        return <ResumeAnalysis setStage={setStage} />;
+      // ✅ FIX: Resume Analysis is now stage 6 (Pro feature)
+      case 6:
+        return (
+          <SubscriptionGate feature="resume_ats">
+            <ResumeAnalysis setStage={setStage} />
+          </SubscriptionGate>
+        );
 
       // ✅ NEW: Creator Profile is stage 7
       case 7:
@@ -210,9 +213,17 @@ function App() {
       case 11:
         return <CertificationsPage setStage={setStage} />;
 
-      // ✅ NEW: Mentor Matching Quiz is stage 12
+      // ✅ NEW: Mentor Matching Quiz is stage 12 (Pro feature)
       case 12:
-        return <MentorMatchingQuiz setStage={setStage} onBack={() => setStage(5)} />;
+        return (
+          <SubscriptionGate feature="mentor_matching">
+            <MentorMatchingQuiz setStage={setStage} onBack={() => setStage(5)} />
+          </SubscriptionGate>
+        );
+
+      // ✅ NEW: Pricing Page is stage 13
+      case 13:
+        return <PricingPage />;
 
       default:
         return (
@@ -241,12 +252,14 @@ function App() {
         selectedCareerPath,
         setSelectedCareerPath
       }}>
-        <TooltipProvider userId={user?.userID || user?.username}>
-          <AchievementProvider>
-            {renderContent()}
-            <TooltipOverlay />
-          </AchievementProvider>
-        </TooltipProvider>
+        <SubscriptionProvider>
+          <TooltipProvider userId={user?.userID || user?.username}>
+            <AchievementProvider>
+              {renderContent()}
+              <TooltipOverlay />
+            </AchievementProvider>
+          </TooltipProvider>
+        </SubscriptionProvider>
       </UserContext.Provider>
     </ErrorBoundary>
   );

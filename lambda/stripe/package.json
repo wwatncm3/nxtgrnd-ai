@@ -1,0 +1,10 @@
+{
+  "name": "nxtgrnd-stripe-lambdas",
+  "version": "1.0.0",
+  "description": "Stripe webhook and portal Lambda functions for NxtGrnd AI",
+  "dependencies": {
+    "stripe": "^14.0.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
+  }
+}

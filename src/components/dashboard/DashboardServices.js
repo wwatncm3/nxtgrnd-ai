@@ -326,6 +326,10 @@ const fetchTavilyJobs = async (user, selectedCareerPath) => {
     })
   });
 
+  if (!response.ok) {
+    throw new Error(`Tavily job search failed: ${response.status} ${response.statusText}`);
+  }
+
   const data = await response.json();
   const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
   const jobs = parsedBody?.recommendations?.jobs || [];
@@ -376,6 +380,10 @@ const fetchAIOpportunities = async (user, selectedCareerPath) => {
       body: JSON.stringify(recommendationPayload)
     })
   });
+
+  if (!response.ok) {
+    throw new Error(`AI opportunities request failed: ${response.status} ${response.statusText}`);
+  }
 
   const data = await response.json();
   const searchUrls = getJobBoardSearchUrls(selectedCareerPath.title);
