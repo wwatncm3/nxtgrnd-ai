@@ -338,24 +338,46 @@ const generateMarketInsights = async (userData) => {
       messages: [
         {
           role: "system",
-          content: "Generate market insights. Return only valid JSON."
+          content: "Generate market insights. Return only valid JSON matching the exact schema provided. Do not add extra fields."
         },
         {
           role: "user",
           content: `Market insights for: ${userData.pathId || 'Software Engineer'}
           Location: ${userData.location || 'United States'}
 
-          Return: {"marketInsights": {"demandGrowth": 15, "averageSalary": 85000, "openPositions": 25000, "requiredSkills": [{"name": "Python", "demandPercentage": "85%"}], "industryDistribution": [{"name": "Technology", "percentage": 45}]}}`
+          Return EXACTLY this schema with no extra fields:
+          {
+            "marketInsights": {
+              "demandGrowth": <integer, e.g. 15>,
+              "averageSalary": <integer in USD, e.g. 85000>,
+              "openPositions": <integer, e.g. 25000>,
+              "requiredSkills": [{"name": "Python", "demandPercentage": "85%"}],
+              "industryDistribution": [{"name": "Technology", "percentage": 45}]
+            }
+          }`
         }
       ],
-      temperature: 0.7,
+      temperature: 0,
       max_tokens: 600,
       response_format: { type: "json_object" }
     });
 
+    const raw = JSON.parse(completion.choices[0].message.content);
+    const mi = raw.marketInsights || raw;
+
+    // Normalize to guarantee the shape the frontend expects
+    const normalized = {
+      demandGrowth: typeof mi.demandGrowth === 'number' ? mi.demandGrowth : null,
+      averageSalary: typeof mi.averageSalary === 'number' ? mi.averageSalary : null,
+      openPositions: typeof mi.openPositions === 'number' ? mi.openPositions : null,
+      requiredSkills: Array.isArray(mi.requiredSkills) ? mi.requiredSkills : [],
+      industryDistribution: Array.isArray(mi.industryDistribution) ? mi.industryDistribution : []
+    };
+
     return {
       statusCode: 200,
-      body: JSON.stringify({ recommendations: JSON.parse(completion.choices[0].message.content) })
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ recommendations: { marketInsights: normalized } })
     };
   } catch (error) {
     console.error('Error generating market insights:', error);

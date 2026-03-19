@@ -172,7 +172,7 @@ const MarketInsights = ({ pathId, path }) => {
           <h4 className="font-medium mb-2">Avg. Salary</h4>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-green-600">
-              ${insights.averageSalary.toLocaleString()}
+              ${typeof insights.averageSalary === 'number' ? insights.averageSalary.toLocaleString() : 'N/A'}
             </span>
           </div>
         </div>
@@ -180,7 +180,7 @@ const MarketInsights = ({ pathId, path }) => {
           <h4 className="font-medium mb-2">Open Positions</h4>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-purple-600">
-              {insights.openPositions.toLocaleString()}
+              {typeof insights.openPositions === 'number' ? insights.openPositions.toLocaleString() : 'N/A'}
             </span>
           </div>
         </div>
