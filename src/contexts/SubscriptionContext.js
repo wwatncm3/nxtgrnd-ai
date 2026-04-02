@@ -94,6 +94,31 @@ export const SubscriptionProvider = ({ children }) => {
     loadSubscription();
   }, [loadSubscription]);
 
+  // Re-fetch subscription when tab becomes visible (handles tier changes while away)
+  useEffect(() => {
+    if (!userId) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadSubscription();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [userId, loadSubscription]);
+
+  // Periodic background refresh every 5 minutes to catch subscription changes
+  useEffect(() => {
+    if (!userId) return;
+
+    const interval = setInterval(() => {
+      loadSubscription();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [userId, loadSubscription]);
+
   // Check if current tier has access to a feature
   const hasFeature = useCallback((featureKey) => {
     const features = TIER_FEATURES[tier] || TIER_FEATURES[TIERS.FREE];

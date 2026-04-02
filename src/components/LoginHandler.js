@@ -134,23 +134,21 @@ if (storedState.resume) {
   console.log('SUCCESS: Added resume to user data');
 }
 
-      // Step 7: Update user context FIRST
-      setUser(completeUserData);
-      
-      // Wait a bit for state to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Step 8: Determine navigation with enhanced debugging
+      // Step 7: Determine navigation based on stored state (no race condition)
       const navigation = determineUserNavigationWithDebug(storedState);
       console.log('NAV: Final Navigation decision:', navigation);
-      
-      // Step 9: Navigate user with explicit logging
+
+      // Step 8: Update user context
+      setUser(completeUserData);
+
+      // Step 9: Navigate user — no arbitrary delay needed since navigation
+      // is derived from storedState (already resolved), not from React state
       console.log('TARGET: About to call onNext with:', {
         userData: completeUserData,
         skipToEnd: navigation.skipToEnd,
         expectedStage: navigation.stage
       });
-      
+
       onNext(completeUserData, navigation);
 
     } catch (error) {

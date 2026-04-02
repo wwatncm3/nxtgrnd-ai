@@ -129,25 +129,37 @@ const generateRecommendation = async (userData) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert AI career counselor. Generate comprehensive career recommendations with REALISTIC match scores.
+            content: `You are an expert career strategist, skills translator, and cross-industry talent mobility specialist. Your unique ability is analyzing someone's existing skills, experience, and interests to identify BOTH conventional AND unconventional career paths — including ones they would never have considered on their own.
+
+CORE PHILOSOPHY:
+- Break down skill silos and reveal hidden connections between industries
+- Every skill is transferable — your job is to show HOW
+- Include 2-3 expected career paths AND 2-3 genuinely unexpected ones
+- For unexpected paths, clearly explain the skill translation (e.g., "Your classroom management experience directly translates to UX research — both require reading human behavior under constraints")
 
 MATCH SCORING CRITERIA (be honest and realistic):
 - 85-100%: Excellent fit - Strong relevant experience, matching skills, clear career progression
 - 70-84%: Good fit - Some relevant experience, transferable skills, reasonable path
-- 55-69%: Moderate fit - Limited experience, some transferable skills, requires development
-- 40-54%: Low fit - Minimal relevant background, significant skill gaps
-- 15-39%: Poor fit - No relevant experience, mismatched skills
+- 55-69%: Moderate fit - Limited direct experience, but strong transferable skills from unexpected angles
+- 40-54%: Stretch fit - Requires significant development, but transferable skills create a viable bridge
+- 15-39%: Exploratory - No direct experience, but passion + hidden skill connections make it worth exploring
 - 0-14%: No fit - Completely unrelated background
 
 A new graduate with relevant coursework should score 65-80%.
-Someone with 0 relevant experience should score 25-45%.
+Someone with 0 relevant experience but strong transferable skills should score 45-60%.
 Only candidates with strong relevant experience should score 85+.
+Unexpected career paths should typically score 50-70% with clear skill translation reasoning.
+
+SKILL TRANSLATION RULES:
+- Always identify the UNDERLYING skill, not just the surface skill (e.g., "teaching" = communication + curriculum design + behavior analysis + performance assessment)
+- Connect skills across industries using these bridges: people management, systems thinking, data analysis, communication, project coordination, creative problem-solving, compliance/regulation knowledge, client relationship management
+- For each unexpected path, provide a "Skills Translation" that maps their current skills to the new role's requirements
 
 Return ONLY valid JSON.`
           },
           {
             role: "user",
-            content: `Generate career recommendations for this candidate:
+            content: `Generate career recommendations for this candidate. Include BOTH conventional paths AND unexpected/unconventional paths they would never have considered.
 
 CANDIDATE PROFILE:
 - Interests: ${interests?.join(', ') || 'Not specified'}
@@ -159,6 +171,12 @@ CANDIDATE PROFILE:
 
 ${resumeContent ? `RESUME CONTENT:\n${resumeContent.substring(0, 3000)}` : ''}
 
+IMPORTANT: Generate 5 career paths total:
+- 2-3 conventional/expected paths (directly related to their background)
+- 2-3 unexpected/unconventional paths (cross-industry skill translation — roles they'd never think of but their skills actually fit)
+
+For unexpected paths, the "skillTranslation" field must explain HOW their current skills map to this new role. Break down their surface skills into underlying abilities and show the connection.
+
 Return JSON with this EXACT structure:
 {
   "careerPaths": [
@@ -166,8 +184,10 @@ Return JSON with this EXACT structure:
       "id": "path-1",
       "title": "Career Title",
       "description": "2-3 sentence description",
+      "pathType": "conventional or unexpected",
       "matchScore": 75,
       "matchReasoning": "Why this score based on their specific qualifications",
+      "skillTranslation": "How their existing skills transfer to this role — map current skills to new role requirements. Only needed for unexpected paths.",
       "keyStrengths": ["Strength 1", "Strength 2"],
       "developmentAreas": ["Area 1", "Area 2"],
       "salaryRange": "$XX,XXX - $XXX,XXX",
@@ -203,9 +223,15 @@ Return JSON with this EXACT structure:
           }
         ]
       },
-      "nextSteps": ["action1", "action2", "action3"]
+      "nextSteps": ["action1", "action2", "action3"],
+      "entryPathway": "Specific steps to transition into this role from their current position"
     }
   ],
+  "skillsTranslationSummary": {
+    "coreTransferableSkills": ["skill1 — underlying ability that crosses industries", "skill2"],
+    "hiddenStrengths": ["Abilities they may not realize are valuable in other fields"],
+    "skillBridges": ["How skill X in their current field maps to skill Y in a new field"]
+  },
   "careerAnalysis": {
     "currentStage": "Current career stage assessment",
     "progressionPath": "Recommended progression",
@@ -219,7 +245,7 @@ Return JSON with this EXACT structure:
           }
         ],
         temperature: 0.7,
-        max_tokens: 1800, // Reduced for faster response (3 career paths fit comfortably)
+        max_tokens: 3000, // Increased for 5 career paths + skill translations
         response_format: { type: "json_object" }
       }, { signal: controller.signal });
     } finally {

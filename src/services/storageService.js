@@ -40,6 +40,16 @@ const localStore = {
       return true;
     } catch (error) {
       console.error(`Failed to store ${key}:`, error);
+      // Detect quota exceeded and warn the user
+      if (error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014) {
+        console.error('STORAGE WARNING: localStorage quota exceeded. Data may be lost.');
+        // Dispatch a custom event so UI components can show a warning
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('storage-quota-exceeded', {
+            detail: { key, error: 'Local storage is full. Some data may not be saved. Please clear unused data or contact support.' }
+          }));
+        }
+      }
       return false;
     }
   },
@@ -82,6 +92,18 @@ const debouncedSync = (userId) => {
   syncTimeout = setTimeout(() => {
     syncToDynamoDB(userId);
   }, SYNC_DELAY);
+};
+
+// Force immediate sync — call before logout to prevent data loss
+export const flushPendingSync = async (userId = null) => {
+  const uid = userId || getCurrentStorageUserId();
+  if (syncTimeout) {
+    clearTimeout(syncTimeout);
+    syncTimeout = null;
+  }
+  if (uid) {
+    await syncToDynamoDB(uid);
+  }
 };
 
 // Sync local data to DynamoDB

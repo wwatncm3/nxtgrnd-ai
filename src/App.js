@@ -34,6 +34,7 @@ function App() {
   const [user, setUser] = useState({});
   const [selectedCareerPath, setSelectedCareerPath] = useState(null);
   const [, setIsLoading] = useState(true);
+  const [storageWarning, setStorageWarning] = useState(null);
 
   // Check authentication status on app load
   useEffect(() => {
@@ -51,7 +52,16 @@ function App() {
       setStage(5);
     }
 
-    return () => analytics.cleanup();
+    // Listen for localStorage quota exceeded warnings
+    const handleQuotaExceeded = (e) => {
+      setStorageWarning(e.detail?.error || 'Local storage is full. Some data may not be saved.');
+    };
+    window.addEventListener('storage-quota-exceeded', handleQuotaExceeded);
+
+    return () => {
+      analytics.cleanup();
+      window.removeEventListener('storage-quota-exceeded', handleQuotaExceeded);
+    };
 
   }, []);
   useEffect(() => {
@@ -260,6 +270,17 @@ function App() {
         <SubscriptionProvider>
           <TooltipProvider userId={user?.userID || user?.username}>
             <AchievementProvider>
+              {storageWarning && (
+                <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-50 border-b border-yellow-200 px-4 py-3 flex items-center justify-between">
+                  <p className="text-sm text-yellow-800">{storageWarning}</p>
+                  <button
+                    onClick={() => setStorageWarning(null)}
+                    className="ml-4 text-yellow-600 hover:text-yellow-800 font-medium text-sm"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
               {renderContent()}
               <TooltipOverlay />
             </AchievementProvider>

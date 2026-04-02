@@ -6,6 +6,7 @@ import {
 import { UserContext } from '../App';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
+import { flushPendingSync } from '../services/storageService';
 import { usePageTooltip } from './OnboardingTooltip';
 import { FullPageLoader } from './ui/AnimatedComponents';
 
@@ -212,6 +213,8 @@ const MainContent = ({ setStage }) => {
 
   const handleLogout = async () => {
     try {
+      // Flush any pending DynamoDB sync before signing out to prevent data loss
+      await flushPendingSync();
       await signOut();
       // Clear session marker (keeps user data for when they log back in)
       storageUtils.clearAllUserData();
