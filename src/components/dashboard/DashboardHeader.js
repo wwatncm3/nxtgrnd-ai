@@ -33,12 +33,12 @@ const DashboardHeader = ({
           <img
             src="/nxtgrnd_full_logo_2.png"
             alt="NxtGrnd AI Logo"
-            className="h-32 sm:h-40 lg:h-48 w-auto"
+            className="h-8 sm:h-10 w-auto"
           />
         </div>
 
         {/* Enhanced Search Bar - Brand Colors (Navy + Teal + Gold) */}
-        <div className="hidden sm:flex flex-1 max-w-2xl mx-4">
+        <div className="flex flex-1 max-w-2xl mx-2 sm:mx-4">
           <div className="relative w-full group">
             {/* Gradient border effect on focus - using brand teal */}
             <div className={`absolute -inset-0.5 bg-gradient-to-r from-blue-900 via-teal-500 to-blue-900 rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 blur-sm ${searchQuery ? 'opacity-50' : ''}`}></div>
@@ -46,10 +46,10 @@ const DashboardHeader = ({
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search learning paths, jobs, goals..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-5 py-3 pl-12 pr-24 bg-white rounded-xl text-sm
+                className="w-full px-3 py-2 pl-10 pr-12 sm:px-5 sm:py-3 sm:pl-12 sm:pr-24 bg-white rounded-xl text-sm
                          focus:outline-none border border-gray-200
                          transition-all duration-300 shadow-sm
                          focus:shadow-lg focus:border-transparent

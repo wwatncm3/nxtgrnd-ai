@@ -123,6 +123,12 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
 
     // Clear any previous errors
     setUploadError('');
+
+    if (!user?.userID) {
+      setUploadError('Please complete your profile before uploading a resume.');
+      return;
+    }
+
     setIsUploading(true);
 
     try {

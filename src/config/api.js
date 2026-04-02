@@ -1,6 +1,14 @@
 // API Configuration - Centralized endpoint management
 // All API endpoints are configured via environment variables
 
+// Fetch with timeout to prevent hanging requests
+export const fetchWithTimeout = (url, options = {}, timeoutMs = 30000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timeoutId));
+};
+
 const API_CONFIG = {
   // Recommendations API - generates career paths, learning resources, opportunities, simulations
   recommendations: {
@@ -90,7 +98,7 @@ export const makeRecommendationRequest = async (payload) => {
       throw new Error('Recommendations API endpoint not configured');
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -98,7 +106,7 @@ export const makeRecommendationRequest = async (payload) => {
         path: '/recommendations/generate',
         body: JSON.stringify(payload)
       })
-    });
+    }, 30000);
 
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);

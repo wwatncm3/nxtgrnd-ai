@@ -6,7 +6,8 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 const DashboardSidebar = ({
   isSidebarOpen,
   setIsSidebarOpen,
-  navigationItems
+  navigationItems,
+  activeStage
 }) => {
   const { isFreeUser, isAdmin } = useSubscription();
 
@@ -57,8 +58,8 @@ const DashboardSidebar = ({
                       setIsSidebarOpen(false);
                     }}
                     className="w-full flex items-center space-x-3 px-3 py-3 mt-4 rounded-lg
-                             bg-gradient-to-r from-indigo-600 to-purple-600 text-white
-                             hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 text-left group
+                             bg-gradient-to-r from-blue-900 to-teal-600 text-white
+                             hover:from-blue-950 hover:to-teal-700 transition-all duration-200 text-left group
                              active:scale-[0.98] shadow-md"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
@@ -68,6 +69,8 @@ const DashboardSidebar = ({
                 );
               }
 
+              const isActive = item.stageId != null && item.stageId === activeStage;
+
               return (
                 <button
                   key={index}
@@ -75,15 +78,19 @@ const DashboardSidebar = ({
                     item.onClick();
                     setIsSidebarOpen(false);
                   }}
-                  className="w-full flex items-center space-x-3 px-3 py-3 text-gray-700 rounded-lg
-                           hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 text-left group
-                           active:scale-[0.98]"
+                  className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg
+                           transition-all duration-200 text-left group
+                           active:scale-[0.98] ${
+                             isActive
+                               ? 'bg-blue-50 text-blue-600 font-medium border-r-2 border-blue-600'
+                               : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                           }`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <item.icon size={20} className="transition-transform duration-200 group-hover:scale-110" />
-                  <span className="text-sm sm:text-base">{item.label}</span>
+                  <span className={`text-sm sm:text-base ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
                   {item.proOnly && isFreeUser && (
-                    <span className="ml-auto inline-flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                    <span className="ml-auto inline-flex items-center gap-0.5 bg-gradient-to-r from-blue-900 to-teal-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
                       <Crown size={10} />
                       PRO
                     </span>

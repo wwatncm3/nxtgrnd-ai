@@ -400,16 +400,21 @@ const MainContent = ({ setStage }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Active sidebar nav tracking
+  const [activeNav, setActiveNav] = useState(5); // default to dashboard (stage 5)
+
   // Navigation items
   const navigationItems = [
     {
       icon: Compass,
       label: 'Career Compass',
-      onClick: () => setStage(4)
+      stageId: 4,
+      onClick: () => { setActiveNav(4); setStage(4); }
     },
     {
       icon: BookOpen,
       label: 'Learning Paths',
+      stageId: 9,
       onClick: () => {
         if (personalizedLearningPaths.length || personalizedOpportunities.length) {
           storeDashboardData(user?.userID, {
@@ -426,6 +431,7 @@ const MainContent = ({ setStage }) => {
     {
       icon: FileText,
       label: 'Resume Analysis',
+      stageId: 6,
       proOnly: true,
       onClick: () => {
         const storedResume = storageUtils.getItem(STORAGE_KEYS.USER_RESUME);
@@ -449,6 +455,7 @@ const MainContent = ({ setStage }) => {
     {
       icon: Building2,
       label: 'Jobs & Projects',
+      stageId: 10,
       onClick: () => {
         if (personalizedLearningPaths.length || personalizedOpportunities.length) {
           storeDashboardData(user?.userID, {
@@ -465,11 +472,13 @@ const MainContent = ({ setStage }) => {
     {
       icon: Users,
       label: 'Creator Profile',
+      stageId: 7,
       onClick: () => setStage(7)
     },
     {
       icon: Award,
       label: 'Certifications',
+      stageId: 11,
       onClick: () => {
         if (personalizedLearningPaths.length || personalizedOpportunities.length) {
           storeDashboardData(user?.userID, {
@@ -486,6 +495,7 @@ const MainContent = ({ setStage }) => {
     {
       icon: UserPlus,
       label: 'Find Mentors',
+      stageId: 12,
       proOnly: true,
       onClick: () => {
         if (personalizedLearningPaths.length || personalizedOpportunities.length) {
@@ -570,6 +580,7 @@ const MainContent = ({ setStage }) => {
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           navigationItems={navigationItems}
+          activeStage={activeNav}
         />
 
         {/* Main Content */}
@@ -581,10 +592,10 @@ const MainContent = ({ setStage }) => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                      Welcome {user?.firstName ? `${user.firstName}` : 'back'} to your {selectedCareerPath.title} Dashboard!
+                      Welcome {user?.firstName ? `${user.firstName}` : 'back'} to your {selectedCareerPath?.title} Dashboard!
                     </h1>
                     <p className="mt-1 text-sm sm:text-base text-gray-600">
-                      Your personalized roadmap to becoming a {selectedCareerPath.title}
+                      Your personalized roadmap to becoming a {selectedCareerPath?.title}
                     </p>
                   </div>
                   <button

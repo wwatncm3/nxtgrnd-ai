@@ -58,20 +58,20 @@ function OnboardingFlow({ onNext }) {
   const featuredPaths = [
     {
       Icon: Monitor,
-      title: 'Full-Stack Web Dev',
-      description: 'Master modern web development with React, Node.js, and cloud technologies.',
+      title: 'Software Engineering',
+      description: 'From hackathons to Fortune 500 — build production-grade skills in React, Node.js, and system design that top recruiters look for at career fairs.',
       color: 'bg-blue-50 text-blue-600'
     },
     {
       Icon: Database,
-      title: 'Data Science',
-      description: 'Learn data analysis, machine learning, and AI with Python and real-world projects.',
+      title: 'Data Science & Analytics',
+      description: 'Turn research projects into industry credentials. Master Python, ML, and data storytelling for roles at top companies actively seeking diverse talent.',
       color: 'bg-teal-50 text-teal-600'
     },
     {
       Icon: Cloud,
-      title: 'Cloud Computing',
-      description: 'Build expertise in AWS, Azure, and cloud architecture for modern applications.',
+      title: 'Cloud & Cybersecurity',
+      description: 'Earn AWS, Azure, and security certifications that open doors. Join the growing network of graduates leading enterprise cloud strategy.',
       color: 'bg-cyan-50 text-cyan-600'
     }
   ];
@@ -89,7 +89,10 @@ function OnboardingFlow({ onNext }) {
             Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-teal-600 to-blue-900">NxtGrnd AI</span>
           </h1>
           <p className="text-gray-600 text-lg md:text-xl animate-slideUp delay-100">
-            Your AI-powered career development platform
+            AI-powered career development for the next generation of leaders
+          </p>
+          <p className="text-gray-500 text-sm md:text-base mt-3 max-w-2xl mx-auto animate-slideUp delay-150">
+            Discover career paths that match your skills, connect with real opportunities, and build your future — born at NC A&T, built for every student ready to level up.
           </p>
         </div>
 

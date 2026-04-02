@@ -9,11 +9,11 @@ const UpgradePrompt = ({ feature, setStage }) => {
   const meta = FEATURE_META[feature] || {};
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
       <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl p-8 text-center">
         {/* Lock Icon */}
-        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-6">
-          <Lock className="w-10 h-10 text-indigo-600" />
+        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-100 to-teal-100 rounded-full flex items-center justify-center mb-6">
+          <Lock className="w-10 h-10 text-blue-900" />
         </div>
 
         {/* Feature Name */}
@@ -22,7 +22,7 @@ const UpgradePrompt = ({ feature, setStage }) => {
         </h2>
 
         {/* Pro Badge */}
-        <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold px-3 py-1 rounded-full mb-4">
+        <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-900 to-teal-600 text-white text-sm font-semibold px-3 py-1 rounded-full mb-4">
           <Crown className="w-3.5 h-3.5" />
           NxtGrnd Pro
         </div>
@@ -35,7 +35,7 @@ const UpgradePrompt = ({ feature, setStage }) => {
         {/* Upgrade Button */}
         <button
           onClick={() => setStage(13)}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 mb-4 shadow-lg shadow-indigo-200"
+          className="w-full bg-gradient-to-r from-blue-900 to-teal-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-950 hover:to-teal-700 transition-all duration-200 flex items-center justify-center gap-2 mb-4 shadow-lg shadow-blue-200"
         >
           Upgrade to NxtGrnd Pro
           <ArrowRight className="w-4 h-4" />
@@ -76,7 +76,7 @@ const SubscriptionGate = ({ feature, children, fallback }) => {
 
 // Small inline badge for sidebar/nav items
 export const ProBadge = () => (
-  <span className="inline-flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+  <span className="inline-flex items-center gap-0.5 bg-gradient-to-r from-blue-900 to-teal-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
     <Crown className="w-2.5 h-2.5" />
     PRO
   </span>
@@ -84,7 +84,7 @@ export const ProBadge = () => (
 
 // Small lock icon for inline use
 export const ProLockIcon = () => (
-  <Lock className="w-3.5 h-3.5 text-indigo-400" />
+  <Lock className="w-3.5 h-3.5 text-teal-500" />
 );
 
 export default SubscriptionGate;

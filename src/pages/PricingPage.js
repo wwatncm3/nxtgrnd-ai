@@ -50,7 +50,7 @@ const PricingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
@@ -78,7 +78,7 @@ const PricingPage = () => {
         {/* Current Plan Badge */}
         {isProUser && (
           <div className="text-center mb-8">
-            <span className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-full font-semibold">
+            <span className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-900 to-teal-600 text-white px-4 py-2 rounded-full font-semibold">
               <Crown className="w-4 h-4" />
               {(isBetaUser || isAdmin) ? 'Full Access (Beta)' : 'NxtGrnd Pro Active'}
             </span>
@@ -119,16 +119,16 @@ const PricingPage = () => {
           </div>
 
           {/* Pro Tier */}
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-indigo-600 p-8 flex flex-col relative">
+          <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-900 p-8 flex flex-col relative">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold px-4 py-1.5 rounded-full">
+              <span className="bg-gradient-to-r from-blue-900 to-teal-600 text-white text-sm font-bold px-4 py-1.5 rounded-full">
                 Most Popular
               </span>
             </div>
 
             <div className="mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center mb-4">
-                <Crown className="w-6 h-6 text-indigo-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-teal-100 rounded-xl flex items-center justify-center mb-4">
+                <Crown className="w-6 h-6 text-blue-900" />
               </div>
               <h3 className="text-xl font-bold text-gray-900">NxtGrnd Pro</h3>
               <div className="mt-2">
@@ -141,7 +141,7 @@ const PricingPage = () => {
             <ul className="space-y-3 mb-8 flex-grow">
               {proFeatures.map((feature, i) => (
                 <li key={i} className={`flex items-start gap-2 ${i === 0 ? 'font-semibold' : ''}`}>
-                  <Check className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
+                  <Check className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />
                   <span className="text-gray-700 text-sm">{feature}</span>
                 </li>
               ))}
@@ -224,7 +224,7 @@ const PricingPage = () => {
           </p>
           <p>
             Questions? Email us at{' '}
-            <a href="mailto:support@nxtgrnd.ai" className="text-indigo-600 hover:text-indigo-700">
+            <a href="mailto:support@nxtgrnd.ai" className="text-blue-900 hover:text-teal-600">
               support@nxtgrnd.ai
             </a>
           </p>
