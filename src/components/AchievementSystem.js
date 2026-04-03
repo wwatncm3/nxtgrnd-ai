@@ -232,6 +232,7 @@ export const AchievementProvider = ({ children }) => {
           }
         }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUserId]); // Re-run when currentUserId changes
 
     // Check for user changes periodically (in case of login/logout)
@@ -413,7 +414,7 @@ const AchievementNotifications = () => {
 
 // Achievement Popup Component
 const AchievementPopup = () => {
-    const { achievements, totalPoints, togglePopup, getStats, getNextAchievements } = useAchievements();
+    const { achievements, togglePopup, getStats, getNextAchievements } = useAchievements();
     const [activeTab, setActiveTab] = useState('unlocked');
 
     const stats = getStats();
@@ -578,8 +579,9 @@ const AchievementPopup = () => {
     );
   };
   
-  export default {
+  const AchievementSystemExports = {
     AchievementProvider,
     useAchievements,
     ACHIEVEMENTS
   };
+  export default AchievementSystemExports;

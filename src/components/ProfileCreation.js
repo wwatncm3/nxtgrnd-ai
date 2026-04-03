@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   signUp,
   confirmSignUp,
@@ -7,12 +7,12 @@ import {
 import { User, Upload, BookOpen, Users, Rocket, Target, Briefcase, Compass, Shield, ArrowLeft, ArrowRight, Check, Eye, EyeOff, Monitor, Database, Cloud, Mail, RefreshCw, AlertCircle } from 'lucide-react';
 import { UserContext } from '../App';
 import { useLoginHandler } from './LoginHandler';
-import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
+import { STORAGE_KEYS } from '../utils/authUtils';
 import { storageService } from '../services/storageService';
 import analytics from '../utils/analytics';
 
 function OnboardingFlow({ onNext }) {
-  const { user, setUser } = useContext(UserContext);
+  const { setUser } = useContext(UserContext);
   const { handleLogin } = useLoginHandler();
   const [view, setView] = useState('landing');
   const [currentSection, setCurrentSection] = useState('account');
@@ -97,8 +97,8 @@ function OnboardingFlow({ onNext }) {
         </div>
 
         {/* Hero Image/Dashboard Preview */}
-        <div className="relative mb-10 animate-slideUp delay-200">
-          <div className="bg-gradient-to-r from-teal-100 via-blue-50 to-teal-100 rounded-2xl p-4 shadow-xl">
+        <div className="relative mb-10 animate-slideUp delay-200 max-w-full overflow-hidden px-4">
+          <div className="bg-gradient-to-r from-teal-100 via-blue-50 to-teal-100 rounded-2xl p-4 shadow-xl max-w-2xl mx-auto">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b">
                 <div className="flex gap-1.5">
@@ -1095,14 +1095,23 @@ function OnboardingFlow({ onNext }) {
             </button>
           )}
           {currentSection === 'account' && (
-            <button
-              onClick={() => handleViewTransition('landing')}
-              className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200 
-                       hover:bg-gray-50 rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back to Home
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleViewTransition('landing')}
+                className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200
+                         hover:bg-gray-50 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Home
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => handleViewTransition('login')}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+              >
+                Already have an account? Sign In
+              </button>
+            </div>
           )}
         </div>
 
@@ -1381,7 +1390,7 @@ function OnboardingFlow({ onNext }) {
             preferred_username: formData.username
           };
   
-          const { isSignUpComplete, userId, nextStep } = await signUp({
+          await signUp({
             username: formData.email, 
             password: formData.password,
             options: {

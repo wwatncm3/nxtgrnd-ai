@@ -1,6 +1,6 @@
 // Dashboard Header Component
 import React from 'react';
-import { Menu, Search, UserCircle, X, Filter, User, Settings, LogOut, Sparkles } from 'lucide-react';
+import { Menu, Search, UserCircle, X, Filter, User, Settings, LogOut } from 'lucide-react';
 import NotificationBell from '../NotificationSystem';
 
 const DashboardHeader = ({

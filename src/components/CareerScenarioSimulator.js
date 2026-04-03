@@ -11,7 +11,7 @@ const CareerScenarioSimulator = ({ selectedPath, user, onClose }) => {
   const [simulationResults, setSimulationResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeScenario, setActiveScenario] = useState(null);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
 
   const scenarios = [
     {

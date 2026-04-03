@@ -60,6 +60,7 @@ const CareerTimeline = ({ path, onMilestoneSelect }) => {
     if (path?.id) {
       fetchMilestones();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path.id]);
 
   if (isLoading) {

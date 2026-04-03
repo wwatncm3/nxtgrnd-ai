@@ -206,6 +206,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [careerPath, user, maxVideos, buildSearchQuery]);
 
   // Refresh handler that forces a new fetch

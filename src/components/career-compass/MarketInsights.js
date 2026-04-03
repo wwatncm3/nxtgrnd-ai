@@ -74,7 +74,6 @@ const generateLocalMarketInsights = (path) => {
 const MarketInsights = ({ pathId, path }) => {
   console.log('MarketInsights: Rendering with pathId:', pathId, 'and path:', path);
   const [insights, setInsights] = useState(null);
-  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -144,6 +143,7 @@ const MarketInsights = ({ pathId, path }) => {
     if (pathId) {
       fetchMarketInsights();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathId]);
 
   if (isLoading) {

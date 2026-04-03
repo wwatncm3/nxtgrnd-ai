@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, Building2, Search, Clock, CircleDollarSign,
-  ChevronRight, ExternalLink, Bookmark, BookmarkCheck, RefreshCw, X,
+  ExternalLink, Bookmark, BookmarkCheck, RefreshCw, X,
   Briefcase, TrendingUp, Users, Globe, Zap
 } from 'lucide-react';
 import { UserContext } from '../App';
@@ -30,6 +30,7 @@ const JobsProjectsPage = ({ setStage }) => {
   useEffect(() => {
     loadOpportunities();
     loadSavedJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userID, selectedCareerPath]);
 
   const loadSavedJobs = () => {

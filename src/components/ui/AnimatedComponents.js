@@ -476,7 +476,7 @@ export const EmptyState = ({
   );
 };
 
-export default {
+const AnimatedComponents = {
   Skeleton,
   CardSkeleton,
   ListSkeleton,
@@ -495,3 +495,4 @@ export default {
   AnimatedSection,
   EmptyState,
 };
+export default AnimatedComponents;

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../App';
 import {
-  File, ArrowLeft, CheckCircle, AlertCircle,
+  ArrowLeft, CheckCircle, AlertCircle,
   RefreshCw, ChevronDown, ChevronUp, TrendingUp, Target,
-  Zap, Book, Star, Award, Briefcase, Clock, Sparkles, BarChart3,
+  Book, Briefcase, Sparkles, BarChart3,
   FileText, Lightbulb, ArrowRight, CheckCircle2, Download,
   Shield, User, XCircle, ScanLine
 } from 'lucide-react';
@@ -122,7 +122,8 @@ const computeATSScore = (resumeData, user) => {
   // ATS Format (15 pts)
   const textLength = text.length;
   const lengthScore = textLength > 300 && textLength < 12000 ? 5 : 2;
-  const hasCleanText = (text.match(/[^\x00-\x7F]/g) || []).length < 20;
+  // eslint-disable-next-line no-control-regex
+  const hasCleanText = (text.match(/[^\u0000-\u007F]/g) || []).length < 20;
   const cleanScore = hasCleanText ? 5 : 2;
   const fileTypeScore = resumeData?.type === 'application/pdf' ? 5 : 3;
   const formatScore = lengthScore + cleanScore + fileTypeScore;

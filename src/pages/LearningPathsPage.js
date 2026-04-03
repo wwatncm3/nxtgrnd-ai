@@ -32,6 +32,7 @@ const LearningPathsPage = ({ setStage }) => {
   useEffect(() => {
     loadLearningPaths();
     loadProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userID, selectedCareerPath]);
 
   const loadProgress = () => {

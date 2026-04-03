@@ -139,14 +139,6 @@ function App() {
     setStage(prevStage => prevStage + 1);
   };
 
-  const handleCareerPathSelect = (path) => {
-    setSelectedCareerPath(path);
-    setUser(prev => ({
-      ...prev,
-      selectedCareerPath: path
-    }));
-  };
-
   const renderContent = () => {
     switch (stage) {
       case 1: // Account Creation

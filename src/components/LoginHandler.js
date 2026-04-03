@@ -15,7 +15,7 @@ import {
   cleanupNonScopedKeys,
   storageUtils
 } from '../utils/authUtils';
-import { userStateService, storageService } from '../services/storageService';
+import { userStateService } from '../services/storageService';
 
 export const useLoginHandler = () => {
   
@@ -41,12 +41,11 @@ export const useLoginHandler = () => {
       }
 
       // Step 2: Check if user is already authenticated
-      let currentUser;
       let userAttributes;
       let needsSignIn = true;
 
       try {
-        currentUser = await getCurrentUser();
+        await getCurrentUser();
         userAttributes = await fetchUserAttributes();
 
         // If we get here, user is already authenticated
@@ -79,7 +78,7 @@ export const useLoginHandler = () => {
         });
 
         // Get user data after sign in
-        currentUser = await getCurrentUser();
+        await getCurrentUser();
         userAttributes = await fetchUserAttributes();
       }
 

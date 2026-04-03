@@ -6,7 +6,6 @@ import { storageUtils } from '../utils/authUtils';
 const TooltipContext = createContext();
 
 const TOOLTIP_STORAGE_KEY = 'onboarding_tooltips_seen';
-const NEW_USER_WINDOW_MS = 5 * 60 * 1000; // 5 minutes - consider user "new" if account created within this window
 
 // Tooltip configurations for each page/stage
 export const TOOLTIP_CONFIGS = {
@@ -146,7 +145,7 @@ export const TOOLTIP_CONFIGS = {
 
 // Provider component
 export const TooltipProvider = ({ children, userId }) => {
-  const [seenTooltips, setSeenTooltips] = useState({});
+  const [, setSeenTooltips] = useState({});
   const [activeTooltip, setActiveTooltip] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isNewUser, setIsNewUser] = useState(true); // Default to true, will be set to false if tooltips exist

@@ -81,6 +81,7 @@ const NotificationBell = ({ setStage }) => {
   // Load notifications on mount
   useEffect(() => {
     loadNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userID, user?.selectedCareerPath]);
 
   // Click outside to close

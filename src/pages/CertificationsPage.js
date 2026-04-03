@@ -29,6 +29,7 @@ const CertificationsPage = ({ setStage }) => {
   useEffect(() => {
     loadCertifications();
     loadProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userID, selectedCareerPath]);
 
   const loadProgress = () => {

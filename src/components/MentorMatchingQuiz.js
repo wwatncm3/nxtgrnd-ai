@@ -9,7 +9,7 @@ import {
   Sprout, TreePine, Mountain, Globe, Handshake, Dumbbell, Rocket
 } from 'lucide-react';
 import { UserContext } from '../App';
-import { storageService, STORAGE_KEYS } from '../services/storageService';
+import { storageService } from '../services/storageService';
 import API_CONFIG from '../config/api';
 
 const MentorMatchingQuiz = ({ setStage, onBack }) => {
@@ -17,7 +17,6 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [mentorResults, setMentorResults] = useState(null);
-  const [userGeolocation, setUserGeolocation] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({
     linkedinUrl: '',
     preferredCompanies: [],
@@ -195,7 +194,6 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
   // These represent search profiles - clicking will search LinkedIn for real professionals
   const generateAIMentors = (criteria) => {
     const careerTitle = user?.selectedCareerPath?.title || '';
-    const careerLower = careerTitle.toLowerCase();
 
     // Career-specific company pools
     const careerCompanyPools = {

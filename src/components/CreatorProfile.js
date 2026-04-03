@@ -36,6 +36,7 @@ const CreatorProfile = ({ setStage }) => {
   // Load profile data on mount
   useEffect(() => {
     loadCreatorProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userID]);
   
   const loadCreatorProfile = async () => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
   Compass, ChevronLeft, GitBranch, Briefcase,
-  TrendingUp, Award, RefreshCw, Clock, BookOpen, Book,
+  Award, RefreshCw, Clock, BookOpen,
   AlertCircle, User, RotateCcw, Info, Calendar, BarChart3, Target
 } from 'lucide-react';
 import { UserContext } from '../App';
@@ -10,8 +10,7 @@ import { storageService } from '../services/storageService';
 import analytics from '../utils/analytics';
 import CareerScenarioSimulator from '../components/CareerScenarioSimulator';
 import SubscriptionGate from '../components/SubscriptionGate';
-import API_CONFIG from '../config/api';
-import { LoadingSpinner, FullPageLoader } from '../components/ui/AnimatedComponents';
+import { FullPageLoader } from '../components/ui/AnimatedComponents';
 
 // Import extracted components and services
 import {
@@ -20,7 +19,6 @@ import {
   MarketInsights,
   generateEnhancedRecommendations,
   generateDefaultTimeline,
-  generateFallbackSimulation,
   generateLocalFallbackPaths
 } from '../components/career-compass';
 
@@ -32,10 +30,8 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
   const [selectedPath, setSelectedPath] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error] = useState(null);
   const [enhancedData, setEnhancedData] = useState(null);
-  const [simulationResults, setSimulationResults] = useState(null);
-  const [isSimulationLoading, setIsSimulationLoading] = useState(false);
 
   // State for refresh functionality
   const [showRefreshOptions, setShowRefreshOptions] = useState(false);
@@ -172,128 +168,8 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
     if (user?.userID) {
       fetchEnhancedData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userID]);
-
-  // Run simulation function
-  const runSimulation = async (scenarioType) => {
-    if (!selectedPath) return;
-
-    setIsSimulationLoading(true);
-    analytics.trackEvent('career_simulation_run', {
-      careerPath: selectedPath.title,
-      scenarioType: scenarioType
-    });
-
-    try {
-      const simulationPayload = {
-        userId: user?.userID,
-        careerPath: selectedPath.title,
-        scenarioType,
-        experienceLevel: user?.experienceLevel || 'entry',
-        skills: selectedPath.requiredSkills || [],
-        currentSalary: parseInt(selectedPath.salaryRange?.split('-')?.[0]?.replace(/\D/g, '') || '50000') || 50000,
-        timeframe: '5years',
-        includeDetails: true
-      };
-
-      const response = await fetch(
-        API_CONFIG.recommendations.generate(),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            httpMethod: 'POST',
-            path: '/recommendations/generate',
-            body: JSON.stringify({
-              requestType: 'career_simulation',
-              ...simulationPayload
-            })
-          })
-        }
-      );
-
-      const data = await response.json();
-      const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
-
-      setSimulationResults(parsedBody.recommendations?.simulation || generateFallbackSimulation(selectedPath, scenarioType));
-    } catch (error) {
-      console.error('Simulation error:', error);
-      setSimulationResults(generateFallbackSimulation(selectedPath, scenarioType));
-    } finally {
-      setIsSimulationLoading(false);
-    }
-  };
-
-  const renderSimulationResults = () => {
-    if (!simulationResults) return null;
-
-    return (
-      <div className="mt-6 border-t pt-6">
-        <h4 className="text-lg font-semibold mb-4">Simulation Results</h4>
-
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-blue-50 to-teal-50 p-4 rounded-xl border border-blue-100">
-            <h5 className="font-medium mb-2 text-blue-900">Career Impact</h5>
-            <p className="text-gray-700">{simulationResults.impact}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-green-50 p-4 rounded-xl">
-              <h5 className="font-medium mb-2">Projected Salary Increase</h5>
-              <p className="text-2xl font-bold text-green-600">
-                +{simulationResults.salaryIncrease}%
-              </p>
-            </div>
-            <div className="bg-teal-50 p-4 rounded-xl">
-              <h5 className="font-medium mb-2">Time Investment</h5>
-              <p className="text-2xl font-bold text-teal-600">
-                {simulationResults.timeInvestment}
-              </p>
-            </div>
-          </div>
-
-          {simulationResults.milestones && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-              <h5 className="font-medium mb-3 text-gray-900">Key Milestones</h5>
-              <div className="space-y-3">
-                {simulationResults.milestones.map((milestone, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="p-2 bg-gradient-to-br from-blue-100 to-teal-100 rounded-xl">
-                      {milestone.type === 'certification' ? (
-                        <Award className="h-4 w-4 text-blue-900" />
-                      ) : milestone.type === 'skill' ? (
-                        <Book className="h-4 w-4 text-blue-900" />
-                      ) : (
-                        <Briefcase className="h-4 w-4 text-blue-900" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{milestone.title}</p>
-                      <p className="text-sm text-gray-500">{milestone.timeline}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {simulationResults.recommendations && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-              <h5 className="font-medium mb-3 text-gray-900">Recommendations</h5>
-              <ul className="space-y-2">
-                {simulationResults.recommendations.map((rec, index) => (
-                  <li key={index} className="text-sm text-gray-700 flex items-start gap-2">
-                    <span className="text-teal-500">•</span>
-                    {rec}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   // Render timeline section
   const renderTimeline = () => {

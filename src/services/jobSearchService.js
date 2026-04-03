@@ -63,7 +63,7 @@ const fetchRemotiveJobs = async (keywords, category = '') => {
 
     // Filter by keywords — split on "/" so "DevOps / SRE" matches either term
     const keywordParts = keywords
-      ? keywords.split(/[\/,]/).map(s => s.trim().toLowerCase()).filter(Boolean)
+      ? keywords.split(/[/,]/).map(s => s.trim().toLowerCase()).filter(Boolean)
       : [];
     const filteredJobs = keywordParts.length
       ? jobs.filter(job => {
@@ -107,7 +107,7 @@ const fetchArbeitnowJobs = async (keywords) => {
 
     // Filter by keywords — split on "/" so "DevOps / SRE" matches either term
     const keywordParts = keywords
-      ? keywords.split(/[\/,]/).map(s => s.trim().toLowerCase()).filter(Boolean)
+      ? keywords.split(/[/,]/).map(s => s.trim().toLowerCase()).filter(Boolean)
       : [];
     const filteredJobs = keywordParts.length
       ? jobs.filter(job => {
