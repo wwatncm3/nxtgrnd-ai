@@ -199,34 +199,34 @@ function OnboardingFlow({ onNext }) {
         </div>
 
         {/* Stats Section with Icons */}
-        <div className="flex justify-center items-center gap-6 md:gap-12 mb-12 animate-slideUp delay-400">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-blue-600" />
+        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-12 mb-12 animate-slideUp delay-400 px-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Users className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-blue-600">2000+</div>
-              <div className="text-sm text-gray-500">Professionals</div>
+              <div className="text-xl md:text-2xl font-bold text-blue-600">2000+</div>
+              <div className="text-xs md:text-sm text-gray-500">Professionals</div>
             </div>
           </div>
-          <div className="h-12 w-px bg-gray-200"></div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-              <Compass className="w-6 h-6 text-teal-600" />
+          <div className="h-12 w-px bg-gray-200 hidden md:block"></div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Compass className="w-5 h-5 md:w-6 md:h-6 text-teal-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-teal-600">100+</div>
-              <div className="text-sm text-gray-500">Career Paths</div>
+              <div className="text-xl md:text-2xl font-bold text-teal-600">100+</div>
+              <div className="text-xs md:text-sm text-gray-500">Career Paths</div>
             </div>
           </div>
-          <div className="h-12 w-px bg-gray-200"></div>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <Check className="w-6 h-6 text-green-600" />
+          <div className="h-12 w-px bg-gray-200 hidden md:block"></div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Check className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">98%</div>
-              <div className="text-sm text-gray-500">Success Rate</div>
+              <div className="text-xl md:text-2xl font-bold text-green-600">98%</div>
+              <div className="text-xs md:text-sm text-gray-500">Success Rate</div>
             </div>
           </div>
         </div>
@@ -1156,19 +1156,19 @@ function OnboardingFlow({ onNext }) {
             </button>
           )}
           {currentSection === 'account' && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={() => handleViewTransition('landing')}
-                className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200
-                         hover:bg-gray-50 rounded-lg"
+                className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 transition-all duration-200
+                         hover:bg-gray-50 rounded-lg text-sm"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
-                Back to Home
+                Back
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden sm:inline">|</span>
               <button
                 onClick={() => handleViewTransition('login')}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium transition-colors duration-200"
               >
                 Already have an account? Sign In
               </button>
@@ -1528,7 +1528,7 @@ function OnboardingFlow({ onNext }) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-teal-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
             {/* Progress indicator for signup flow */}
             {view === 'signup' && (
               <div className="mb-8 animate-slideDown">
