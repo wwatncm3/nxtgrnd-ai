@@ -5,6 +5,13 @@ const awsConfig = {
       userPoolWebClientId: '82vo982u03f2ou1htfvsagf43',
       mandatorySignIn: false,
       authenticationFlowType: 'USER_PASSWORD_AUTH',
+      oauth: {
+        domain: 'us-east-1nzs87k3xt.auth.us-east-1.amazoncognito.com',
+        scope: ['openid', 'email', 'profile'],
+        redirectSignIn: typeof window !== 'undefined' ? window.location.origin + '/' : 'http://localhost:3000/',
+        redirectSignOut: typeof window !== 'undefined' ? window.location.origin + '/' : 'http://localhost:3000/',
+        responseType: 'code'
+      }
     },
     DynamoDB: {
       region: 'us-east-1',

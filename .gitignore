@@ -29,3 +29,7 @@ yarn-error.log*
 # video production
 /video/
 .claude/worktrees/
+
+# Local Netlify folder
+.netlify
+.vercel

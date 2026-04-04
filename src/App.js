@@ -88,12 +88,12 @@ function App() {
       // FIX: Corrected the function name to match the import (fetchUserAttributes)
       const userAttributes = await fetchUserAttributes();
 
-      // Convert Cognito attributes to user object
+      // Convert Cognito attributes to user object (handles both email/password and OAuth users)
       const baseUserData = {
         username: cognitoUser.username,
         email: userAttributes.email,
-        firstName: userAttributes.given_name,
-        lastName: userAttributes.family_name,
+        firstName: userAttributes.given_name || userAttributes.name?.split(' ')[0] || '',
+        lastName: userAttributes.family_name || userAttributes.name?.split(' ').slice(1).join(' ') || '',
       };
 
       // Load stored preferences (including avatar) and merge with Cognito data
