@@ -1,5 +1,6 @@
 import React, { useState, createContext, useEffect } from 'react';
-import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
+import { Hub } from '@aws-amplify/core';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
@@ -38,17 +39,38 @@ function App() {
 
   // Check authentication status on app load
   useEffect(() => {
-    // localStorage.clear();
-    // sessionStorage.clear();
     analytics.init();
-    checkAuthState();
+
+    // Listen for OAuth sign-in completion via Amplify Hub
+    const hubListener = Hub.listen('auth', ({ payload }) => {
+      if (payload.event === 'signInWithRedirect') {
+        // OAuth token exchange completed — now safe to check auth
+        checkAuthState();
+      }
+      if (payload.event === 'signInWithRedirect_failure') {
+        console.error('OAuth sign-in failed:', payload.data);
+        setStage(1);
+        setIsLoading(false);
+      }
+    });
+
+    // Detect if this is an OAuth callback (URL has ?code= from Cognito redirect)
+    const params = new URLSearchParams(window.location.search);
+    const isOAuthCallback = params.has('code') && params.has('state');
+
+    if (isOAuthCallback) {
+      // OAuth callback — Amplify is exchanging the code for tokens in the background.
+      // Do NOT call checkAuthState yet — it will fail because tokens aren't ready.
+      // The Hub listener above will fire 'signInWithRedirect' when tokens are ready.
+      console.log('OAuth callback detected — waiting for token exchange...');
+    } else {
+      // Normal page load — check auth state immediately
+      checkAuthState();
+    }
 
     // Handle Stripe checkout return
-    const params = new URLSearchParams(window.location.search);
     if (params.get('subscription') === 'success') {
-      // Clear the query param from URL
       window.history.replaceState({}, '', window.location.pathname);
-      // Will be picked up by SubscriptionProvider's refreshSubscription
       setStage(5);
     }
 
@@ -59,6 +81,7 @@ function App() {
     window.addEventListener('storage-quota-exceeded', handleQuotaExceeded);
 
     return () => {
+      hubListener();
       analytics.cleanup();
       window.removeEventListener('storage-quota-exceeded', handleQuotaExceeded);
     };
@@ -120,9 +143,21 @@ function App() {
       firstName: completeUserData.firstName,
       lastName: completeUserData.lastName
     });
-      // Instead of going directly to dashboard, start at the beginning of the flow
-      setStage(1);
+      // Authenticated user — route based on profile completeness
+      if (completeUserData.selectedCareerPath) {
+        // Existing user with career path → dashboard
+        setStage(5);
+      } else if (completeUserData.pathType || completeUserData.careerStage) {
+        // Partially completed onboarding → interest selection
+        setStage(2);
+      } else {
+        // New OAuth user (no stored data) → onboarding flow
+        // Use stage 2 (interest selection) since they already have an account via Google
+        setStage(2);
+      }
     } catch (error) {
+      // Clear any stale/corrupt auth session so Cognito stops returning 400
+      try { await signOut(); } catch (_) { /* no session to clear */ }
       setStage(1); // Go to login/signup if not authenticated
     } finally {
       setIsLoading(false);
