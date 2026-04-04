@@ -7,9 +7,9 @@ const awsConfig = {
       authenticationFlowType: 'USER_PASSWORD_AUTH',
       oauth: {
         domain: 'us-east-1nzs87k3xt.auth.us-east-1.amazoncognito.com',
-        scope: ['openid', 'email', 'profile', 'aws.cognito.signin.user.admin'],
-        redirectSignIn: 'https://nxtgrnd-ai.vercel.app/',
-        redirectSignOut: 'https://nxtgrnd-ai.vercel.app/',
+        scope: ['openid', 'email', 'profile'],
+        redirectSignIn: typeof window !== 'undefined' ? window.location.origin + '/' : 'http://localhost:3000/',
+        redirectSignOut: typeof window !== 'undefined' ? window.location.origin + '/' : 'http://localhost:3000/',
         responseType: 'code'
       }
     },

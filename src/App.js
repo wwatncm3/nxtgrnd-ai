@@ -1,5 +1,5 @@
 import React, { useState, createContext, useEffect } from 'react';
-import { getCurrentUser, fetchUserAttributes, fetchAuthSession, signOut } from '@aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
@@ -38,36 +38,17 @@ function App() {
 
   // Check authentication status on app load
   useEffect(() => {
+    // localStorage.clear();
+    // sessionStorage.clear();
     analytics.init();
-
-    const params = new URLSearchParams(window.location.search);
-
-    // Detect if this is an OAuth callback (URL has ?code= from Cognito redirect)
-    const isOAuthCallback = params.has('code') && params.has('state');
-
-    if (isOAuthCallback) {
-      // OAuth callback — Amplify auto-handles code exchange during configure() in index.js.
-      // By the time this useEffect runs, tokens should already be in storage.
-      // checkAuthState will: getCurrentUser → fetchUserAttributes → route to correct stage.
-      // If it fails, the user needs to clear browser data and retry (stale tokens from prev attempts).
-      checkAuthState().catch(() => {
-        window.history.replaceState({}, '', window.location.pathname);
-        setStage(1);
-        setIsLoading(false);
-      });
-    } else {
-      // Normal page load — check auth state immediately
-      checkAuthState().catch(() => {
-        // Not authenticated — clear stale session and show login
-        signOut().catch(() => {});
-        setStage(1);
-        setIsLoading(false);
-      });
-    }
+    checkAuthState();
 
     // Handle Stripe checkout return
+    const params = new URLSearchParams(window.location.search);
     if (params.get('subscription') === 'success') {
+      // Clear the query param from URL
       window.history.replaceState({}, '', window.location.pathname);
+      // Will be picked up by SubscriptionProvider's refreshSubscription
       setStage(5);
     }
 
@@ -104,29 +85,8 @@ function App() {
   const checkAuthState = async () => {
     try {
       const cognitoUser = await getCurrentUser();
-
-      // Try fetchUserAttributes first (works for email/password users)
-      // Fall back to ID token decoding (required for OAuth/Google users)
-      let userAttributes;
-      try {
-        userAttributes = await fetchUserAttributes();
-      } catch (attrError) {
-        // OAuth users may not have admin scope — decode ID token instead
-        const session = await fetchAuthSession();
-        const idToken = session.tokens?.idToken;
-        if (idToken) {
-          const payload = idToken.payload;
-          userAttributes = {
-            email: payload.email,
-            given_name: payload.given_name,
-            family_name: payload.family_name,
-            name: payload.name,
-            sub: payload.sub
-          };
-        } else {
-          throw attrError; // No token available — re-throw
-        }
-      }
+      // FIX: Corrected the function name to match the import (fetchUserAttributes)
+      const userAttributes = await fetchUserAttributes();
 
       // Convert Cognito attributes to user object (handles both email/password and OAuth users)
       const baseUserData = {
@@ -160,21 +120,12 @@ function App() {
       firstName: completeUserData.firstName,
       lastName: completeUserData.lastName
     });
-      // Authenticated user — route based on profile completeness
-      if (completeUserData.selectedCareerPath) {
-        // Existing user with career path → dashboard
-        setStage(5);
-      } else if (completeUserData.pathType || completeUserData.careerStage) {
-        // Partially completed onboarding → interest selection
-        setStage(2);
-      } else {
-        // New OAuth user (no stored data) → onboarding flow
-        // Use stage 2 (interest selection) since they already have an account via Google
-        setStage(2);
-      }
+      // Instead of going directly to dashboard, start at the beginning of the flow
+      setStage(1);
     } catch (error) {
-      // Re-throw so OAuth retry loop can catch without side effects
-      throw error;
+      setStage(1); // Go to login/signup if not authenticated
+    } finally {
+      setIsLoading(false);
     }
   };
 
