@@ -120,8 +120,9 @@ function App() {
       firstName: completeUserData.firstName,
       lastName: completeUserData.lastName
     });
-      // Instead of going directly to dashboard, start at the beginning of the flow
-      setStage(1);
+      // Authenticated user — go to dashboard (stage 5)
+      // If they haven't completed onboarding yet, they can be routed from there
+      setStage(5);
     } catch (error) {
       // Clear any stale/corrupt auth session so Cognito stops returning 400
       try { await signOut(); } catch (_) { /* no session to clear */ }
