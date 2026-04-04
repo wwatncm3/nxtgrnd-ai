@@ -13,6 +13,19 @@ import { storageService } from '../services/storageService';
 import analytics from '../utils/analytics';
 import { fetchWithTimeout } from '../config/api';
 
+const handleGoogleSignIn = async () => {
+  try {
+    await signInWithRedirect({ provider: 'Google' });
+  } catch (error) {
+    if (error.name === 'UserAlreadyAuthenticatedException') {
+      // User is already signed in — just reload so App.js picks up the session
+      window.location.reload();
+    } else {
+      console.error('Google sign-in error:', error);
+    }
+  }
+};
+
 function OnboardingFlow({ onNext }) {
   const { setUser } = useContext(UserContext);
   const { handleLogin } = useLoginHandler();
@@ -366,7 +379,7 @@ function OnboardingFlow({ onNext }) {
             {/* Google Sign In */}
             <button
               type="button"
-              onClick={() => signInWithRedirect({ provider: 'Google' })}
+              onClick={handleGoogleSignIn}
               className="w-full h-14 flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl
                        hover:border-gray-300 hover:shadow-md transition-all duration-200 hover:scale-[1.01]"
             >
@@ -421,7 +434,7 @@ function OnboardingFlow({ onNext }) {
           <div className="mb-6 animate-slideUp">
             <button
               type="button"
-              onClick={() => signInWithRedirect({ provider: 'Google' })}
+              onClick={handleGoogleSignIn}
               className="w-full h-14 flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl
                        hover:border-gray-300 hover:shadow-md transition-all duration-200 hover:scale-[1.01]"
             >
