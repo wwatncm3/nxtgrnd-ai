@@ -1,5 +1,6 @@
 import React, { useState, createContext, useEffect } from 'react';
 import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
+import { Hub } from 'aws-amplify';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
@@ -41,10 +42,35 @@ function App() {
     // localStorage.clear();
     // sessionStorage.clear();
     analytics.init();
-    checkAuthState();
+
+    // Listen for OAuth sign-in completion
+    const hubListener = Hub.listen('auth', ({ payload }) => {
+      if (payload.event === 'signInWithRedirect') {
+        // OAuth completed — check auth state now
+        checkAuthState();
+      }
+      if (payload.event === 'signInWithRedirect_failure') {
+        console.error('OAuth sign-in failed:', payload.data);
+        setStage(1);
+        setIsLoading(false);
+      }
+    });
+
+    // Check if this is an OAuth callback (URL has ?code= param)
+    const params = new URLSearchParams(window.location.search);
+    const isOAuthCallback = params.has('code') && params.has('state');
+
+    if (isOAuthCallback) {
+      // Don't call checkAuthState yet — wait for Hub 'signInWithRedirect' event
+      // Amplify is still exchanging the code for tokens
+      // Clean the URL params
+      window.history.replaceState({}, '', window.location.pathname);
+    } else {
+      // Normal page load — check auth state immediately
+      checkAuthState();
+    }
 
     // Handle Stripe checkout return
-    const params = new URLSearchParams(window.location.search);
     if (params.get('subscription') === 'success') {
       // Clear the query param from URL
       window.history.replaceState({}, '', window.location.pathname);
