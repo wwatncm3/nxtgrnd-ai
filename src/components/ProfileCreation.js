@@ -10,6 +10,7 @@ import { useLoginHandler } from './LoginHandler';
 import { STORAGE_KEYS } from '../utils/authUtils';
 import { storageService } from '../services/storageService';
 import analytics from '../utils/analytics';
+import { fetchWithTimeout } from '../config/api';
 
 function OnboardingFlow({ onNext }) {
   const { setUser } = useContext(UserContext);
@@ -1355,7 +1356,7 @@ function OnboardingFlow({ onNext }) {
           }),
         };
   
-        const response = await fetch('https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations', {
+        const response = await fetchWithTimeout('https://3ub6swm509.execute-api.us-east-1.amazonaws.com/dev/recommendations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Briefcase, Clock } from 'lucide-react';
-import API_CONFIG from '../../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../../config/api';
 import { LoadingSpinner } from '../ui/AnimatedComponents';
 
 const CareerTimeline = ({ path, onMilestoneSelect }) => {
@@ -28,7 +28,7 @@ const CareerTimeline = ({ path, onMilestoneSelect }) => {
 
         console.log('CareerTimeline: Sending milestone request with payload:', payload);
 
-        const response = await fetch(
+        const response = await fetchWithTimeout(
           API_CONFIG.recommendations.generate(),
           {
             method: 'POST',

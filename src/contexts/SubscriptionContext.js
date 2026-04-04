@@ -3,7 +3,7 @@ import { UserContext } from '../App';
 import { TIERS, TIER_FEATURES, BETA_CUTOFF_DATE, ADMIN_EMAILS } from '../config/subscription';
 import { getUserSubscription, updateUserSubscription } from '../services/dynamoService';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 
 const SubscriptionContext = createContext();
 
@@ -53,7 +53,7 @@ export const SubscriptionProvider = ({ children }) => {
         const betaEndpoint = API_CONFIG.subscription.checkBetaAccess();
         if (betaEndpoint) {
           try {
-            const betaRes = await fetch(`${betaEndpoint}?email=${encodeURIComponent(userId)}`);
+            const betaRes = await fetchWithTimeout(`${betaEndpoint}?email=${encodeURIComponent(userId)}`);
             const betaData = await betaRes.json();
             isBetaApproved = betaData.approved === true;
           } catch (err) {

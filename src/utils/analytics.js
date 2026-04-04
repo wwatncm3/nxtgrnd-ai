@@ -1,4 +1,6 @@
 // src/utils/analytics.js - Updated for API Gateway endpoint
+import { fetchWithTimeout } from '../config/api';
+
 class Analytics {
   constructor() {
     this.isInitialized = false;
@@ -70,7 +72,7 @@ class Analytics {
     const events = this.eventQueue.splice(0, 10); // Send up to 10 events at a time
     
     try {
-      const response = await fetch(this.apiEndpoint, {
+      const response = await fetchWithTimeout(this.apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

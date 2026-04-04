@@ -4,7 +4,7 @@ import { UserContext } from '../App';
 import  skillsData  from '../data/skills';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import { storageService } from '../services/storageService';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 import { LoadingSpinner } from './ui/AnimatedComponents';
 
 const CareerInterests = ({ onComplete, initialData = {} }) => {
@@ -138,9 +138,9 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
         filename: `${user.userID}/resume/${file.name}`
       });
 
-      const response = await fetch(API_CONFIG.files.upload(), {
+      const response = await fetchWithTimeout(API_CONFIG.files.upload(), {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -149,7 +149,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
           fileContent: base64Content,
           fileType: file.type
         }),
-      });
+      }, 60000);
 
       const responseData = await response.json();
       console.log('Upload response:', {
@@ -240,7 +240,7 @@ const CareerInterests = ({ onComplete, initialData = {} }) => {
 
       console.log('Sending preferences payload:', preferencesPayload);
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         API_CONFIG.dynamicOptions.get(),
         {
           method: 'POST',

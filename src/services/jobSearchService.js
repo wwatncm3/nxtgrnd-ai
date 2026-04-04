@@ -1,5 +1,6 @@
 // Job Search Service
 // Fetches real job listings from multiple job board APIs and aggregates results
+import { fetchWithTimeout } from '../config/api';
 
 // Job board configurations
 const JOB_BOARDS = {
@@ -55,7 +56,7 @@ const fetchRemotiveJobs = async (keywords, category = '') => {
       url += `?category=${encodeURIComponent(category)}`;
     }
 
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, {}, 30000);
     if (!response.ok) throw new Error('Remotive API error');
 
     const data = await response.json();
@@ -99,7 +100,7 @@ const fetchRemotiveJobs = async (keywords, category = '') => {
 // Fetch jobs from Arbeitnow (free API)
 const fetchArbeitnowJobs = async (keywords) => {
   try {
-    const response = await fetch(JOB_BOARDS.ARBEITNOW.baseUrl);
+    const response = await fetchWithTimeout(JOB_BOARDS.ARBEITNOW.baseUrl, {}, 30000);
     if (!response.ok) throw new Error('Arbeitnow API error');
 
     const data = await response.json();

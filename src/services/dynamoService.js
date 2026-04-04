@@ -4,7 +4,7 @@
 
 import { fetchAuthSession } from 'aws-amplify/auth';
 import awsConfig from '../aws-config';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 
 // Get the user data API base URL (derived from dynamic-options API)
 const getUserDataApiUrl = () => {
@@ -57,7 +57,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
 
   try {
     const baseUrl = getUserDataApiUrl();
-    const response = await fetch(`${baseUrl}${endpoint}`, options);
+    const response = await fetchWithTimeout(`${baseUrl}${endpoint}`, options, 30000);
     const data = await response.json();
 
     if (!response.ok) {
@@ -397,9 +397,9 @@ export const checkDynamoConnection = async () => {
   try {
     // Simple health check
     const baseUrl = getUserDataApiUrl();
-    const response = await fetch(`${baseUrl.replace('/user', '')}/health`, {
+    const response = await fetchWithTimeout(`${baseUrl.replace('/user', '')}/health`, {
       method: 'GET'
-    });
+    }, 30000);
     return response.ok;
   } catch {
     return false;

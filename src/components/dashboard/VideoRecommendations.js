@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Play, ExternalLink, Eye, ThumbsUp, RefreshCw, ChevronRight, AlertCircle } from 'lucide-react';
 import { UserContext } from '../../App';
+import { fetchWithTimeout } from '../../config/api';
 
 const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY;
 
@@ -140,7 +141,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
           key: YOUTUBE_API_KEY
         });
 
-      const searchResponse = await fetch(searchUrl);
+      const searchResponse = await fetchWithTimeout(searchUrl);
 
       if (!searchResponse.ok) {
         const errorData = await searchResponse.json();
@@ -167,7 +168,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
           key: YOUTUBE_API_KEY
         });
 
-      const statsResponse = await fetch(statsUrl);
+      const statsResponse = await fetchWithTimeout(statsUrl);
       const statsData = await statsResponse.json();
 
       // Create a map of video stats

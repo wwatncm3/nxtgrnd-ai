@@ -3,7 +3,7 @@ import { ArrowLeft, Check, Crown, Building2, Zap, Mail } from 'lucide-react';
 import { UserContext } from '../App';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { STRIPE_CONFIG, PRO_FEATURES_LIST } from '../config/subscription';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 
 const PricingPage = () => {
   const { user, setStage } = useContext(UserContext);
@@ -19,11 +19,11 @@ const PricingPage = () => {
 
     setPortalLoading(true);
     try {
-      const response = await fetch(portalEndpoint, {
+      const response = await fetchWithTimeout(portalEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user?.email })
-      });
+      }, 30000);
       const data = await response.json();
       if (data.url) {
         window.location.href = data.url;

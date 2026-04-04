@@ -7,7 +7,7 @@ import {
 import { UserContext } from '../App';
 import { storageUtils } from '../utils/authUtils';
 import analytics from '../utils/analytics';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 import { FullPageLoader } from '../components/ui/AnimatedComponents';
 import { getDashboardFromSession } from '../components/dashboard';
 import { usePageTooltip } from '../components/OnboardingTooltip';
@@ -85,7 +85,7 @@ const LearningPathsPage = ({ setStage }) => {
     if (!selectedCareerPath) return [];
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         API_CONFIG.recommendations.generate(),
         {
           method: 'POST',

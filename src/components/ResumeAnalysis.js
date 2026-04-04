@@ -11,7 +11,7 @@ import { useAchievements } from './AchievementSystem';
 import * as lucide from 'lucide-react';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import analytics from '../utils/analytics';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 import { FullPageLoader } from './ui/AnimatedComponents';
 
 const ANALYSIS_CACHE_KEY = 'resumeAnalysisCache';
@@ -49,7 +49,7 @@ const getStoredAnalysis = (userId, resumePath) => {
 
 const downloadResumeFromS3 = async (path) => {
   try {
-    const response = await fetch(API_CONFIG.files.download(), {
+    const response = await fetchWithTimeout(API_CONFIG.files.download(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: path }),

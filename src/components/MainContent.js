@@ -595,10 +595,10 @@ const MainContent = ({ setStage }) => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                      Welcome {user?.firstName ? `${user.firstName}` : 'back'} to your {selectedCareerPath?.title} Dashboard!
+                      Welcome {user?.firstName ? `${user.firstName}` : 'back'} to your {selectedCareerPath?.title || 'Career'} Dashboard!
                     </h1>
                     <p className="mt-1 text-sm sm:text-base text-gray-600">
-                      Your personalized roadmap to becoming a {selectedCareerPath?.title}
+                      Your personalized roadmap to becoming a {selectedCareerPath?.title || 'professional'}
                     </p>
                   </div>
                   <button

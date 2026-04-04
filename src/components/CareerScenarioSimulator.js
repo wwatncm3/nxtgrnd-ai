@@ -4,7 +4,7 @@ import {
   DollarSign, Target, CheckCircle, ArrowUpRight, BarChart3,
   Lightbulb, RefreshCw, Users, Zap
 } from 'lucide-react';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 import { LoadingSpinner } from './ui/AnimatedComponents';
 
 const CareerScenarioSimulator = ({ selectedPath, user, onClose }) => {
@@ -104,7 +104,7 @@ const CareerScenarioSimulator = ({ selectedPath, user, onClose }) => {
         includeDetails: true
       };
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         API_CONFIG.recommendations.generate(),
         {
           method: 'POST',
@@ -117,7 +117,8 @@ const CareerScenarioSimulator = ({ selectedPath, user, onClose }) => {
               ...simulationPayload
             })
           })
-        }
+        },
+        120000
       );
 
       const data = await response.json();

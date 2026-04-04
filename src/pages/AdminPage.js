@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { ArrowLeft, UserPlus, Trash2, RefreshCw, Shield, Check, X } from 'lucide-react';
 import { UserContext } from '../App';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 
 const AdminPage = ({ setStage }) => {
   const { user } = useContext(UserContext);
@@ -25,7 +25,7 @@ const AdminPage = ({ setStage }) => {
     if (!betaEndpoint) return;
     setLoading(true);
     try {
-      const res = await fetch(`${betaEndpoint}/list?adminEmail=${encodeURIComponent(user?.email)}`);
+      const res = await fetchWithTimeout(`${betaEndpoint}/list?adminEmail=${encodeURIComponent(user?.email)}`);
       const data = await res.json();
       setBetaUsers(data.users || []);
     } catch (err) {
@@ -44,7 +44,7 @@ const AdminPage = ({ setStage }) => {
     if (!newEmail.trim()) return;
     setActionLoading(true);
     try {
-      const res = await fetch(betaEndpoint, {
+      const res = await fetchWithTimeout(betaEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,7 +72,7 @@ const AdminPage = ({ setStage }) => {
     if (!window.confirm(`Revoke beta access for ${email}?`)) return;
     setActionLoading(true);
     try {
-      const res = await fetch(betaEndpoint, {
+      const res = await fetchWithTimeout(betaEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

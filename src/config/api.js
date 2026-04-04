@@ -127,10 +127,10 @@ export const uploadFile = async (formData) => {
       throw new Error('Files API endpoint not configured');
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       body: formData
-    });
+    }, 60000);
 
     if (!response.ok) {
       throw new Error(`File upload failed: ${response.status} ${response.statusText}`);
@@ -151,11 +151,11 @@ export const downloadFile = async (payload) => {
       throw new Error('Files API endpoint not configured');
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    });
+    }, 30000);
 
     if (!response.ok) {
       throw new Error(`File download failed: ${response.status} ${response.statusText}`);
@@ -176,11 +176,11 @@ export const getDynamicOptions = async (payload) => {
       throw new Error('Dynamic Options API endpoint not configured');
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    });
+    }, 30000);
 
     if (!response.ok) {
       throw new Error(`Dynamic options request failed: ${response.status} ${response.statusText}`);

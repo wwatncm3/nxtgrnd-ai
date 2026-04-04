@@ -1,5 +1,5 @@
 // Dashboard API Services
-import API_CONFIG from '../../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../../config/api';
 import { calculateMatchScore } from './DashboardUtils';
 import { getJobRecommendations, getJobBoardSearchUrls } from '../../services/jobSearchService';
 
@@ -25,7 +25,7 @@ export const generateLearningPaths = async (user, selectedCareerPath) => {
       }
     };
 
-    const response = await fetch(API_CONFIG.recommendations.generate(), {
+    const response = await fetchWithTimeout(API_CONFIG.recommendations.generate(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -33,7 +33,7 @@ export const generateLearningPaths = async (user, selectedCareerPath) => {
         path: '/recommendations/generate',
         body: JSON.stringify(recommendationPayload)
       })
-    });
+    }, 120000);
 
     const data = await response.json();
     console.log('Learning paths raw response:', data);
@@ -316,7 +316,7 @@ const fetchTavilyJobs = async (user, selectedCareerPath) => {
     location: user?.location || 'United States',
   };
 
-  const response = await fetch(API_CONFIG.recommendations.generate(), {
+  const response = await fetchWithTimeout(API_CONFIG.recommendations.generate(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -324,7 +324,7 @@ const fetchTavilyJobs = async (user, selectedCareerPath) => {
       path: '/recommendations/generate',
       body: JSON.stringify(payload)
     })
-  });
+  }, 120000);
 
   if (!response.ok) {
     throw new Error(`Tavily job search failed: ${response.status} ${response.statusText}`);
@@ -371,7 +371,7 @@ const fetchAIOpportunities = async (user, selectedCareerPath) => {
     interests: Array.isArray(user?.interests) ? user.interests : []
   };
 
-  const response = await fetch(API_CONFIG.recommendations.generate(), {
+  const response = await fetchWithTimeout(API_CONFIG.recommendations.generate(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -379,7 +379,7 @@ const fetchAIOpportunities = async (user, selectedCareerPath) => {
       path: '/recommendations/generate',
       body: JSON.stringify(recommendationPayload)
     })
-  });
+  }, 120000);
 
   if (!response.ok) {
     throw new Error(`AI opportunities request failed: ${response.status} ${response.statusText}`);

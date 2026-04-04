@@ -7,7 +7,7 @@ import { updateUserAttributes, updatePassword } from '@aws-amplify/auth';
 import { UserContext } from '../App';
 import { storageUtils, STORAGE_KEYS } from '../utils/authUtils';
 import analytics from '../utils/analytics';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 import {
   isPushSupported,
   getPermissionStatus,
@@ -257,7 +257,7 @@ const getResumeStatus = () => {
             reader.readAsDataURL(avatar);
           });
           
-          const response = await fetch(API_CONFIG.files.upload(), {
+          const response = await fetchWithTimeout(API_CONFIG.files.upload(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -265,7 +265,7 @@ const getResumeStatus = () => {
               fileContent: base64Data,
               fileType: avatar.type
             })
-          });
+          }, 60000);
           
           if (response.ok) {
             avatarUrl = avatarPreview;

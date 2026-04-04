@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import API_CONFIG from '../../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../../config/api';
 import { LoadingSpinner } from '../ui/AnimatedComponents';
 
 // Build realistic market data from the path object when the API is unavailable
@@ -96,7 +96,7 @@ const MarketInsights = ({ pathId, path }) => {
 
         console.log('MarketInsights: Sending request with payload:', payload);
 
-        const response = await fetch(
+        const response = await fetchWithTimeout(
           API_CONFIG.recommendations.generate(),
           {
             method: 'POST',

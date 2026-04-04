@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { UserContext } from '../App';
 import { storageService } from '../services/storageService';
-import API_CONFIG from '../config/api';
+import API_CONFIG, { fetchWithTimeout } from '../config/api';
 
 const MentorMatchingQuiz = ({ setStage, onBack }) => {
   const { user } = useContext(UserContext);
@@ -128,7 +128,7 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
 
       // Use AI recommendations API for intelligent mentor matching
       try {
-        const response = await fetch(API_CONFIG.recommendations.generate(), {
+        const response = await fetchWithTimeout(API_CONFIG.recommendations.generate(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -142,7 +142,7 @@ const MentorMatchingQuiz = ({ setStage, onBack }) => {
               ...searchCriteria
             })
           })
-        });
+        }, 120000);
 
         if (response.ok) {
           const data = await response.json();
