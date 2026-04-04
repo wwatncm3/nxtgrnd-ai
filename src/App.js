@@ -1,6 +1,5 @@
 import React, { useState, createContext, useEffect } from 'react';
-import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
-import { Hub } from 'aws-amplify';
+import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
@@ -42,35 +41,10 @@ function App() {
     // localStorage.clear();
     // sessionStorage.clear();
     analytics.init();
-
-    // Listen for OAuth sign-in completion
-    const hubListener = Hub.listen('auth', ({ payload }) => {
-      if (payload.event === 'signInWithRedirect') {
-        // OAuth completed — check auth state now
-        checkAuthState();
-      }
-      if (payload.event === 'signInWithRedirect_failure') {
-        console.error('OAuth sign-in failed:', payload.data);
-        setStage(1);
-        setIsLoading(false);
-      }
-    });
-
-    // Check if this is an OAuth callback (URL has ?code= param)
-    const params = new URLSearchParams(window.location.search);
-    const isOAuthCallback = params.has('code') && params.has('state');
-
-    if (isOAuthCallback) {
-      // Don't call checkAuthState yet — wait for Hub 'signInWithRedirect' event
-      // Amplify is still exchanging the code for tokens
-      // Clean the URL params
-      window.history.replaceState({}, '', window.location.pathname);
-    } else {
-      // Normal page load — check auth state immediately
-      checkAuthState();
-    }
+    checkAuthState();
 
     // Handle Stripe checkout return
+    const params = new URLSearchParams(window.location.search);
     if (params.get('subscription') === 'success') {
       // Clear the query param from URL
       window.history.replaceState({}, '', window.location.pathname);
@@ -146,12 +120,9 @@ function App() {
       firstName: completeUserData.firstName,
       lastName: completeUserData.lastName
     });
-      // Authenticated user — go to dashboard (stage 5)
-      // If they haven't completed onboarding yet, they can be routed from there
-      setStage(5);
+      // Instead of going directly to dashboard, start at the beginning of the flow
+      setStage(1);
     } catch (error) {
-      // Clear any stale/corrupt auth session so Cognito stops returning 400
-      try { await signOut(); } catch (_) { /* no session to clear */ }
       setStage(1); // Go to login/signup if not authenticated
     } finally {
       setIsLoading(false);
