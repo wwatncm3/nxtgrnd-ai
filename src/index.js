@@ -13,7 +13,16 @@ Amplify.configure({
     Cognito: {
       userPoolId: awsConfig.Auth.userPoolId,
       userPoolClientId: awsConfig.Auth.userPoolWebClientId,
-      signUpVerificationMethod: 'code'
+      signUpVerificationMethod: 'code',
+      loginWith: {
+        oauth: {
+          domain: awsConfig.Auth.oauth.domain,
+          scopes: awsConfig.Auth.oauth.scope,
+          redirectSignIn: [awsConfig.Auth.oauth.redirectSignIn],
+          redirectSignOut: [awsConfig.Auth.oauth.redirectSignOut],
+          responseType: awsConfig.Auth.oauth.responseType
+        }
+      }
     }
   }
 });
