@@ -8,8 +8,8 @@ const awsConfig = {
       oauth: {
         domain: 'us-east-1nzs87k3xt.auth.us-east-1.amazoncognito.com',
         scope: ['openid', 'email', 'profile'],
-        redirectSignIn: typeof window !== 'undefined' ? window.location.origin + '/' : 'http://localhost:3000/',
-        redirectSignOut: typeof window !== 'undefined' ? window.location.origin + '/' : 'http://localhost:3000/',
+        redirectSignIn: 'https://nxtgrnd-ai.vercel.app/',
+        redirectSignOut: 'https://nxtgrnd-ai.vercel.app/',
         responseType: 'code'
       }
     },
