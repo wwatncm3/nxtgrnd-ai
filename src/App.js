@@ -66,8 +66,9 @@ function App() {
           }
         }
       };
-      // Give Amplify a moment to start processing the code exchange
-      setTimeout(() => retryAuth(), 2000);
+      // Give Amplify time to parse URL params and complete token exchange
+      // Cold Vercel load can take 3-4s for JS bundle + Amplify init
+      setTimeout(() => retryAuth(), 3000);
     } else {
       // Normal page load — check auth state immediately
       checkAuthState().catch(() => {
