@@ -1,5 +1,5 @@
 import React, { useState, createContext, useEffect } from 'react';
-import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
@@ -123,6 +123,8 @@ function App() {
       // Instead of going directly to dashboard, start at the beginning of the flow
       setStage(1);
     } catch (error) {
+      // Clear any stale/corrupt auth session so Cognito stops returning 400
+      try { await signOut(); } catch (_) { /* no session to clear */ }
       setStage(1); // Go to login/signup if not authenticated
     } finally {
       setIsLoading(false);
