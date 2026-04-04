@@ -46,29 +46,15 @@ function App() {
     const isOAuthCallback = params.has('code') && params.has('state');
 
     if (isOAuthCallback) {
-      // OAuth callback — Amplify reads ?code=&state= and exchanges for tokens.
-      // Don't clean the URL yet — Amplify needs the params.
-      // Retry checkAuthState until Amplify finishes the token exchange.
-      const retryAuth = async (attempts = 0) => {
-        try {
-          await checkAuthState();
-          // Success — clean the URL params
-          window.history.replaceState({}, '', window.location.pathname);
-        } catch (e) {
-          if (attempts < 8) {
-            setTimeout(() => retryAuth(attempts + 1), 1000);
-          } else {
-            // All retries failed — clean up and show login
-            window.history.replaceState({}, '', window.location.pathname);
-            signOut().catch(() => {});
-            setStage(1);
-            setIsLoading(false);
-          }
-        }
-      };
-      // Give Amplify time to parse URL params and complete token exchange
-      // Cold Vercel load can take 3-4s for JS bundle + Amplify init
-      setTimeout(() => retryAuth(), 3000);
+      // OAuth callback — Amplify auto-handles code exchange during configure() in index.js.
+      // By the time this useEffect runs, tokens should already be in storage.
+      // checkAuthState will: getCurrentUser → fetchUserAttributes → route to correct stage.
+      // If it fails, the user needs to clear browser data and retry (stale tokens from prev attempts).
+      checkAuthState().catch(() => {
+        window.history.replaceState({}, '', window.location.pathname);
+        setStage(1);
+        setIsLoading(false);
+      });
     } else {
       // Normal page load — check auth state immediately
       checkAuthState().catch(() => {
