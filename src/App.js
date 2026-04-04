@@ -1,5 +1,5 @@
 import React, { useState, createContext, useEffect } from 'react';
-import { getCurrentUser, fetchUserAttributes, signOut } from '@aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes, fetchAuthSession, signOut } from '@aws-amplify/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfileCreation from './components/ProfileCreation';
 import InterestSelection from './components/InterestSelection';
@@ -104,8 +104,29 @@ function App() {
   const checkAuthState = async () => {
     try {
       const cognitoUser = await getCurrentUser();
-      // FIX: Corrected the function name to match the import (fetchUserAttributes)
-      const userAttributes = await fetchUserAttributes();
+
+      // Try fetchUserAttributes first (works for email/password users)
+      // Fall back to ID token decoding (required for OAuth/Google users)
+      let userAttributes;
+      try {
+        userAttributes = await fetchUserAttributes();
+      } catch (attrError) {
+        // OAuth users may not have admin scope — decode ID token instead
+        const session = await fetchAuthSession();
+        const idToken = session.tokens?.idToken;
+        if (idToken) {
+          const payload = idToken.payload;
+          userAttributes = {
+            email: payload.email,
+            given_name: payload.given_name,
+            family_name: payload.family_name,
+            name: payload.name,
+            sub: payload.sub
+          };
+        } else {
+          throw attrError; // No token available — re-throw
+        }
+      }
 
       // Convert Cognito attributes to user object (handles both email/password and OAuth users)
       const baseUserData = {
