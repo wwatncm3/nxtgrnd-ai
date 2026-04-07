@@ -1,6 +1,19 @@
 import { STORAGE_KEYS } from './storageService';
 import storageService from './storageService';
 
+// Mock dynamoService to prevent actual DynamoDB calls
+jest.mock('./dynamoService', () => ({
+  syncLocalToDynamo: jest.fn().mockResolvedValue(true),
+  loadAllUserData: jest.fn().mockResolvedValue({ hasData: false }),
+  deleteAllUserData: jest.fn().mockResolvedValue(true)
+}));
+
+// Mock authUtils
+jest.mock('../utils/authUtils', () => ({
+  getCurrentStorageUserId: jest.fn(() => null),
+  setCurrentStorageUserId: jest.fn()
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store = {};
@@ -9,7 +22,8 @@ const localStorageMock = (() => {
     setItem: jest.fn((key, value) => { store[key] = value; }),
     removeItem: jest.fn(key => { delete store[key]; }),
     clear: jest.fn(() => { store = {}; }),
-    get length() { return Object.keys(store).length; }
+    get length() { return Object.keys(store).length; },
+    key: jest.fn(i => Object.keys(store)[i] || null)
   };
 })();
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
@@ -30,17 +44,22 @@ describe('storageService', () => {
     });
   });
 
-  describe('storageService.saveData', () => {
-    it('should save data without crashing on null userId', () => {
+  describe('storageService.setItem', () => {
+    it('should not crash on null userId when no current user set', () => {
       expect(() => {
-        storageService.saveData(null, 'testKey', { test: true });
+        storageService.setItem('testKey', { test: true }, null);
       }).not.toThrow();
+    });
+
+    it('should save data with explicit userId', () => {
+      storageService.setItem('testKey', { test: true }, 'user-123');
+      expect(localStorageMock.setItem).toHaveBeenCalled();
     });
   });
 
-  describe('storageService.getData', () => {
+  describe('storageService.getItem', () => {
     it('should return null for missing data', () => {
-      const result = storageService.getData('nonexistent', 'testKey');
+      const result = storageService.getItem('nonexistent', 'testUser');
       expect(result).toBeNull();
     });
   });
@@ -48,10 +67,12 @@ describe('storageService', () => {
   describe('localStorage quota handling', () => {
     it('should not crash when localStorage is full', () => {
       localStorageMock.setItem.mockImplementationOnce(() => {
-        throw new DOMException('QuotaExceededError');
+        const error = new DOMException('QuotaExceededError');
+        error.name = 'QuotaExceededError';
+        throw error;
       });
       expect(() => {
-        storageService.saveData('testUser', 'testKey', { large: 'data' });
+        storageService.setItem('testKey', { large: 'data' }, 'testUser');
       }).not.toThrow();
     });
   });

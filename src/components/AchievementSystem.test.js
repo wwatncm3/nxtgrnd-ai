@@ -9,15 +9,11 @@ jest.mock('../utils/authUtils', () => ({
   getCurrentStorageUserId: jest.fn()
 }));
 
-// Test component to expose achievement hooks
-const TestComponent = ({ onReady }) => {
+// Helper component that captures context and exposes it via ref
+let capturedCtx = null;
+const TestComponent = () => {
   const achievements = useAchievements();
-
-  React.useEffect(() => {
-    if (onReady) {
-      onReady(achievements);
-    }
-  }, [achievements, onReady]);
+  capturedCtx = achievements;
 
   return (
     <div>
@@ -29,68 +25,54 @@ const TestComponent = ({ onReady }) => {
 
 describe('AchievementSystem', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
     localStorage.clear();
     jest.clearAllMocks();
+    capturedCtx = null;
   });
 
   describe('User Data Isolation', () => {
     it('should properly isolate achievements between different users', async () => {
-      // User 1
+      // User 1 unlocks an achievement
       authUtils.getCurrentStorageUserId.mockReturnValue('user-123');
 
-      const { rerender } = render(
+      const { unmount } = render(
         <AchievementProvider>
           <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('achievement-count')).toHaveTextContent('0');
+        expect(capturedCtx).toBeTruthy();
       });
 
-      // Unlock achievement for user 1
-      let achievementContext;
-      rerender(
-        <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
-        </AchievementProvider>
-      );
+      act(() => {
+        capturedCtx.unlockAchievement('CAREER_PATH_SELECTED');
+      });
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('CAREER_PATH_SELECTED');
-          });
-        }
+        expect(screen.getByTestId('achievement-count')).toHaveTextContent('1');
       });
 
-      // Verify user 1 has the achievement
+      // Verify localStorage for user 1
       const user1Data = localStorage.getItem('user-123_achievements');
       expect(user1Data).toBeTruthy();
       expect(JSON.parse(user1Data)).toContain('CAREER_PATH_SELECTED');
 
-      // Switch to User 2
+      // Unmount and remount as User 2
+      unmount();
+      capturedCtx = null;
       authUtils.getCurrentStorageUserId.mockReturnValue('user-456');
 
-      rerender(
+      render(
         <AchievementProvider>
           <TestComponent />
         </AchievementProvider>
       );
 
-      // Wait for user change to take effect
+      // User 2 should have no achievements (no data in their localStorage key)
       await waitFor(() => {
         expect(screen.getByTestId('achievement-count')).toHaveTextContent('0');
-      }, { timeout: 2000 });
-
-      // Verify user 2 has no achievements
-      const user2Data = localStorage.getItem('user-456_achievements');
-      expect(user2Data).toBeNull();
+      });
 
       // Verify user 1 data is still intact
       const user1DataAfter = localStorage.getItem('user-123_achievements');
@@ -100,26 +82,20 @@ describe('AchievementSystem', () => {
     it('should not allow unlocking achievements without user ID', async () => {
       authUtils.getCurrentStorageUserId.mockReturnValue(null);
 
-      let achievementContext;
       render(
         <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
+          <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('CAREER_PATH_SELECTED');
-          });
-        }
+        expect(capturedCtx).toBeTruthy();
       });
 
-      // Verify no achievements were unlocked
+      act(() => {
+        capturedCtx.unlockAchievement('CAREER_PATH_SELECTED');
+      });
+
       expect(screen.getByTestId('achievement-count')).toHaveTextContent('0');
       expect(screen.getByTestId('total-points')).toHaveTextContent('0');
     });
@@ -131,23 +107,18 @@ describe('AchievementSystem', () => {
     });
 
     it('should unlock achievement and update points', async () => {
-      let achievementContext;
       render(
         <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
+          <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('CAREER_PATH_SELECTED');
-          });
-        }
+        expect(capturedCtx).toBeTruthy();
+      });
+
+      act(() => {
+        capturedCtx.unlockAchievement('CAREER_PATH_SELECTED');
       });
 
       await waitFor(() => {
@@ -157,26 +128,30 @@ describe('AchievementSystem', () => {
     });
 
     it('should not unlock same achievement twice', async () => {
-      let achievementContext;
       render(
         <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
+          <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('CAREER_PATH_SELECTED');
-            achievementContext.unlockAchievement('CAREER_PATH_SELECTED');
-          });
-        }
+        expect(capturedCtx).toBeTruthy();
       });
 
+      act(() => {
+        capturedCtx.unlockAchievement('CAREER_PATH_SELECTED');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('achievement-count')).toHaveTextContent('1');
+      });
+
+      // Try unlocking again
+      act(() => {
+        capturedCtx.unlockAchievement('CAREER_PATH_SELECTED');
+      });
+
+      // Should still be 1
       await waitFor(() => {
         expect(screen.getByTestId('achievement-count')).toHaveTextContent('1');
         expect(screen.getByTestId('total-points')).toHaveTextContent('50');
@@ -184,23 +159,18 @@ describe('AchievementSystem', () => {
     });
 
     it('should handle invalid achievement keys gracefully', async () => {
-      let achievementContext;
       render(
         <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
+          <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('INVALID_ACHIEVEMENT');
-          });
-        }
+        expect(capturedCtx).toBeTruthy();
+      });
+
+      act(() => {
+        capturedCtx.unlockAchievement('INVALID_ACHIEVEMENT');
       });
 
       await waitFor(() => {
@@ -216,33 +186,38 @@ describe('AchievementSystem', () => {
     });
 
     it('should calculate correct statistics', async () => {
-      let achievementContext;
       render(
         <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
+          <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('CAREER_PATH_SELECTED');
-            achievementContext.unlockAchievement('RESUME_UPLOADED');
-          });
-        }
+        expect(capturedCtx).toBeTruthy();
+      });
+
+      act(() => {
+        capturedCtx.unlockAchievement('CAREER_PATH_SELECTED');
       });
 
       await waitFor(() => {
-        const stats = achievementContext.getStats();
-        expect(stats.unlocked).toBe(2);
-        expect(stats.totalPoints).toBe(80); // 50 + 30
-        expect(stats.level).toBe(1);
-        expect(stats.progressToNextLevel).toBe(80);
+        expect(screen.getByTestId('achievement-count')).toHaveTextContent('1');
       });
+
+      act(() => {
+        capturedCtx.unlockAchievement('RESUME_UPLOADED');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('achievement-count')).toHaveTextContent('2');
+        expect(screen.getByTestId('total-points')).toHaveTextContent('80');
+      });
+
+      const stats = capturedCtx.getStats();
+      expect(stats.unlocked).toBe(2);
+      expect(stats.totalPoints).toBe(80);
+      expect(stats.level).toBe(1);
+      expect(stats.progressToNextLevel).toBe(80);
     });
   });
 
@@ -252,7 +227,6 @@ describe('AchievementSystem', () => {
     });
 
     it('should load achievements from localStorage on mount', async () => {
-      // Pre-populate localStorage
       localStorage.setItem(
         'test-user_achievements',
         JSON.stringify(['CAREER_PATH_SELECTED', 'RESUME_UPLOADED'])
@@ -271,23 +245,18 @@ describe('AchievementSystem', () => {
     });
 
     it('should persist achievements to localStorage when unlocked', async () => {
-      let achievementContext;
       render(
         <AchievementProvider>
-          <TestComponent
-            onReady={(ctx) => {
-              achievementContext = ctx;
-            }}
-          />
+          <TestComponent />
         </AchievementProvider>
       );
 
       await waitFor(() => {
-        if (achievementContext) {
-          act(() => {
-            achievementContext.unlockAchievement('SKILLS_ADDED');
-          });
-        }
+        expect(capturedCtx).toBeTruthy();
+      });
+
+      act(() => {
+        capturedCtx.unlockAchievement('SKILLS_ADDED');
       });
 
       await waitFor(() => {

@@ -90,12 +90,15 @@ describe('CompassServices', () => {
     });
 
     it('should handle API errors gracefully', async () => {
+      // Use a non-retryable error (400 doesn't match 500/503/504 retry logic)
       global.fetch.mockResolvedValueOnce({
         ok: false,
-        status: 500
+        status: 400
       });
 
-      await expect(generateEnhancedRecommendations(mockUser)).rejects.toThrow();
+      await expect(generateEnhancedRecommendations(mockUser)).rejects.toThrow(
+        'Failed to fetch enhanced recommendations: 400'
+      );
     });
 
     it('should handle empty interests and skills arrays', async () => {
