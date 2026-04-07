@@ -14,6 +14,8 @@ import CertificationsPage from './pages/CertificationsPage';
 import MentorMatchingQuiz from './components/MentorMatchingQuiz';
 import PricingPage from './pages/PricingPage';
 import AdminPage from './pages/AdminPage';
+import OfferScoringPage from './pages/OfferScoringPage';
+import InterviewStoriesPage from './pages/InterviewStoriesPage';
 import SubscriptionGate from './components/SubscriptionGate';
 import { AchievementProvider } from './components/AchievementSystem';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
@@ -231,6 +233,22 @@ function App() {
       // ✅ NEW: Admin Page is stage 14
       case 14:
         return <AdminPage setStage={setStage} />;
+
+      // ✅ NEW: Offer Scoring is stage 15 (Pro feature)
+      case 15:
+        return (
+          <SubscriptionGate feature="offer_scoring">
+            <OfferScoringPage setStage={setStage} />
+          </SubscriptionGate>
+        );
+
+      // ✅ NEW: Interview Stories is stage 16 (Pro feature)
+      case 16:
+        return (
+          <SubscriptionGate feature="interview_stories">
+            <InterviewStoriesPage setStage={setStage} />
+          </SubscriptionGate>
+        );
 
       default:
         return (

@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { signOut } from '@aws-amplify/auth';
 import {
-  Compass, BookOpen, Award, Users, Building2, FileText, UserPlus, Crown, Shield
+  Compass, BookOpen, Award, Users, Building2, FileText, UserPlus, Crown, Shield, TrendingUp, MessageSquare
 } from 'lucide-react';
 import { UserContext } from '../App';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -512,6 +512,18 @@ const MainContent = ({ setStage }) => {
         }
         setStage(12);
       }
+    },
+    {
+      icon: TrendingUp,
+      label: 'Offer Scoring',
+      stageId: 15,
+      onClick: () => setStage(15)
+    },
+    {
+      icon: MessageSquare,
+      label: 'Interview Stories',
+      stageId: 16,
+      onClick: () => setStage(16)
     },
     {
       icon: Crown,
