@@ -37,7 +37,9 @@ export const TIER_FEATURES = {
     'linkedin_finder',
     'career_roadmap_full',
     'career_simulator',
-    'market_insights'
+    'market_insights',
+    'offer_scoring',
+    'interview_stories'
   ],
   [TIERS.BETA]: [
     'career_compass_basic',
@@ -51,7 +53,9 @@ export const TIER_FEATURES = {
     'linkedin_finder',
     'career_roadmap_full',
     'career_simulator',
-    'market_insights'
+    'market_insights',
+    'offer_scoring',
+    'interview_stories'
   ],
   [TIERS.B2B]: [
     'career_compass_basic',
@@ -65,7 +69,9 @@ export const TIER_FEATURES = {
     'linkedin_finder',
     'career_roadmap_full',
     'career_simulator',
-    'market_insights'
+    'market_insights',
+    'offer_scoring',
+    'interview_stories'
   ],
   [TIERS.ADMIN]: [
     'career_compass_basic',
@@ -79,7 +85,9 @@ export const TIER_FEATURES = {
     'linkedin_finder',
     'career_roadmap_full',
     'career_simulator',
-    'market_insights'
+    'market_insights',
+    'offer_scoring',
+    'interview_stories'
   ]
 };
 
