@@ -87,6 +87,10 @@ function OnboardingFlow({ onNext }) {
       <div className="max-w-4xl mx-auto px-4 py-8 animate-fadeIn">
         {/* Header Section */}
         <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 animate-slideDown">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            Open Beta — Now Available
+          </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 animate-slideDown">
             Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-teal-600 to-blue-900">NxtGrnd AI</span>
           </h1>
@@ -94,7 +98,7 @@ function OnboardingFlow({ onNext }) {
             AI-powered career development for the next generation of leaders
           </p>
           <p className="text-gray-500 text-sm md:text-base mt-3 max-w-2xl mx-auto animate-slideUp delay-150">
-            Discover career paths that match your skills, connect with real opportunities, and build your future — born at NC A&T, built for every student ready to level up.
+            Discover career paths that match your skills, connect with real opportunities, and build your future — built for the ambitious but uncertain.
           </p>
         </div>
 
@@ -185,15 +189,15 @@ function OnboardingFlow({ onNext }) {
           </button>
         </div>
 
-        {/* Stats Section with Icons */}
-        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-12 mb-12 animate-slideUp delay-400 px-4">
+        {/* Beta Messaging */}
+        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 mb-12 animate-slideUp delay-400 px-4">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Users className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
+              <Rocket className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
             </div>
             <div>
-              <div className="text-xl md:text-2xl font-bold text-blue-600">2000+</div>
-              <div className="text-xs md:text-sm text-gray-500">Professionals</div>
+              <div className="text-sm md:text-base font-semibold text-gray-800">Free During Beta</div>
+              <div className="text-xs md:text-sm text-gray-500">Full access, no card needed</div>
             </div>
           </div>
           <div className="h-12 w-px bg-gray-200 hidden md:block"></div>
@@ -202,18 +206,18 @@ function OnboardingFlow({ onNext }) {
               <Compass className="w-5 h-5 md:w-6 md:h-6 text-teal-600" />
             </div>
             <div>
-              <div className="text-xl md:text-2xl font-bold text-teal-600">100+</div>
-              <div className="text-xs md:text-sm text-gray-500">Career Paths</div>
+              <div className="text-sm md:text-base font-semibold text-gray-800">AI-Powered</div>
+              <div className="text-xs md:text-sm text-gray-500">Personalized career paths</div>
             </div>
           </div>
           <div className="h-12 w-px bg-gray-200 hidden md:block"></div>
           <div className="flex items-center gap-2 md:gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Check className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
+              <Shield className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
             </div>
             <div>
-              <div className="text-xl md:text-2xl font-bold text-green-600">98%</div>
-              <div className="text-xs md:text-sm text-gray-500">Success Rate</div>
+              <div className="text-sm md:text-base font-semibold text-gray-800">Built for You</div>
+              <div className="text-xs md:text-sm text-gray-500">The ambitious but uncertain</div>
             </div>
           </div>
         </div>
@@ -240,6 +244,17 @@ function OnboardingFlow({ onNext }) {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Footer Links */}
+        <div className="text-center mt-12 pt-8 border-t border-gray-200 animate-slideUp delay-500">
+          <p className="text-xs text-gray-400">
+            By signing up, you agree to our{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 underline">Terms of Service</a>
+            {' '}and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 underline">Privacy Policy</a>.
+            {' '}© 2026 NxtGrnd AI. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
@@ -1123,13 +1138,19 @@ function OnboardingFlow({ onNext }) {
         <div>
           {currentSection === 'account' && (
             <div className="flex flex-col items-end">
+              <p className="text-xs text-gray-400 mb-3 text-right">
+                By creating an account, you agree to our{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Terms of Service</a>
+                {' '}and{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Privacy Policy</a>.
+              </p>
               <button
                 onClick={handleNext}
                 disabled={
-                  !formData.firstName || 
-                  !formData.lastName || 
-                  !formData.email || 
-                  !formData.username || 
+                  !formData.firstName ||
+                  !formData.lastName ||
+                  !formData.email ||
+                  !formData.username ||
                   !formData.password ||
                   !isValidPassword(formData.password)
                 }
