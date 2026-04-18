@@ -3,669 +3,541 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NxtGrnd AI — Your AI-Powered Career OS</title>
+  <title>NxtGrnd AI — Launch your career with AI</title>
   <link rel="icon" type="image/png" href="ng-logo.png" />
   <link rel="apple-touch-icon" href="ng-logo.png" />
   <meta name="description" content="NxtGrnd AI uses advanced AI to analyze your resume, map your career path, and build a personalized roadmap to your dream career. Join the closed beta today." />
-  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; }
-
-    .gradient-text {
-      background: linear-gradient(135deg, #2563EB 0%, #6366F1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .feature-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(37,99,235,0.1);
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A; background: #fff; -webkit-font-smoothing: antialiased; }
+    .page { background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 40%, #FFFFFF 100%); min-height: 100vh; overflow-x: hidden; }
+    button { font-family: 'Inter', sans-serif; }
+    button:active { transform: scale(0.98); }
+    a { color: inherit; }
+    .hidden { display: none !important; }
 
     #beta-form input:focus,
     #beta-form select:focus {
       outline: none;
-      border-color: #3B82F6;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      border-color: #3B82F6 !important;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
     }
 
-    .step-line {
-      position: absolute;
-      top: 24px;
-      left: calc(50% + 36px);
-      right: calc(-50% + 36px);
-      height: 2px;
-      background: linear-gradient(90deg, #3B82F6, #6366F1);
-      opacity: 0.25;
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr !important; }
+      .hero-preview { display: none !important; }
+      .features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .pricing-grid { grid-template-columns: 1fr !important; }
+      .nav-links { display: none !important; }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr !important; }
     }
   </style>
 </head>
-<body style="background:#fff;color:#0F172A;-webkit-font-smoothing:antialiased;">
+<body>
+<div id="root"></div>
 
-  <!-- ============================================================ -->
-  <!-- NAV -->
-  <!-- ============================================================ -->
-  <nav style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,0.06);">
-    <div style="max-width:1280px;margin:0 auto;padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;">
+<script type="text/babel">
 
-      <!-- Logo -->
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-          </svg>
-        </div>
-        <span style="font-weight:700;font-size:17px;color:#0F172A;">NxtGrnd <span class="gradient-text">AI</span></span>
-      </div>
-
-      <!-- Nav Links -->
-      <div class="hidden md:flex" style="align-items:center;gap:32px;">
-        <a href="#features" style="font-size:14px;font-weight:500;color:#475569;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#475569'">Features</a>
-        <a href="#how-it-works" style="font-size:14px;font-weight:500;color:#475569;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#475569'">How It Works</a>
-        <a href="#pricing" style="font-size:14px;font-weight:500;color:#475569;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='#475569'">Pricing</a>
-      </div>
-
-      <!-- CTAs -->
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="/app" style="font-size:14px;font-weight:500;color:#475569;text-decoration:none;padding:8px 16px;border:1px solid #E2E8F0;border-radius:8px;transition:all 0.15s;" onmouseover="this.style.borderColor='#94A3B8';this.style.color='#0F172A';" onmouseout="this.style.borderColor='#E2E8F0';this.style.color='#475569';">Sign In</a>
-        <a href="#beta" style="font-size:14px;font-weight:600;color:#fff;text-decoration:none;padding:8px 18px;background:linear-gradient(135deg,#2563EB,#6366F1);border-radius:8px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Get Started →</a>
-      </div>
-
-    </div>
-  </nav>
-
-
-  <!-- ============================================================ -->
-  <!-- HERO -->
-  <!-- ============================================================ -->
-  <section style="padding:80px 32px 60px;background:#fff;">
-    <div style="max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1.1fr;gap:60px;align-items:center;">
-
-      <!-- Left: Text -->
-      <div class="fade-in-up">
-        <!-- Badge -->
-        <div style="display:inline-flex;align-items:center;gap:8px;background:#EFF6FF;border:1px solid #BFDBFE;color:#2563EB;font-size:13px;font-weight:500;padding:6px 14px;border-radius:100px;margin-bottom:28px;">
-          <span style="width:7px;height:7px;background:#3B82F6;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-          Open Beta — Now Accepting Users
-        </div>
-
-        <h1 style="font-size:clamp(36px,4vw,56px);font-weight:800;line-height:1.1;color:#0F172A;margin:0 0 20px;">
-          Launch your career<br/>
-          <span class="gradient-text">with AI</span>
-        </h1>
-
-        <p style="font-size:18px;color:#64748B;line-height:1.7;margin:0 0 36px;max-width:480px;">
-          Built for the ambitious but uncertain. NxtGrnd AI analyzes where you are, maps where you're going, and builds the path to get you there.
-        </p>
-
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <a href="#beta" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2563EB,#6366F1);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 28px;border-radius:12px;box-shadow:0 4px 20px rgba(37,99,235,0.3);transition:opacity 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-            Request Access →
-          </a>
-          <a href="#features" style="display:inline-flex;align-items:center;gap:6px;background:#F8FAFC;color:#475569;font-size:15px;font-weight:500;text-decoration:none;padding:14px 28px;border-radius:12px;border:1px solid #E2E8F0;transition:all 0.15s;" onmouseover="this.style.background='#F1F5F9';this.style.color='#0F172A';" onmouseout="this.style.background='#F8FAFC';this.style.color='#475569';">
-            See Features
-          </a>
-        </div>
-
-        <p style="font-size:13px;color:#94A3B8;margin-top:20px;">Powered by Claude · Built on AWS · No credit card required</p>
-      </div>
-
-      <!-- Right: Dashboard Preview Card -->
-      <div style="position:relative;" class="hidden md:block">
-        <!-- Browser frame -->
-        <div style="background:#fff;border-radius:16px;border:1px solid #E2E8F0;box-shadow:0 24px 60px rgba(15,23,42,0.12);overflow:hidden;">
-          <!-- Browser chrome -->
-          <div style="background:#F8FAFC;border-bottom:1px solid #E2E8F0;padding:12px 16px;display:flex;align-items:center;gap:8px;">
-            <div style="width:11px;height:11px;border-radius:50%;background:#FC5F57;"></div>
-            <div style="width:11px;height:11px;border-radius:50%;background:#FDBC2C;"></div>
-            <div style="width:11px;height:11px;border-radius:50%;background:#2AC840;"></div>
-            <div style="flex:1;background:#E2E8F0;border-radius:6px;height:22px;margin-left:8px;display:flex;align-items:center;padding:0 10px;">
-              <span style="font-size:12px;color:#94A3B8;">nxtgrnd.ai/dashboard</span>
-            </div>
-          </div>
-          <!-- Dashboard content mockup -->
-          <div style="padding:20px;background:#F8FAFC;">
-            <!-- Header -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-              <div>
-                <div style="font-size:13px;color:#64748B;">Career Compass</div>
-                <div style="font-size:16px;font-weight:700;color:#0F172A;">Your Personalized Path</div>
-              </div>
-              <div style="background:linear-gradient(135deg,#2563EB,#6366F1);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;">AI ACTIVE</div>
-            </div>
-            <!-- Match cards -->
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div style="width:32px;height:32px;background:linear-gradient(135deg,#2563EB,#6366F1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                  </div>
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#0F172A;">Software Engineer</div>
-                    <div style="font-size:11px;color:#64748B;">Google · L3 · $145K</div>
-                  </div>
-                </div>
-                <div style="font-size:12px;font-weight:700;color:#16A34A;background:#F0FDF4;padding:3px 8px;border-radius:6px;">94%</div>
-              </div>
-              <div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div style="width:32px;height:32px;background:linear-gradient(135deg,#7C3AED,#A855F7);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                  </div>
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#0F172A;">Product Manager</div>
-                    <div style="font-size:11px;color:#64748B;">Meta · IC4 · $160K</div>
-                  </div>
-                </div>
-                <div style="font-size:12px;font-weight:700;color:#D97706;background:#FFFBEB;padding:3px 8px;border-radius:6px;">87%</div>
-              </div>
-              <div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div style="width:32px;height:32px;background:linear-gradient(135deg,#059669,#10B981);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-                  </div>
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:#0F172A;">Data Scientist</div>
-                    <div style="font-size:11px;color:#64748B;">Stripe · Senior · $175K</div>
-                  </div>
-                </div>
-                <div style="font-size:12px;font-weight:700;color:#2563EB;background:#EFF6FF;padding:3px 8px;border-radius:6px;">82%</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Floating badge -->
-        <div style="position:absolute;bottom:-16px;left:-20px;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);display:flex;align-items:center;gap:8px;">
-          <div style="width:28px;height:28px;background:linear-gradient(135deg,#059669,#10B981);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:#059669;">Offer accepted</div>
-            <div style="font-size:11px;color:#64748B;">Google L3 SWE · $145K</div>
-          </div>
+// ─────────────────────────────────────────────
+// NAV
+// ─────────────────────────────────────────────
+function LandingNav() {
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+  return (
+    <nav style={{position:'sticky',top:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 40px',background:'rgba(255,255,255,0.85)',backdropFilter:'blur(12px)',borderBottom:'1px solid rgba(0,0,0,0.05)',fontFamily:'Inter, sans-serif'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <img src="ng-logo.png" style={{width:32,height:32,borderRadius:8}} alt="NxtGrnd" />
+        <div style={{fontWeight:800,fontSize:17,letterSpacing:'-0.01em'}}>
+          NxtGrnd <span style={{background:'linear-gradient(135deg,#2563EB,#6366F1)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>AI</span>
         </div>
       </div>
-
-    </div>
-  </section>
-
-
-  <!-- ============================================================ -->
-  <!-- FEATURES -->
-  <!-- ============================================================ -->
-  <section id="features" style="padding:80px 32px;background:#F8FAFC;">
-    <div style="max-width:1280px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:48px;">
-        <div style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#2563EB;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          Everything you need
-        </div>
-        <h2 style="font-size:clamp(28px,3vw,40px);font-weight:800;color:#0F172A;margin:0 0 14px;">AI tools built for career clarity</h2>
-        <p style="font-size:17px;color:#64748B;max-width:520px;margin:0 auto;line-height:1.6;">Not another job board. NxtGrnd builds the full picture — where you are, where you should go, and how to get there.</p>
+      <div className="nav-links" style={{display:'flex',gap:28}}>
+        <a style={{fontSize:14,color:'#374151',fontWeight:500,cursor:'pointer',textDecoration:'none'}} href="#features">Features</a>
+        <a style={{fontSize:14,color:'#374151',fontWeight:500,cursor:'pointer',textDecoration:'none'}} href="#how">How it works</a>
+        <a style={{fontSize:14,color:'#374151',fontWeight:500,cursor:'pointer',textDecoration:'none'}} href="#pricing">Pricing</a>
+        <a style={{fontSize:14,color:'#374151',fontWeight:500,cursor:'pointer',textDecoration:'none'}} href="#signup">Beta</a>
       </div>
-
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
-
-        <!-- Feature 1 -->
-        <div class="feature-card" style="background:#fff;border-radius:16px;padding:28px;border:1px solid #E2E8F0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:8px;">Resume Analysis</div>
-          <div style="font-size:14px;color:#64748B;line-height:1.6;">AI scans your resume and identifies gaps, strengths, and high-impact improvements tailored to your target role.</div>
-        </div>
-
-        <!-- Feature 2 -->
-        <div class="feature-card" style="background:#fff;border-radius:16px;padding:28px;border:1px solid #E2E8F0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:8px;">Career Path Mapping</div>
-          <div style="font-size:14px;color:#64748B;line-height:1.6;">Get a personalized career roadmap showing the exact roles, timelines, and skill milestones between you and your goal.</div>
-        </div>
-
-        <!-- Feature 3 -->
-        <div class="feature-card" style="background:#fff;border-radius:16px;padding:28px;border:1px solid #E2E8F0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:8px;">Skill Gap Identification</div>
-          <div style="font-size:14px;color:#64748B;line-height:1.6;">Know exactly which skills to build next. Ranked by impact and matched to what employers in your target field are actually hiring for.</div>
-        </div>
-
-        <!-- Feature 4 -->
-        <div class="feature-card" style="background:#fff;border-radius:16px;padding:28px;border:1px solid #E2E8F0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:8px;">Learning Roadmaps</div>
-          <div style="font-size:14px;color:#64748B;line-height:1.6;">Curated resources — courses, projects, certifications — sequenced in the right order based on your current level.</div>
-        </div>
-
-        <!-- Feature 5 -->
-        <div class="feature-card" style="background:#fff;border-radius:16px;padding:28px;border:1px solid #E2E8F0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:8px;">Job Match Scoring</div>
-          <div style="font-size:14px;color:#64748B;line-height:1.6;">See how well real job postings match your profile and get an honest score with specific improvement suggestions.</div>
-        </div>
-
-        <!-- Feature 6 -->
-        <div class="feature-card" style="background:#fff;border-radius:16px;padding:28px;border:1px solid #E2E8F0;">
-          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:#0F172A;margin-bottom:8px;">Progress Dashboard</div>
-          <div style="font-size:14px;color:#64748B;line-height:1.6;">Track your career development over time. See skill improvements, applications, and momentum — all in one view.</div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ============================================================ -->
-  <!-- HOW IT WORKS -->
-  <!-- ============================================================ -->
-  <section id="how-it-works" style="padding:80px 32px;background:#fff;">
-    <div style="max-width:1280px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:56px;">
-        <div style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#2563EB;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">
-          Simple process
-        </div>
-        <h2 style="font-size:clamp(28px,3vw,40px);font-weight:800;color:#0F172A;margin:0 0 14px;">How NxtGrnd works</h2>
-        <p style="font-size:17px;color:#64748B;max-width:480px;margin:0 auto;">Three steps from sign up to a clear career roadmap.</p>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;position:relative;">
-
-        <!-- Connecting line (desktop) -->
-        <div class="hidden md:block step-line" style="left:calc(33.3% + 40px);right:calc(33.3% - 40px);"></div>
-        <div class="hidden md:block step-line" style="left:calc(66.6% + 40px);right:calc(0% - 40px);opacity:0;"></div>
-
-        <!-- Step 1 -->
-        <div style="text-align:center;position:relative;">
-          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;position:relative;z-index:2;">
-            <span style="font-size:16px;font-weight:800;color:#fff;">1</span>
-          </div>
-          <h3 style="font-size:17px;font-weight:700;color:#0F172A;margin:0 0 10px;">Upload your resume</h3>
-          <p style="font-size:14px;color:#64748B;line-height:1.6;max-width:260px;margin:0 auto;">Drop your resume or paste your LinkedIn. Our AI reads every line and builds your career profile in seconds.</p>
-        </div>
-
-        <!-- Step 2 -->
-        <div style="text-align:center;position:relative;">
-          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;position:relative;z-index:2;">
-            <span style="font-size:16px;font-weight:800;color:#fff;">2</span>
-          </div>
-          <h3 style="font-size:17px;font-weight:700;color:#0F172A;margin:0 0 10px;">Tell us your goals</h3>
-          <p style="font-size:14px;color:#64748B;line-height:1.6;max-width:260px;margin:0 auto;">Where do you want to be in 2 years? Dream role, industry, salary — NxtGrnd uses this to tailor everything to you.</p>
-        </div>
-
-        <!-- Step 3 -->
-        <div style="text-align:center;position:relative;">
-          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;position:relative;z-index:2;">
-            <span style="font-size:16px;font-weight:800;color:#fff;">3</span>
-          </div>
-          <h3 style="font-size:17px;font-weight:700;color:#0F172A;margin:0 0 10px;">Get your roadmap</h3>
-          <p style="font-size:14px;color:#64748B;line-height:1.6;max-width:260px;margin:0 auto;">A personalized career plan with skill priorities, curated resources, and job matches — ready to execute on day one.</p>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ============================================================ -->
-  <!-- SOCIAL PROOF / HONEST MESSAGING -->
-  <!-- ============================================================ -->
-  <section style="padding:60px 32px;background:#F8FAFC;">
-    <div style="max-width:760px;margin:0 auto;text-align:center;">
-
-      <div style="display:inline-flex;align-items:center;gap:8px;background:#EFF6FF;border:1px solid #BFDBFE;font-size:12px;font-weight:700;color:#2563EB;text-transform:uppercase;letter-spacing:0.08em;padding:6px 14px;border-radius:100px;margin-bottom:24px;">
-        <span style="width:6px;height:6px;background:#3B82F6;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-        Open Beta
-      </div>
-
-      <h2 style="font-size:clamp(24px,3vw,36px);font-weight:800;color:#0F172A;margin:0 0 16px;line-height:1.2;">
-        Built for the ambitious but uncertain.
-      </h2>
-
-      <p style="font-size:17px;color:#64748B;line-height:1.7;max-width:580px;margin:0 auto 32px;">
-        Most career platforms show you jobs and hope for the best. NxtGrnd AI builds your full picture — resume, skills, path, and real opportunities — and keeps updating it as you grow.
-      </p>
-
-      <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span style="font-size:14px;color:#475569;font-weight:500;">No career experience required</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span style="font-size:14px;color:#475569;font-weight:500;">Free during beta</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span style="font-size:14px;color:#475569;font-weight:500;">Personalized, not generic</span>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- ============================================================ -->
-  <!-- PRICING -->
-  <!-- ============================================================ -->
-  <section id="pricing" style="padding:80px 32px;background:#fff;">
-    <div style="max-width:1280px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:48px;">
-        <h2 style="font-size:clamp(28px,3vw,40px);font-weight:800;color:#0F172A;margin:0 0 14px;">Simple pricing</h2>
-        <p style="font-size:17px;color:#64748B;">Free during beta. Pro unlocks everything.</p>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:720px;margin:0 auto;">
-
-        <!-- Free -->
-        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:20px;padding:36px 32px;">
-          <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Free</div>
-          <div style="font-size:42px;font-weight:800;color:#0F172A;margin-bottom:6px;">$0</div>
-          <div style="font-size:14px;color:#94A3B8;margin-bottom:28px;">Always free</div>
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Resume upload & analysis
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Career path recommendations
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#475569;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              5 job matches / month
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              Learning roadmaps
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              Skill gap analysis
-            </div>
-          </div>
-          <a href="#beta" style="display:block;text-align:center;background:#E2E8F0;color:#475569;font-size:14px;font-weight:600;text-decoration:none;padding:13px;border-radius:10px;transition:background 0.15s;" onmouseover="this.style.background='#CBD5E1'" onmouseout="this.style.background='#E2E8F0'">Get Started Free</a>
-        </div>
-
-        <!-- Pro -->
-        <div style="background:linear-gradient(160deg,#0F172A 0%,#1E293B 60%,#1E3A8A 100%);border-radius:20px;padding:36px 32px;box-shadow:0 20px 50px rgba(37,99,235,0.25);position:relative;overflow:hidden;">
-          <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(99,102,241,0.15) 0%,transparent 70%);pointer-events:none;"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div style="font-size:13px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Pro</div>
-            <div style="background:linear-gradient(135deg,#2563EB,#6366F1);font-size:11px;font-weight:700;color:#fff;padding:3px 10px;border-radius:100px;">COMING SOON</div>
-          </div>
-          <div style="font-size:42px;font-weight:800;color:#fff;margin-bottom:6px;">$9<span style="font-size:18px;font-weight:500;color:#94A3B8;">/mo</span></div>
-          <div style="font-size:14px;color:#64748B;margin-bottom:28px;">Everything you need</div>
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Everything in Free
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Unlimited job matching
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Full learning roadmaps
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Skill gap deep dives
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#CBD5E1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              AI career coach chat
-            </div>
-          </div>
-          <button disabled style="display:block;width:100%;text-align:center;background:rgba(99,102,241,0.2);color:#6366F1;font-size:14px;font-weight:600;border:1px solid rgba(99,102,241,0.3);padding:13px;border-radius:10px;cursor:not-allowed;">Notify Me at Launch</button>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ============================================================ -->
-  <!-- BETA SIGNUP -->
-  <!-- ============================================================ -->
-  <section id="beta" style="padding:80px 32px;background:#F8FAFC;">
-    <div style="max-width:520px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:36px;">
-        <div style="display:inline-flex;align-items:center;gap:8px;background:#F0FDF4;border:1px solid #BBF7D0;color:#16A34A;font-size:13px;font-weight:500;padding:6px 14px;border-radius:100px;margin-bottom:20px;">
-          <span style="width:7px;height:7px;background:#22C55E;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-          Accepting Beta Requests
-        </div>
-        <h2 style="font-size:clamp(26px,3vw,36px);font-weight:800;color:#0F172A;margin:0 0 12px;">Get Early Access</h2>
-        <p style="font-size:16px;color:#64748B;line-height:1.6;">
-          Join the closed beta and be among the first to experience AI-powered career guidance. Spots are limited.
-        </p>
-      </div>
-
-      <!-- Form — KEEP ALL BACKEND FUNCTIONALITY INTACT -->
-      <form
-        id="beta-form"
-        action="https://formspree.io/f/xaqpoppk"
-        method="POST"
-        onsubmit="handleFormSubmit(event)"
-        style="background:#fff;border:1px solid #E2E8F0;border-radius:20px;padding:32px;box-shadow:0 4px 24px rgba(15,23,42,0.06);"
-      >
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              required
-              placeholder="Alex Johnson"
-              style="width:100%;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;font-size:14px;color:#0F172A;background:#fff;box-sizing:border-box;font-family:inherit;transition:border-color 0.15s,box-shadow 0.15s;"
-            />
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Email Address</label>
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="alex@example.com"
-              style="width:100%;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;font-size:14px;color:#0F172A;background:#fff;box-sizing:border-box;font-family:inherit;transition:border-color 0.15s,box-shadow 0.15s;"
-            />
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">Where are you in your career?</label>
-            <select
-              name="careerStage"
-              required
-              style="width:100%;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;font-size:14px;color:#374151;background:#fff;box-sizing:border-box;font-family:inherit;transition:border-color 0.15s,box-shadow 0.15s;"
-            >
-              <option value="">Select your level...</option>
-              <option value="new-grad">New grad / about to graduate</option>
-              <option value="early">Early career (1–3 years)</option>
-              <option value="mid">Mid-level (3–7 years)</option>
-              <option value="senior">Senior / experienced (7+ years)</option>
-              <option value="career-changer">Career changer</option>
-              <option value="student">Still in school</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">What field are you targeting?</label>
-            <select
-              name="targetField"
-              style="width:100%;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;font-size:14px;color:#374151;background:#fff;box-sizing:border-box;font-family:inherit;transition:border-color 0.15s,box-shadow 0.15s;"
-            >
-              <option value="">Select a field...</option>
-              <option value="software">Software Engineering / Tech</option>
-              <option value="data">Data / AI / Analytics</option>
-              <option value="product">Product Management</option>
-              <option value="design">Design / UX</option>
-              <option value="finance">Finance / Accounting</option>
-              <option value="marketing">Marketing / Growth</option>
-              <option value="ops">Operations / Consulting</option>
-              <option value="healthcare">Healthcare</option>
-              <option value="other">Other / Not sure yet</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">What's your main goal right now?</label>
-            <select
-              name="goal"
-              style="width:100%;padding:12px 14px;border:1px solid #E2E8F0;border-radius:10px;font-size:14px;color:#374151;background:#fff;box-sizing:border-box;font-family:inherit;transition:border-color 0.15s,box-shadow 0.15s;"
-            >
-              <option value="">Select a goal...</option>
-              <option value="first-job">Land my first real job</option>
-              <option value="better-job">Find a better / higher-paying role</option>
-              <option value="promotion">Get promoted or level up</option>
-              <option value="switch">Switch into a new field</option>
-              <option value="skills">Figure out what skills to build</option>
-              <option value="resume">Fix my resume and get more interviews</option>
-            </select>
-          </div>
-        </div>
-
+      <div style={{display:'flex',gap:8}}>
         <button
-          type="submit"
-          id="submit-btn"
-          style="margin-top:24px;width:100%;background:linear-gradient(135deg,#2563EB,#6366F1);color:#fff;font-size:15px;font-weight:700;padding:15px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,0.3);transition:opacity 0.15s;font-family:inherit;"
-          onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"
+          style={{whiteSpace:'nowrap',padding:'9px 16px',background:'transparent',border:'1px solid #E5E7EB',borderRadius:10,fontWeight:600,fontSize:14,cursor:'pointer',color:'#111827'}}
+          onClick={() => window.location.href='https://nxtgrnd-ai.vercel.app/login'}
+        >Sign In</button>
+        <button
+          style={{whiteSpace:'nowrap',padding:'9px 18px',background:'linear-gradient(135deg,#2563EB,#6366F1)',color:'white',border:'none',borderRadius:10,fontWeight:700,fontSize:14,cursor:'pointer',boxShadow:'0 4px 12px rgba(37,99,235,0.25)'}}
+          onClick={() => document.getElementById('signup')?.scrollIntoView({behavior:'smooth'})}
+        >Get Started →</button>
+      </div>
+    </nav>
+  );
+}
+
+// ─────────────────────────────────────────────
+// HERO
+// ─────────────────────────────────────────────
+function LandingHero() {
+  return (
+    <section style={{position:'relative',padding:'80px 40px 40px',maxWidth:1280,margin:'0 auto',fontFamily:'Inter, sans-serif'}}>
+      <div style={{position:'absolute',top:'-10%',right:'-5%',width:600,height:600,borderRadius:'50%',background:'radial-gradient(circle, rgba(99,102,241,0.15), transparent 60%)',zIndex:0,pointerEvents:'none'}} />
+      <div className="hero-grid" style={{display:'grid',gridTemplateColumns:'1fr 1.1fr',gap:60,alignItems:'center',position:'relative',zIndex:1}}>
+        <div>
+          <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',background:'white',border:'1px solid #E5E7EB',borderRadius:9999,fontSize:12,fontWeight:600,color:'#374151',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+            <i data-lucide="sparkles" style={{width:14,height:14,color:'#2563EB'}}/> Built for ambitious students · Born at NC A&T
+          </div>
+          <h1 style={{fontSize:'clamp(40px,5vw,60px)',fontWeight:800,margin:'20px 0 0',letterSpacing:'-0.035em',lineHeight:1.02,color:'#0F172A'}}>
+            Launch your career<br/>with <span style={{background:'linear-gradient(135deg,#2563EB 0%,#6366F1 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>AI</span>.
+          </h1>
+          <p style={{fontSize:17,lineHeight:1.6,color:'#475569',marginTop:22,maxWidth:520}}>
+            AI-powered career development for the next generation of leaders. Your personalized path from campus to top-tier tech, consulting, and professional careers.
+          </p>
+          <div style={{display:'flex',gap:12,marginTop:30,flexWrap:'wrap'}}>
+            <button
+              style={{display:'inline-flex',alignItems:'center',gap:8,padding:'14px 24px',background:'linear-gradient(135deg,#2563EB,#6366F1)',color:'white',border:'none',borderRadius:12,fontWeight:700,fontSize:15,cursor:'pointer',boxShadow:'0 10px 25px rgba(37,99,235,0.3)'}}
+              onClick={() => document.getElementById('signup')?.scrollIntoView({behavior:'smooth'})}
+            >Get Started Free <i data-lucide="arrow-right" style={{width:18,height:18}}/></button>
+            <button style={{display:'inline-flex',alignItems:'center',gap:8,padding:'14px 22px',background:'white',color:'#111827',border:'1px solid #E5E7EB',borderRadius:12,fontWeight:600,fontSize:15,cursor:'pointer'}}>
+              <i data-lucide="play-circle" style={{width:18,height:18}}/> Watch 2-min demo
+            </button>
+          </div>
+        </div>
+
+        <div className="hero-preview" style={{position:'relative'}}>
+          <div style={{background:'white',borderRadius:18,boxShadow:'0 30px 60px rgba(15,23,42,0.15), 0 10px 25px rgba(15,23,42,0.08)',overflow:'hidden',border:'1px solid rgba(0,0,0,0.04)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,padding:'12px 16px',borderBottom:'1px solid #F3F4F6'}}>
+              <div style={{width:10,height:10,borderRadius:'50%',background:'#EF4444'}}/>
+              <div style={{width:10,height:10,borderRadius:'50%',background:'#F59E0B'}}/>
+              <div style={{width:10,height:10,borderRadius:'50%',background:'#10B981'}}/>
+              <div style={{marginLeft:12,fontSize:12,color:'#6B7280',fontWeight:500}}>AI Career Compass · Results</div>
+            </div>
+            <div style={{padding:20}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+                <div style={{width:40,height:40,borderRadius:10,background:'linear-gradient(135deg,#EFF6FF,#E0E7FF)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <i data-lucide="compass" style={{width:22,height:22,color:'#2563EB'}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:'#111827'}}>Your top path</div>
+                  <div style={{fontSize:11,color:'#6B7280'}}>Based on 47 data points</div>
+                </div>
+                <div style={{marginLeft:'auto',textAlign:'right'}}>
+                  <div style={{fontSize:22,fontWeight:800,background:'linear-gradient(135deg,#2563EB,#6366F1)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>94%</div>
+                  <div style={{fontSize:10,color:'#6B7280',letterSpacing:'0.05em',textTransform:'uppercase',fontWeight:600}}>match</div>
+                </div>
+              </div>
+              <div style={{fontSize:16,fontWeight:700,color:'#111827'}}>AI Research Engineer</div>
+              <div style={{fontSize:12,color:'#6B7280',marginTop:2}}>$180K–$240K · High growth</div>
+              <div style={{marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
+                {[
+                  {label:'ML Fundamentals',progress:85,color:'#2563EB'},
+                  {label:'Python Mastery',progress:72,color:'#6366F1'},
+                  {label:'System Design',progress:40,color:'#8B5CF6'},
+                ].map(r => (
+                  <div key={r.label}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:4}}>
+                      <span style={{fontWeight:600,color:'#374151'}}>{r.label}</span>
+                      <span style={{color:'#6B7280'}}>{r.progress}%</span>
+                    </div>
+                    <div style={{height:6,background:'#F3F4F6',borderRadius:9999,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:r.progress+'%',background:r.color,borderRadius:9999}}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{position:'absolute',top:-20,right:-20,background:'white',borderRadius:12,padding:'10px 14px',boxShadow:'0 10px 30px rgba(15,23,42,0.15)',display:'flex',alignItems:'center',gap:10,border:'1px solid #E5E7EB'}}>
+            <i data-lucide="check-circle-2" style={{width:16,height:16,color:'#10B981'}}/>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:'#111827'}}>Offer accepted</div>
+              <div style={{fontSize:10,color:'#6B7280'}}>Google · L3 SWE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// FEATURES
+// ─────────────────────────────────────────────
+function FeaturesSection() {
+  const features = [
+    {icon:'compass',       title:'AI Career Compass',  desc:'Personalized career paths scored from your skills, interests, and goals.'},
+    {icon:'file-text',     title:'Resume ATS Scanner', desc:'Optimize your resume for any job description in under a minute.'},
+    {icon:'user-plus',     title:'Mentor Matching',    desc:'Direct intros to alumni at top tech, finance, and consulting firms.'},
+    {icon:'trending-up',   title:'Offer Scoring',      desc:'Compare offers on comp, equity, growth, and fit — weighted for you.'},
+    {icon:'book-open',     title:'Learning Paths',     desc:'Curated skill tracks in React, ML, cloud, and system design.'},
+    {icon:'building-2',    title:'Job Opportunities',  desc:'Real roles at companies actively recruiting top student talent.'},
+  ];
+  return (
+    <section id="features" style={{maxWidth:1200,margin:'80px auto 40px',padding:'0 40px',fontFamily:'Inter, sans-serif'}}>
+      <div style={{textAlign:'center',marginBottom:48}}>
+        <div style={{display:'inline-block',fontSize:12,fontWeight:700,color:'#2563EB',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:14}}>THE PLATFORM</div>
+        <h2 style={{fontSize:'clamp(28px,4vw,42px)',fontWeight:800,margin:0,letterSpacing:'-0.03em',color:'#0F172A',lineHeight:1.1}}>Everything you need to land the role.</h2>
+        <p style={{fontSize:17,color:'#475569',marginTop:14,maxWidth:580,marginInline:'auto',lineHeight:1.55}}>Six tools built into one focused workflow — from finding your path to negotiating your first offer.</p>
+      </div>
+      <div className="features-grid" style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:16}}>
+        {features.map(f => (
+          <div key={f.title} style={{background:'#F1F5F9',borderRadius:16,padding:28,transition:'transform 250ms cubic-bezier(0.16,1,0.3,1),box-shadow 250ms'}}
+            onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 20px 40px rgba(37,99,235,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none'; }}
+          >
+            <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,#2563EB 0%,#6366F1 100%)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,boxShadow:'0 6px 16px rgba(37,99,235,0.25)'}}>
+              <i data-lucide={f.icon} style={{width:22,height:22,color:'white',strokeWidth:'2.25'}}/>
+            </div>
+            <div style={{fontSize:17,fontWeight:700,color:'#0F172A',letterSpacing:'-0.01em'}}>{f.title}</div>
+            <div style={{fontSize:14,color:'#475569',lineHeight:1.55,marginTop:6}}>{f.desc}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// HOW IT WORKS
+// ─────────────────────────────────────────────
+function HowItWorks() {
+  const steps = [
+    {n:'01',title:'Set your goals',       desc:'Tell us where you are and where you want to be. Takes 2 minutes.'},
+    {n:'02',title:'Get your AI career plan',desc:'Personalized paths, learning tracks, and target roles — ready to go.'},
+    {n:'03',title:'Land your opportunity', desc:'Apply with tuned resumes, mentor intros, and offer comparisons.'},
+  ];
+  return (
+    <section id="how" style={{maxWidth:1100,margin:'60px auto',padding:'0 40px',fontFamily:'Inter, sans-serif'}}>
+      <div style={{textAlign:'center',marginBottom:56}}>
+        <div style={{display:'inline-block',fontSize:12,fontWeight:700,color:'#2563EB',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:14}}>HOW IT WORKS</div>
+        <h2 style={{fontSize:'clamp(26px,4vw,38px)',fontWeight:800,margin:0,letterSpacing:'-0.03em',color:'#0F172A'}}>Three steps to your next move.</h2>
+      </div>
+      <div style={{position:'relative',display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:32,alignItems:'start'}}>
+        <div style={{position:'absolute',top:32,left:'17%',right:'17%',height:2,background:'linear-gradient(90deg, #DBEAFE 0%, #E0E7FF 50%, #DBEAFE 100%)',zIndex:0}} />
+        {steps.map(s => (
+          <div key={s.n} style={{position:'relative',zIndex:1,textAlign:'center',padding:'0 12px'}}>
+            <div style={{width:64,height:64,borderRadius:'50%',background:'white',border:'2px solid #E5E7EB',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 22px',boxShadow:'0 4px 12px rgba(15,23,42,0.06)'}}>
+              <div style={{width:48,height:48,borderRadius:'50%',background:'linear-gradient(135deg,#2563EB 0%,#6366F1 100%)',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:15,letterSpacing:'0.02em'}}>{s.n}</div>
+            </div>
+            <div style={{fontSize:19,fontWeight:700,color:'#0F172A',letterSpacing:'-0.01em'}}>{s.title}</div>
+            <div style={{fontSize:14,color:'#475569',lineHeight:1.55,marginTop:8,maxWidth:280,marginInline:'auto'}}>{s.desc}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// BETA SOCIAL PROOF
+// ─────────────────────────────────────────────
+function BetaSocialProof() {
+  return (
+    <section style={{maxWidth:1100,margin:'60px auto',padding:'0 40px',fontFamily:'Inter, sans-serif'}}>
+      <div style={{background:'white',border:'1px solid #E2E8F0',borderRadius:24,padding:'56px 48px',textAlign:'center',boxShadow:'0 1px 3px rgba(15,23,42,0.04)'}}>
+        <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'6px 14px',background:'#EFF6FF',border:'1px solid #DBEAFE',borderRadius:9999,fontSize:11,fontWeight:700,color:'#2563EB',letterSpacing:'0.12em'}}>
+          <span style={{width:7,height:7,borderRadius:'50%',background:'#2563EB',boxShadow:'0 0 0 4px rgba(37,99,235,0.15)',display:'inline-block'}}></span>
+          OPEN BETA
+        </div>
+        <h2 style={{fontSize:'clamp(26px,4vw,38px)',fontWeight:800,margin:'22px 0 0',letterSpacing:'-0.03em',color:'#0F172A',lineHeight:1.1}}>
+          Built by an ambitious student,<br/>
+          <span style={{background:'linear-gradient(135deg,#2563EB 0%,#6366F1 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>for ambitious students.</span>
+        </h2>
+        <p style={{fontSize:17,lineHeight:1.6,color:'#475569',marginTop:18,maxWidth:620,marginInline:'auto'}}>
+          NxtGrnd AI started as a dorm-room project at NC A&T and is now in open beta. We're learning fast, shipping weekly, and listening closely to every student who signs up.
+        </p>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',flexWrap:'wrap',gap:14,marginTop:28}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:7,fontSize:13,fontWeight:600,color:'#374151'}}>
+            <i data-lucide="graduation-cap" style={{width:16,height:16,color:'#2563EB'}}/> Born at NC A&T
+          </div>
+          <div style={{width:3,height:3,borderRadius:'50%',background:'#CBD5E1'}} />
+          <div style={{display:'inline-flex',alignItems:'center',gap:7,fontSize:13,fontWeight:600,color:'#374151'}}>
+            <i data-lucide="zap" style={{width:16,height:16,color:'#6366F1'}}/> Shipping weekly
+          </div>
+          <div style={{width:3,height:3,borderRadius:'50%',background:'#CBD5E1'}} />
+          <div style={{display:'inline-flex',alignItems:'center',gap:7,fontSize:13,fontWeight:600,color:'#374151'}}>
+            <i data-lucide="message-circle" style={{width:16,height:16,color:'#8B5CF6'}}/> Founder reads every email
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// BETA SIGNUP FORM (Formspree — preserved exactly)
+// ─────────────────────────────────────────────
+function BetaSignupForm() {
+  return (
+    <section id="signup" style={{padding:'80px 32px',background:'#F8FAFC',fontFamily:'Inter, sans-serif'}}>
+      <div style={{maxWidth:520,margin:'0 auto'}}>
+        <div style={{textAlign:'center',marginBottom:36}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'#F0FDF4',border:'1px solid #BBF7D0',color:'#16A34A',fontSize:13,fontWeight:500,padding:'6px 14px',borderRadius:100,marginBottom:20}}>
+            <span style={{width:7,height:7,background:'#22C55E',borderRadius:'50%',display:'inline-block',animation:'pulse-dot 2s infinite'}}></span>
+            Accepting Beta Requests
+          </div>
+          <h2 style={{fontSize:'clamp(26px,3vw,36px)',fontWeight:800,color:'#0F172A',margin:'0 0 12px'}}>Get Early Access</h2>
+          <p style={{fontSize:16,color:'#64748B',lineHeight:1.6}}>
+            Join the closed beta and be among the first to experience AI-powered career guidance. Spots are limited.
+          </p>
+        </div>
+
+        <form
+          id="beta-form"
+          action="https://formspree.io/f/xaqpoppk"
+          method="POST"
+          onSubmit="handleFormSubmit(event)"
+          style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:20,padding:32,boxShadow:'0 4px 24px rgba(15,23,42,0.06)'}}
         >
-          Request Beta Access →
-        </button>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div>
+              <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Full Name</label>
+              <input type="text" name="fullName" required placeholder="Alex Johnson"
+                style={{width:'100%',padding:'12px 14px',border:'1px solid #E2E8F0',borderRadius:10,fontSize:14,color:'#0F172A',background:'#fff',boxSizing:'border-box',fontFamily:'inherit',transition:'border-color 0.15s,box-shadow 0.15s'}} />
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Email Address</label>
+              <input type="email" name="email" required placeholder="alex@example.com"
+                style={{width:'100%',padding:'12px 14px',border:'1px solid #E2E8F0',borderRadius:10,fontSize:14,color:'#0F172A',background:'#fff',boxSizing:'border-box',fontFamily:'inherit',transition:'border-color 0.15s,box-shadow 0.15s'}} />
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>Where are you in your career?</label>
+              <select name="careerStage" required
+                style={{width:'100%',padding:'12px 14px',border:'1px solid #E2E8F0',borderRadius:10,fontSize:14,color:'#374151',background:'#fff',boxSizing:'border-box',fontFamily:'inherit',transition:'border-color 0.15s,box-shadow 0.15s'}}>
+                <option value="">Select your level...</option>
+                <option value="new-grad">New grad / about to graduate</option>
+                <option value="early">Early career (1–3 years)</option>
+                <option value="mid">Mid-level (3–7 years)</option>
+                <option value="senior">Senior / experienced (7+ years)</option>
+                <option value="career-changer">Career changer</option>
+                <option value="student">Still in school</option>
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>What field are you targeting?</label>
+              <select name="targetField"
+                style={{width:'100%',padding:'12px 14px',border:'1px solid #E2E8F0',borderRadius:10,fontSize:14,color:'#374151',background:'#fff',boxSizing:'border-box',fontFamily:'inherit',transition:'border-color 0.15s,box-shadow 0.15s'}}>
+                <option value="">Select a field...</option>
+                <option value="software">Software Engineering / Tech</option>
+                <option value="data">Data / AI / Analytics</option>
+                <option value="product">Product Management</option>
+                <option value="design">Design / UX</option>
+                <option value="finance">Finance / Accounting</option>
+                <option value="marketing">Marketing / Growth</option>
+                <option value="ops">Operations / Consulting</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="other">Other / Not sure yet</option>
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:13,fontWeight:600,color:'#374151',marginBottom:6}}>What's your main goal right now?</label>
+              <select name="goal"
+                style={{width:'100%',padding:'12px 14px',border:'1px solid #E2E8F0',borderRadius:10,fontSize:14,color:'#374151',background:'#fff',boxSizing:'border-box',fontFamily:'inherit',transition:'border-color 0.15s,box-shadow 0.15s'}}>
+                <option value="">Select a goal...</option>
+                <option value="first-job">Land my first real job</option>
+                <option value="better-job">Find a better / higher-paying role</option>
+                <option value="promotion">Get promoted or level up</option>
+                <option value="switch">Switch into a new field</option>
+                <option value="skills">Figure out what skills to build</option>
+                <option value="resume">Fix my resume and get more interviews</option>
+              </select>
+            </div>
+          </div>
 
-        <!-- Success message (hidden by default) -->
-        <div id="form-success" class="hidden" style="margin-top:16px;background:#F0FDF4;border:1px solid #BBF7D0;color:#16A34A;font-size:14px;text-align:center;padding:12px;border-radius:10px;font-weight:500;">
-          <span style="display:inline-flex;align-items:center;gap:6px;">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            You're on the list! We'll reach out with your access link soon.
-          </span>
+          <button type="submit" id="submit-btn"
+            style={{marginTop:24,width:'100%',background:'linear-gradient(135deg,#2563EB,#6366F1)',color:'#fff',fontSize:15,fontWeight:700,padding:15,borderRadius:12,border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(37,99,235,0.3)',transition:'opacity 0.15s',fontFamily:'inherit'}}
+            onMouseOver={(e) => e.currentTarget.style.opacity='0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity='1'}
+          >
+            Request Beta Access →
+          </button>
+
+          <div id="form-success" className="hidden" style={{marginTop:16,background:'#F0FDF4',border:'1px solid #BBF7D0',color:'#16A34A',fontSize:14,textAlign:'center',padding:12,borderRadius:10,fontWeight:500}}>
+            <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              You're on the list! We'll reach out with your access link soon.
+            </span>
+          </div>
+
+          <p style={{fontSize:12,color:'#94A3B8',textAlign:'center',marginTop:12}}>No spam, ever. We'll only email you with your access link.</p>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────
+// PRICING
+// ─────────────────────────────────────────────
+function Pricing() {
+  const freeFeatures = [
+    'AI Career Compass (1 path)',
+    'Resume ATS Scanner (3/mo)',
+    'Learning Paths library',
+    'Community Discord access',
+  ];
+  const proFeatures = [
+    'Unlimited career paths',
+    'Unlimited resume scans',
+    'Mentor Matching (direct intros)',
+    'Offer Scoring & negotiation tools',
+    'Interview Stories archive',
+    'Priority support',
+  ];
+  const scrollToSignup = () => document.getElementById('signup')?.scrollIntoView({behavior:'smooth'});
+  return (
+    <section id="pricing" style={{maxWidth:1000,margin:'80px auto',padding:'0 40px',fontFamily:'Inter, sans-serif'}}>
+      <div style={{textAlign:'center',marginBottom:48}}>
+        <div style={{display:'inline-block',fontSize:12,fontWeight:700,color:'#2563EB',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:14}}>PRICING</div>
+        <h2 style={{fontSize:'clamp(26px,4vw,38px)',fontWeight:800,margin:0,letterSpacing:'-0.03em',color:'#0F172A'}}>Start free. Upgrade when you're ready.</h2>
+        <p style={{fontSize:15,color:'#64748B',marginTop:12}}>No credit card required. Cancel anytime.</p>
+      </div>
+      <div className="pricing-grid" style={{display:'grid',gridTemplateColumns:'repeat(2, 1fr)',gap:20}}>
+        {/* FREE */}
+        <div style={{background:'white',border:'1px solid #E2E8F0',borderRadius:20,padding:36}}>
+          <div style={{fontSize:18,fontWeight:700,color:'#0F172A',letterSpacing:'-0.01em'}}>Free</div>
+          <div style={{fontSize:14,color:'#64748B',marginTop:6,lineHeight:1.5,minHeight:42}}>Everything you need to explore your path.</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:20,marginBottom:24}}>
+            <span style={{fontSize:52,fontWeight:800,color:'#0F172A',letterSpacing:'-0.04em',lineHeight:1}}>$0</span>
+            <span style={{fontSize:14,color:'#64748B',fontWeight:500}}>/ forever</span>
+          </div>
+          <button onClick={scrollToSignup} style={{width:'100%',padding:'12px 20px',background:'white',color:'#0F172A',border:'1px solid #E2E8F0',borderRadius:12,fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:'inherit',transition:'background 0.15s'}}
+            onMouseOver={(e) => e.currentTarget.style.background='#F8FAFC'}
+            onMouseOut={(e) => e.currentTarget.style.background='white'}
+          >Get started free</button>
+          <ul style={{listStyle:'none',padding:0,margin:'24px 0 0',display:'flex',flexDirection:'column',gap:12}}>
+            {freeFeatures.map(f => (
+              <li key={f} style={{display:'flex',alignItems:'flex-start',gap:10,fontSize:14,color:'#374151',lineHeight:1.5}}>
+                <i data-lucide="check" style={{width:16,height:16,color:'#10B981',flexShrink:0,marginTop:2}}/>
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <p style="font-size:12px;color:#94A3B8;text-align:center;margin-top:12px;">No spam, ever. We'll only email you with your access link.</p>
-      </form>
-
-    </div>
-  </section>
-
-
-  <!-- ============================================================ -->
-  <!-- FOOTER -->
-  <!-- ============================================================ -->
-  <footer style="background:#0F172A;padding:32px;color:#475569;">
-    <div style="max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-
-      <!-- Logo -->
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#2563EB,#6366F1);display:flex;align-items:center;justify-content:center;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-          </svg>
+        {/* PRO */}
+        <div style={{position:'relative',background:'linear-gradient(160deg, #0F172A 0%, #1E293B 45%, #1E3A8A 100%)',borderRadius:20,padding:36,color:'white',boxShadow:'0 20px 50px rgba(37,99,235,0.25)'}}>
+          <div style={{position:'absolute',top:-14,left:36,display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',background:'linear-gradient(135deg,#2563EB,#6366F1)',color:'white',borderRadius:9999,fontSize:10,fontWeight:800,letterSpacing:'0.12em',boxShadow:'0 6px 16px rgba(37,99,235,0.4)'}}>
+            <i data-lucide="crown" style={{width:12,height:12}}/> MOST POPULAR
+          </div>
+          <div style={{fontSize:18,fontWeight:700,color:'white',letterSpacing:'-0.01em'}}>Pro</div>
+          <div style={{fontSize:14,color:'rgba(255,255,255,0.75)',marginTop:6,lineHeight:1.5,minHeight:42}}>Everything, unlocked. For students serious about landing the role.</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:20,marginBottom:24}}>
+            <span style={{fontSize:52,fontWeight:800,color:'white',letterSpacing:'-0.04em',lineHeight:1}}>$9</span>
+            <span style={{fontSize:14,color:'rgba(255,255,255,0.7)',fontWeight:500}}>/ month</span>
+          </div>
+          <button onClick={scrollToSignup} style={{width:'100%',padding:'12px 20px',background:'linear-gradient(135deg,#2563EB,#6366F1)',color:'white',border:'none',borderRadius:12,fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 10px 25px rgba(37,99,235,0.4)'}}>Start Pro trial →</button>
+          <ul style={{listStyle:'none',padding:0,margin:'24px 0 0',display:'flex',flexDirection:'column',gap:12}}>
+            {proFeatures.map(f => (
+              <li key={f} style={{display:'flex',alignItems:'flex-start',gap:10,fontSize:14,color:'rgba(255,255,255,0.92)',lineHeight:1.5}}>
+                <i data-lucide="check" style={{width:16,height:16,color:'#60A5FA',flexShrink:0,marginTop:2}}/>
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        <span style="font-weight:700;font-size:15px;color:#E2E8F0;">NxtGrnd AI</span>
       </div>
+    </section>
+  );
+}
 
-      <!-- Links -->
-      <div style="display:flex;align-items:center;gap:20px;font-size:13px;">
-        <a href="/privacy" style="color:#475569;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#94A3B8'" onmouseout="this.style.color='#475569'">Privacy Policy</a>
-        <span style="color:#334155;">|</span>
-        <a href="/terms" style="color:#475569;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#94A3B8'" onmouseout="this.style.color='#475569'">Terms of Service</a>
-        <span style="color:#334155;">|</span>
-        <a href="mailto:hello@nxtgrnd.ai" style="color:#475569;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='#94A3B8'" onmouseout="this.style.color='#475569'">Contact</a>
+// ─────────────────────────────────────────────
+// FOOTER
+// ─────────────────────────────────────────────
+function SiteFooter() {
+  return (
+    <footer style={{background:'#0F172A',marginTop:80,fontFamily:'Inter, sans-serif'}}>
+      <div style={{maxWidth:1280,margin:'0 auto',padding:'28px 40px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <img src="ng-logo.png" style={{width:28,height:28,borderRadius:7}} alt="NxtGrnd" />
+          <div style={{fontWeight:800,fontSize:15,letterSpacing:'-0.01em',color:'white'}}>
+            NxtGrnd <span style={{background:'linear-gradient(135deg,#60A5FA,#818CF8)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>AI</span>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:14}}>
+          <a href="/privacy" style={{fontSize:13,color:'#CBD5E1',fontWeight:500,textDecoration:'none'}}>Privacy Policy</a>
+          <span style={{color:'#334155',fontSize:12}}>|</span>
+          <a href="/terms" style={{fontSize:13,color:'#CBD5E1',fontWeight:500,textDecoration:'none'}}>Terms of Service</a>
+          <span style={{color:'#334155',fontSize:12}}>|</span>
+          <a href="mailto:hello@nxtgrnd.ai" style={{fontSize:13,color:'#CBD5E1',fontWeight:500,textDecoration:'none'}}>Contact</a>
+        </div>
+        <div style={{fontSize:13,color:'#94A3B8',fontWeight:500}}>© 2026 NxtGrnd AI</div>
       </div>
+    </footer>
+  );
+}
 
-      <!-- Copyright -->
-      <p style="font-size:13px;color:#334155;margin:0;">© 2026 NxtGrnd AI. All rights reserved.</p>
-
+// ─────────────────────────────────────────────
+// APP
+// ─────────────────────────────────────────────
+function App() {
+  React.useEffect(() => {
+    const tick = () => window.lucide && window.lucide.createIcons();
+    tick();
+    const t = setTimeout(tick, 100);
+    return () => clearTimeout(t);
+  });
+  return (
+    <div className="page">
+      <LandingNav />
+      <LandingHero />
+      <FeaturesSection />
+      <HowItWorks />
+      <BetaSocialProof />
+      <BetaSignupForm />
+      <Pricing />
+      <SiteFooter />
     </div>
-  </footer>
+  );
+}
 
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 
-  <!-- ============================================================ -->
-  <!-- JS: Form handling + scroll -->
-  <!-- ============================================================ -->
-  <script>
-    function handleFormSubmit(e) {
-      const form = document.getElementById('beta-form');
-      if (form.action.includes('YOUR_FORM_ID')) {
-        e.preventDefault();
-        showSuccess();
-        return;
-      }
-      e.preventDefault();
-      const btn = document.getElementById('submit-btn');
-      btn.textContent = 'Submitting...';
-      btn.disabled = true;
+<script>
+function handleFormSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById('beta-form');
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
 
-      fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: { 'Accept': 'application/json' }
-      })
-      .then(res => {
-        if (res.ok) {
-          showSuccess();
-          form.reset();
-        } else {
-          btn.textContent = 'Something went wrong. Try again.';
-          btn.disabled = false;
-        }
-      })
-      .catch(() => {
-        btn.textContent = 'Something went wrong. Try again.';
-        btn.disabled = false;
-      });
+  fetch(form.action, {
+    method: 'POST',
+    body: new FormData(form),
+    headers: { 'Accept': 'application/json' }
+  })
+  .then(res => {
+    if (res.ok) {
+      showSuccess();
+      form.reset();
+    } else {
+      btn.textContent = 'Something went wrong. Try again.';
+      btn.disabled = false;
     }
+  })
+  .catch(() => {
+    btn.textContent = 'Something went wrong. Try again.';
+    btn.disabled = false;
+  });
+}
 
-    function showSuccess() {
-      document.getElementById('submit-btn').classList.add('hidden');
-      document.getElementById('form-success').classList.remove('hidden');
-    }
-
-    // Highlight nav link on scroll
-    const sections = document.querySelectorAll('section[id]');
-    window.addEventListener('scroll', () => {
-      let current = '';
-      sections.forEach(section => {
-        if (window.scrollY >= section.offsetTop - 100) {
-          current = section.getAttribute('id');
-        }
-      });
-    });
-  </script>
+function showSuccess() {
+  document.getElementById('submit-btn').classList.add('hidden');
+  document.getElementById('form-success').classList.remove('hidden');
+}
+</script>
 
 </body>
 </html>
