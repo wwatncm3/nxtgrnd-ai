@@ -25,6 +25,7 @@ const DashboardHeader = ({
           id="mobile-menu-button"
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 hover:bg-gray-100 rounded-lg lg:hidden transition-all duration-200 active:scale-95"
+          aria-label="Toggle menu"
         >
           <Menu size={24} />
         </button>
@@ -33,7 +34,7 @@ const DashboardHeader = ({
           <img
             src="/nxtgrnd_full_logo_2.png"
             alt="NxtGrnd AI Logo"
-            className="h-10 sm:h-14 w-auto"
+            className="h-12 sm:h-14 w-auto"
           />
         </div>
 
@@ -113,6 +114,7 @@ const DashboardHeader = ({
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="p-2 hover:bg-gray-100 rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
+              aria-label="User menu"
             >
               <UserCircle size={24} />
             </button>

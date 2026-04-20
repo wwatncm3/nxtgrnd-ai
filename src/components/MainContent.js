@@ -606,7 +606,7 @@ const MainContent = ({ setStage }) => {
               <div className="mb-6 sm:mb-8 animate-slide-up">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                    <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
                       Welcome {user?.firstName ? `${user.firstName}` : 'back'} to your {selectedCareerPath?.title || 'Career'} Dashboard!
                     </h1>
                     <p className="mt-1 text-sm sm:text-base text-gray-600">
@@ -615,7 +615,7 @@ const MainContent = ({ setStage }) => {
                   </div>
                   <button
                     onClick={() => setStage(4)}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 w-full sm:w-auto transition-all duration-200 hover:shadow-md hover:border-blue-300 active:scale-95 group"
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 w-full sm:w-auto transition-all duration-200 hover:shadow-md hover:border-blue-300 active:scale-[0.96] group"
                   >
                     <Compass className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
                     Change Career Path

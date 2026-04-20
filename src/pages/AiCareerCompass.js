@@ -347,12 +347,13 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
         {/* Hero Header Card */}
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden mb-8">
           {/* Gradient Header */}
-          <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-teal-600 px-6 sm:px-8 py-8 text-white">
+          <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-teal-600 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-white">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => handleStageChange(5)}
                   className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                  aria-label="Go back to dashboard"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
@@ -360,7 +361,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                   <Compass className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold">AI Career Compass</h1>
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">AI Career Compass</h1>
                   <p className="text-blue-100 mt-1">AI-Powered career insights and personalized guidance</p>
                 </div>
               </div>
@@ -376,7 +377,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
           </div>
 
           {/* Quick Stats */}
-          <div className="px-6 sm:px-8 py-4 bg-gradient-to-r from-blue-50/50 to-teal-50/50 grid grid-cols-3 gap-4">
+          <div className="px-6 sm:px-8 py-4 bg-gradient-to-r from-blue-50/50 to-teal-50/50 grid grid-cols-3 gap-2 sm:gap-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-900">{enhancedData?.careerPaths?.length || 0}</p>
               <p className="text-sm text-gray-600">Career Paths</p>
@@ -488,7 +489,7 @@ const EnhancedAICareerCompass = ({ setStage: setStageFromProps }) => {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2
+                        className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2 active:scale-[0.96]
                           ${activeTab === tab.id
                             ? 'bg-white text-blue-900 shadow-md'
                             : 'text-gray-600 hover:bg-white/60 hover:text-gray-900'

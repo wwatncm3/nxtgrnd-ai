@@ -60,7 +60,7 @@ const DashboardSidebar = ({
                     className="w-full flex items-center space-x-3 px-3 py-3 mt-4 rounded-lg
                              bg-gradient-to-r from-blue-900 to-teal-600 text-white
                              hover:from-blue-950 hover:to-teal-700 transition-all duration-200 text-left group
-                             active:scale-[0.98] shadow-md"
+                             active:scale-[0.96] shadow-md"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <item.icon size={20} className="transition-transform duration-200 group-hover:scale-110" />
@@ -80,7 +80,7 @@ const DashboardSidebar = ({
                   }}
                   className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg
                            transition-all duration-200 text-left group
-                           active:scale-[0.98] ${
+                           active:scale-[0.96] ${
                              isActive
                                ? 'bg-blue-50 text-blue-600 font-medium border-r-2 border-blue-600'
                                : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'

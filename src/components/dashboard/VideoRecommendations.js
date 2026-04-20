@@ -361,7 +361,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
             <Play className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold">Recommended Videos</h2>
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold">Recommended Videos</h2>
             <p className="text-sm text-gray-500">Curated for your {careerPath?.title || 'career'} journey</p>
           </div>
         </div>
@@ -429,7 +429,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
       )}
 
       {/* Video Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
         {videos.map((video) => (
           <div
             key={video.id}
@@ -437,7 +437,7 @@ const VideoRecommendations = ({ careerPath, maxVideos = 6 }) => {
             onClick={() => setSelectedVideo(video)}
           >
             {/* Thumbnail */}
-            <div className="relative w-36 sm:w-44 h-20 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+            <div className="relative w-28 sm:w-36 md:w-44 h-20 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
               {video.thumbnail && (
                 <img
                   src={video.thumbnail}

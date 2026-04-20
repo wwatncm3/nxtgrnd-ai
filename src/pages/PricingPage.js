@@ -64,10 +64,10 @@ const PricingPage = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Unlock Your Full Career Potential
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -86,16 +86,16 @@ const PricingPage = () => {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-16">
           {/* Free Tier */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 flex flex-col">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 flex flex-col hover:shadow-xl transition-shadow duration-300">
             <div className="mb-6">
               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-gray-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900">Free</h3>
               <div className="mt-2">
-                <span className="text-4xl font-bold text-gray-900">$0</span>
+                <span className="text-4xl font-bold text-gray-900 tabular-nums">$0</span>
                 <span className="text-gray-500 ml-1">/month</span>
               </div>
               <p className="text-gray-500 mt-2 text-sm">Get started with career guidance</p>
@@ -112,14 +112,14 @@ const PricingPage = () => {
 
             <button
               disabled
-              className="w-full py-3 px-6 rounded-xl border-2 border-gray-200 text-gray-400 font-semibold cursor-default"
+              className="w-full py-3 px-6 rounded-xl border-2 border-gray-200 text-gray-400 font-semibold cursor-default active:scale-[0.96] transition-transform"
             >
               {tier === 'free' ? 'Current Plan' : 'Free Tier'}
             </button>
           </div>
 
           {/* Pro Tier */}
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-900 p-8 flex flex-col relative">
+          <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-900 p-8 flex flex-col relative hover:shadow-xl transition-shadow duration-300">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
               <span className="bg-gradient-to-r from-blue-900 to-teal-600 text-white text-sm font-bold px-4 py-1.5 rounded-full">
                 Most Popular
@@ -132,7 +132,7 @@ const PricingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900">NxtGrnd Pro</h3>
               <div className="mt-2">
-                <span className="text-4xl font-bold text-gray-900">$9</span>
+                <span className="text-4xl font-bold text-gray-900 tabular-nums">$9</span>
                 <span className="text-gray-500 ml-1">/month</span>
               </div>
               <p className="text-gray-500 mt-2 text-sm">Full access to all career tools</p>
@@ -151,7 +151,7 @@ const PricingPage = () => {
               <button
                 onClick={handleManageSubscription}
                 disabled={portalLoading}
-                className="w-full py-3 px-6 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
+                className="w-full py-3 px-6 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors active:scale-[0.96] transition-transform"
               >
                 {portalLoading ? 'Loading...' : 'Manage Subscription'}
               </button>
@@ -164,7 +164,7 @@ const PricingPage = () => {
           </div>
 
           {/* B2B / Institutional */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 flex flex-col">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 flex flex-col hover:shadow-xl transition-shadow duration-300">
             <div className="mb-6">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <Building2 className="w-6 h-6 text-blue-600" />
@@ -194,7 +194,7 @@ const PricingPage = () => {
 
             <a
               href="mailto:contact@nxtgrnd.ai"
-              className="w-full py-3 px-6 rounded-xl border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 px-6 rounded-xl border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors active:scale-[0.96] transition-transform flex items-center justify-center gap-2"
             >
               <Mail className="w-4 h-4" />
               Contact Sales
