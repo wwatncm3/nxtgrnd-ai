@@ -132,7 +132,7 @@ const PricingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900">NxtGrnd Pro</h3>
               <div className="mt-2">
-                <span className="text-4xl font-bold text-gray-900">$15</span>
+                <span className="text-4xl font-bold text-gray-900">$9</span>
                 <span className="text-gray-500 ml-1">/month</span>
               </div>
               <p className="text-gray-500 mt-2 text-sm">Full access to all career tools</p>

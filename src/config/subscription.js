@@ -12,6 +12,7 @@ export const TIERS = {
 // Admin emails — full access + admin controls
 export const ADMIN_EMAILS = [
   'willcwalton3@gmail.com',
+  'willwalton3@gmail.com',
   process.env.REACT_APP_ADMIN_EMAIL || ''
 ].filter(Boolean);
 
